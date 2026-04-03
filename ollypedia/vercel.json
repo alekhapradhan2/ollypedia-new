@@ -1,0 +1,13 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "env": {
+    "MONGODB_URI": "@mongodb_uri",
+    "JWT_SECRET": "@jwt_secret",
+    "GROQ_API_KEY": "@groq_api_key",
+    "NEXT_PUBLIC_SITE_URL": "https://www.ollypedia.in",
+    "NEXT_PUBLIC_SITE_NAME": "Ollypedia"
+  }
+}

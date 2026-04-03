@@ -1,0 +1,5 @@
+<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="#1a1a1a"/>
+  <rect x="60" y="160" width="680" height="12" rx="6" fill="#2a2a2a"/>
+  <text x="400" y="240" font-family="sans-serif" font-size="16" fill="#555" text-anchor="middle">Ollypedia Blog</text>
+</svg>
