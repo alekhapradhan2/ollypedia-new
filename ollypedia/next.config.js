@@ -1,16 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    unoptimized: true, // ✅ ADD THIS LINE (VERY IMPORTANT)
+
     remotePatterns: [
       { protocol: "https", hostname: "**" },
-      { protocol: "http",  hostname: "**" },
+      { protocol: "http", hostname: "**" },
     ],
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    contentSecurityPolicy:
+      "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // ✅ ADD THIS BLOCK 👇 (IMPORTANT)
+  // ✅ keep this
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -22,7 +25,10 @@ const nextConfig = {
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
         ],
       },
     ];
