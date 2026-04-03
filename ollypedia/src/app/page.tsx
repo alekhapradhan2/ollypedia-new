@@ -9,7 +9,8 @@ import { MovieCard } from "@/components/movie/MovieCard";
 import { BlogCard } from "@/components/blog/BlogCard";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { buildMeta, SITE_NAME } from "@/lib/seo";
-import { Film, Star, Music, Newspaper, TrendingUp, Award, Play } from "lucide-react";
+import { Film, Star, Music, Newspaper, TrendingUp, Award } from "lucide-react";
+import HeroCarousel, { type HeroMovie } from "@/components/layout/HeroCarousel";
 
 export const metadata: Metadata = buildMeta({
   title: `${SITE_NAME} – The Odia Film Encyclopedia`,
@@ -22,16 +23,32 @@ export const metadata: Metadata = buildMeta({
   url: "/",
 });
 
+// ── Date helpers (mirrors Home.jsx logic) ────────────────────────
+const _now = new Date();
+function withinDays(d: string | undefined, past: number, future: number) {
+  if (!d) return false;
+  const diff = (new Date(d).getTime() - _now.getTime()) / 86400000;
+  return diff >= -past && diff <= future;
+}
+function isThisMonth(d: string | undefined) {
+  if (!d) return false;
+  const dt = new Date(d);
+  return dt.getMonth() === _now.getMonth() && dt.getFullYear() === _now.getFullYear();
+}
+function isLastMonth(d: string | undefined) {
+  if (!d) return false;
+  const dt = new Date(d);
+  const lm = new Date(_now.getFullYear(), _now.getMonth() - 1, 1);
+  return dt.getMonth() === lm.getMonth() && dt.getFullYear() === lm.getFullYear();
+}
+
 async function getHomeData() {
   await connectDB();
-  const [latestMovies, upcomingMovies, latestBlogs, latestNews] = await Promise.all([
-    Movie.find({ status: { $ne: "Upcoming" } }, "-reviews")
+  const [allMovies, latestBlogs, latestNews] = await Promise.all([
+    // Fetch all movies so we can derive hero + rows server-side
+    Movie.find({}, "-reviews -media.songs")
       .sort({ releaseDate: -1 })
-      .limit(10)
-      .lean(),
-    Movie.find({ $or: [{ status: "Upcoming" }, { releaseTBA: true }] }, "-reviews")
-      .sort({ createdAt: -1 })
-      .limit(6)
+      .limit(80)
       .lean(),
     Blog.find({ published: true }, "-content -reviews")
       .sort({ createdAt: -1 })
@@ -42,90 +59,110 @@ async function getHomeData() {
       .limit(4)
       .lean(),
   ]);
-  return { latestMovies, upcomingMovies, latestBlogs, latestNews };
+
+  // ── Hero movies — same filter as Home.jsx heroMovies useMemo ──
+  const heroMovies: HeroMovie[] = (allMovies as any[])
+    .filter((m) => {
+      const hasImage = m.thumbnailUrl || m.media?.trailer?.ytId || m.posterUrl;
+      if (!hasImage) return false;
+      if (!m.verdict || m.verdict === "Upcoming") return true;
+      if (m.releaseDate && withinDays(m.releaseDate, 60, 0)) return true;
+      return isThisMonth(m.releaseDate) || isLastMonth(m.releaseDate);
+    })
+    .sort((a: any, b: any) => {
+      const aUp = !a.verdict || a.verdict === "Upcoming";
+      const bUp = !b.verdict || b.verdict === "Upcoming";
+      const aDate = a.releaseDate ? new Date(a.releaseDate).getTime() : null;
+      const bDate = b.releaseDate ? new Date(b.releaseDate).getTime() : null;
+      if (aUp && bUp) {
+        if (!aDate && !bDate) return 0;
+        if (!aDate) return 1;
+        if (!bDate) return -1;
+        return aDate - bDate;
+      }
+      if (aUp && !bUp) return -1;
+      if (!aUp && bUp) return 1;
+      return (bDate || 0) - (aDate || 0);
+    })
+    .slice(0, 8)
+    .map((m: any) => ({
+      _id:         String(m._id),
+      slug:        m.slug        || undefined,
+      title:       m.title,
+      category:    m.category    || undefined,
+      genre:       m.genre       || undefined,
+      language:    m.language    || undefined,
+      releaseDate: m.releaseDate || undefined,
+      director:    m.director    || undefined,
+      verdict:     m.verdict     || undefined,
+      synopsis:    m.synopsis    || undefined,
+      thumbnailUrl: m.thumbnailUrl || undefined,
+      posterUrl:   m.posterUrl   || undefined,
+      bannerUrl:   m.bannerUrl   || undefined,
+      media: m.media?.trailer?.ytId
+        ? { trailer: { ytId: m.media.trailer.ytId } }
+        : undefined,
+    }));
+
+  // ── Latest released movies ────────────────────────────────────
+  const latestMovies = (allMovies as any[])
+    .filter((m) => m.status !== "Upcoming" && m.releaseDate && new Date(m.releaseDate) <= _now)
+    .sort((a: any, b: any) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
+    .slice(0, 10);
+
+  // ── Upcoming movies ───────────────────────────────────────────
+  const upcomingMovies = (allMovies as any[])
+    .filter((m) => !m.verdict || m.verdict === "Upcoming")
+    .sort((a: any, b: any) => {
+      const aDate = a.releaseDate ? new Date(a.releaseDate).getTime() : null;
+      const bDate = b.releaseDate ? new Date(b.releaseDate).getTime() : null;
+      if (!aDate && !bDate) return 0;
+      if (!aDate) return 1;
+      if (!bDate) return -1;
+      return aDate - bDate;
+    })
+    .slice(0, 6);
+
+  return { heroMovies, latestMovies, upcomingMovies, latestBlogs, latestNews };
 }
 
 export default async function HomePage() {
-  const { latestMovies, upcomingMovies, latestBlogs, latestNews } =
+  const { heroMovies, latestMovies, upcomingMovies, latestBlogs, latestNews } =
     await getHomeData();
-
-  const heroMovie = latestMovies[0] as any;
 
   return (
     <div className="min-h-screen">
-      {/* ── Hero ── */}
-      <section className="relative min-h-[85vh] flex items-end overflow-hidden">
-        {heroMovie?.bannerUrl || heroMovie?.posterUrl ? (
-          <Image
-            src={heroMovie.bannerUrl || heroMovie.posterUrl}
-            alt={heroMovie.title}
-            fill
-            priority
-            className="object-cover object-top"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-900/20 via-[#0a0a0a] to-[#0a0a0a]" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/70 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/90 via-transparent to-transparent" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 w-full">
-          <div className="max-w-2xl">
-            {heroMovie && (
-              <>
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="badge-orange">Now Showing</span>
-                  {heroMovie.genre?.slice(0, 2).map((g: string) => (
-                    <span key={g} className="badge-gray">{g}</span>
-                  ))}
-                </div>
-                <h1 className="font-display text-5xl md:text-7xl font-black text-white leading-none mb-4 tracking-tight">
-                  {heroMovie.title}
-                </h1>
-                {heroMovie.synopsis && (
-                  <p className="text-gray-300 text-lg leading-relaxed line-clamp-3 mb-6">
-                    {heroMovie.synopsis}
-                  </p>
-                )}
-                <div className="flex flex-wrap gap-3">
-                  <Link
-                    href={`/movie/${heroMovie.slug || heroMovie._id}`}
-                    className="btn-primary flex items-center gap-2"
-                  >
-                    <Play className="w-4 h-4" /> Explore Movie
-                  </Link>
-                  <Link href="/movies" className="btn-outline">
-                    Browse All Films
-                  </Link>
-                </div>
-              </>
-            )}
-            {!heroMovie && (
-              <>
-                <h1 className="font-display text-5xl md:text-7xl font-black text-white leading-none mb-4">
-                  Discover <span className="text-orange-500">Odia</span> Cinema
-                </h1>
-                <p className="text-gray-300 text-lg mb-6">
-                  Your ultimate guide to Ollywood — movies, actors, songs, and more.
-                </p>
-                <Link href="/movies" className="btn-primary inline-flex items-center gap-2">
-                  <Film className="w-4 h-4" /> Explore Movies
-                </Link>
-              </>
-            )}
+      {/* ══ HERO — multi-slide carousel matching Home.jsx exactly ══ */}
+      {heroMovies.length > 0 ? (
+        <HeroCarousel movies={heroMovies} />
+      ) : (
+        /* Fallback when DB is empty */
+        <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-[#0a0a0a]">
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-900/20 via-[#0a0a0a] to-[#0a0a0a]" />
+          <div className="relative z-10 text-center px-4">
+            <h1 className="font-display text-5xl md:text-7xl font-black text-white leading-none mb-4">
+              Discover <span className="text-orange-500">Odia</span> Cinema
+            </h1>
+            <p className="text-gray-300 text-lg mb-6">
+              Your ultimate guide to Ollywood — movies, actors, songs, and more.
+            </p>
+            <Link href="/movies" className="btn-primary inline-flex items-center gap-2">
+              <Film className="w-4 h-4" /> Explore Movies
+            </Link>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ── Stats Bar ── */}
       <section className="bg-[#111] border-y border-[#1f1f1f]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-[#1f1f1f]">
             {[
-              { icon: Film,       label: "Odia Movies",  value: "500+" },
-              { icon: Star,       label: "Cast Profiles", value: "1000+" },
-              { icon: Music,      label: "Odia Songs",   value: "5000+" },
-              { icon: Newspaper,  label: "News Articles", value: "Daily" },
+              { icon: Film,      label: "Odia Movies",   value: "500+"  },
+              { icon: Star,      label: "Cast Profiles",  value: "1000+" },
+              { icon: Music,     label: "Odia Songs",    value: "5000+" },
+              { icon: Newspaper, label: "News Articles",  value: "Daily" },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="flex items-center gap-3 px-6 py-4">
                 <Icon className="w-5 h-5 text-orange-500 flex-shrink-0" />
@@ -173,7 +210,7 @@ export default async function HomePage() {
           </section>
         )}
 
-        {/* ── SEO Rich Content Section ── */}
+        {/* ── SEO Rich Content ── */}
         <section className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-8 md:p-12">
           <div className="max-w-4xl">
             <div className="flex items-center gap-2 mb-4">
@@ -242,7 +279,7 @@ export default async function HomePage() {
                   <div className="flex-1 min-w-0">
                     <span className="badge-blue text-xs mb-2 inline-block">{n.category || "News"}</span>
                     <h3 className="text-sm font-semibold text-white line-clamp-2 hover:text-orange-400 transition-colors">
-                      <Link href={`/news`}>{n.title}</Link>
+                      <Link href="/news">{n.title}</Link>
                     </h3>
                     <p className="text-xs text-gray-500 mt-1">
                       {new Date(n.createdAt).toLocaleDateString("en-IN", {
@@ -300,6 +337,7 @@ export default async function HomePage() {
             </div>
           ))}
         </section>
+
       </div>
     </div>
   );
