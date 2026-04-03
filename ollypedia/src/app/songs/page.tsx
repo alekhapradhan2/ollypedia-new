@@ -48,8 +48,8 @@ async function getSongs({ singer, musicDirector, movie }: {
   const songs = await Movie.aggregate(pipeline);
 
   // Get filter options
-  const singers = [...new Set(songs.map((s: any) => s.singer).filter(Boolean))].sort() as string[];
-  const directors = [...new Set(songs.map((s: any) => s.musicDirector).filter(Boolean))].sort() as string[];
+  const singers = Array.from(new Set(songs.map((s: any) => s.singer).filter(Boolean))).sort() as string[];
+  const directors = Array.from(new Set(songs.map((s: any) => s.musicDirector).filter(Boolean))).sort() as string[];
 
   return { songs, singers, directors };
 }
