@@ -37,7 +37,7 @@ export default function ContactPage() {
         {/* Info */}
         <div className="space-y-6">
           {[
-            { icon: Mail,   label: "Email",    value: "hello@ollypedia.in" },
+            { icon: Mail,   label: "Email",    value: "alekhpradhan3305@gmail.com" },
             { icon: MapPin, label: "Location", value: "Bhubaneswar, Odisha, India" },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex items-start gap-3">

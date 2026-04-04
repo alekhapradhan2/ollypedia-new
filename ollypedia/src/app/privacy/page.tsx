@@ -92,7 +92,7 @@ export default function PrivacyPage() {
           <h2>9. Contact Us</h2>
           <p>
             If you have any questions about this Privacy Policy, please contact us at{" "}
-            <a href="/contact">our contact page</a> or email us at hello@ollypedia.in.
+            <a href="/contact">our contact page</a> or email us at alekhpradhan3305@gmail.com.
           </p>
         </section>
       </div>
