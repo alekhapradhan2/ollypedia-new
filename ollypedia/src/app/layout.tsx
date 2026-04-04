@@ -30,6 +30,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
+          <head>
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXX"
+          crossOrigin="anonymous"
+        ></script>
+      </head>
       <body className="grain min-h-screen flex flex-col bg-[#0a0a0a]">
         <Navbar />
         <main className="flex-1">{children}</main>
