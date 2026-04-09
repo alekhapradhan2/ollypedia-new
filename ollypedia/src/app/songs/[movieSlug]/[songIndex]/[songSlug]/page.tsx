@@ -12,7 +12,7 @@ import { notFound } from "next/navigation";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 import { buildMeta } from "@/lib/seo";
-import { SongDetailClient } from "../SongDetailClient";
+import { SongDetailClient } from "../../../SongDetailClient";
 import type { MovieData, SongData } from "../types";
 
 // ─── Shared data helpers ──────────────────────────────────────────────────────
