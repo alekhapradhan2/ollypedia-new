@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { MovieData, SongData } from "./types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function extractYtId(input?: string | null): string | null {

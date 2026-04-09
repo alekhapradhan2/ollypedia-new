@@ -2,104 +2,215 @@ import type { Metadata } from "next";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 import { SongsClient } from "./SongsClient";
-import { buildMeta } from "@/lib/seo";
-
-export const metadata: Metadata = buildMeta({
-  title: "Odia Songs – Ollywood Music Database",
-  description:
-    "Explore thousands of Odia songs from Ollywood movies. Filter by singer, music director, or movie. Watch YouTube videos and read lyrics of your favourite Odia film songs.",
-  keywords: ["Odia songs", "Ollywood music", "Odia film songs", "Odia singer", "Odia music director"],
-  url: "/songs",
-});
 
 const PAGE_SIZE = 24;
 
-async function getSongs({
-  singer, musicDirector, movie, page,
-}: {
-  singer?: string; musicDirector?: string; movie?: string; page?: number;
-}) {
-  await connectDB();
+// 🔥 Dynamic SEO Metadata
+export async function generateMetadata({ searchParams }): Promise<Metadata> {
+  const { singer, year } = searchParams;
 
-  const songMatch: any = {};
-  if (singer)        songMatch["media.songs.singer"]        = { $regex: singer,        $options: "i" };
-  if (musicDirector) songMatch["media.songs.musicDirector"] = { $regex: musicDirector, $options: "i" };
-  const movieMatch: any = {};
-  if (movie) movieMatch.slug = movie;
+  let title = "Odia Songs 2026 | Latest & Upcoming Ollywood Songs";
+  let description =
+    "Explore latest Odia songs, upcoming movie songs and trending Ollywood music.";
 
-  const currentPage = Math.max(1, page || 1);
-  const skip = (currentPage - 1) * PAGE_SIZE;
-
-  const basePipeline: any[] = [
-    { $match: movieMatch },
-    { $unwind: { path: "$media.songs", includeArrayIndex: "songIndex" } },
-    ...(Object.keys(songMatch).length ? [{ $match: songMatch }] : []),
-  ];
-
-  const [songs, countResult] = await Promise.all([
-    Movie.aggregate([
-      ...basePipeline,
-      { $sort: { title: 1, songIndex: 1 } },
-      { $skip: skip },
-      { $limit: PAGE_SIZE },
-      { $project: {
-        _id: 0,
-        songIndex:     "$songIndex",
-        songId:        "$media.songs._id",
-        title:         "$media.songs.title",
-        singer:        "$media.songs.singer",
-        musicDirector: "$media.songs.musicDirector",
-        lyricist:      "$media.songs.lyricist",
-        ytId:          "$media.songs.ytId",
-        thumbnailUrl:  "$media.songs.thumbnailUrl",
-        description:   "$media.songs.description",
-        lyrics:        "$media.songs.lyrics",
-        movieTitle:    "$title",
-        movieSlug:     "$slug",
-        movieId:       "$_id",
-      }},
-    ]),
-    Movie.aggregate([...basePipeline, { $count: "total" }]),
-  ]);
-
-  const total = countResult[0]?.total ?? 0;
-
-  // Filter options — only compute on unfiltered pages
-  let singers: string[] = [];
-  let directors: string[] = [];
-  if (!singer && !musicDirector && !movie) {
-    const opts = await Movie.aggregate([
-      { $project: { s: "$media.songs.singer", d: "$media.songs.musicDirector" } },
-      { $group: { _id: null, s: { $push: "$s" }, d: { $push: "$d" } } },
-    ]);
-    if (opts[0]) {
-      singers   = [...new Set(opts[0].s.flat().filter(Boolean))].sort() as string[];
-      directors = [...new Set(opts[0].d.flat().filter(Boolean))].sort() as string[];
-    }
+  if (singer) {
+    title = `${singer} Songs | Odia Hit Songs`;
+    description = `Listen to ${singer} Odia songs, watch videos and explore movie songs.`;
   }
 
-  return { songs, singers, directors, total, currentPage, totalPages: Math.ceil(total / PAGE_SIZE) };
+  if (year) {
+    title = `Odia Songs ${year} | Latest & Upcoming`;
+  }
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: "https://yourdomain.com/songs",
+    },
+    openGraph: {
+      title,
+      description,
+      url: "https://yourdomain.com/songs",
+      type: "website",
+    },
+  };
 }
 
-export default async function SongsPage({
-  searchParams,
-}: {
-  searchParams: { singer?: string; musicDirector?: string; movie?: string; page?: string };
-}) {
-  const { singer, musicDirector, movie, page } = searchParams;
-  const { songs, singers, directors, total, currentPage, totalPages } =
-    await getSongs({ singer, musicDirector, movie, page: Number(page) || 1 });
+// 🔥 NEW: 3 SECTION DATA
+async function getSongsSections() {
+  await connectDB();
+  const today = new Date();
+
+  // Upcoming
+  const upcoming = await Movie.aggregate([
+    { $match: { releaseDate: { $gt: today } } },
+    { $sort: { releaseDate: 1 } },
+    { $limit: 10 },
+    {
+      $project: {
+        title: 1,
+        slug: 1,
+        releaseDate: 1,
+        songs: "$media.songs",
+      },
+    },
+  ]);
+
+  // Latest
+  const latest = await Movie.aggregate([
+    { $match: { releaseDate: { $lte: today } } },
+    { $sort: { releaseDate: -1 } },
+    { $limit: 10 },
+    {
+      $project: {
+        title: 1,
+        slug: 1,
+        releaseDate: 1,
+        songs: "$media.songs",
+      },
+    },
+  ]);
+
+  return { upcoming, latest };
+}
+
+// 🔥 EXISTING SONGS LIST
+async function getSongs({ page = 1 }) {
+  await connectDB();
+
+  const skip = (page - 1) * PAGE_SIZE;
+
+  const songs = await Movie.aggregate([
+    { $unwind: "$media.songs" },
+    { $sort: { releaseDate: -1 } },
+    { $skip: skip },
+    { $limit: PAGE_SIZE },
+    {
+      $project: {
+        title: "$media.songs.title",
+        singer: "$media.songs.singer",
+        musicDirector: "$media.songs.musicDirector",
+        ytId: "$media.songs.ytId",
+        thumbnailUrl: "$media.songs.thumbnailUrl",
+        movieTitle: "$title",
+        movieSlug: "$slug",
+        songIndex: "$media.songs.index",
+      },
+    },
+  ]);
+
+  const total = await Movie.countDocuments({
+    "media.songs.0": { $exists: true },
+  });
+
+  return {
+    songs,
+    total,
+    currentPage: page,
+    totalPages: Math.ceil(total / PAGE_SIZE),
+  };
+}
+
+// 🔥 MAIN PAGE
+export default async function SongsPage({ searchParams }) {
+  const page = Number(searchParams?.page) || 1;
+
+  const [{ upcoming, latest }, songData] = await Promise.all([
+    getSongsSections(),
+    getSongs({ page }),
+  ]);
+
+  const { songs, total, currentPage, totalPages } = songData;
+
+  // 🔥 JSON-LD
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Odia Songs",
+    itemListElement: songs.map((s, i) => ({
+      "@type": "MusicRecording",
+      position: i + 1,
+      name: s.title,
+      byArtist: s.singer,
+      url: `https://yourdomain.com/songs/${s.movieSlug}/${s.songIndex}`,
+    })),
+  };
 
   return (
-    <SongsClient
-      songs={songs}
-      singers={singers}
-      directors={directors}
-      active={{ singer, musicDirector, movie }}
-      total={total}
-      currentPage={currentPage}
-      totalPages={totalPages}
-      pageSize={PAGE_SIZE}
-    />
+    <>
+      {/* JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      {/* 🔥 UPCOMING */}
+      <section className="px-6 py-6">
+        <h2 className="text-xl font-bold mb-4">
+          Upcoming Odia Songs 2026
+        </h2>
+        {upcoming.map((movie) => (
+          <div key={movie.slug} className="mb-4">
+            <h3 className="text-lg text-orange-400">
+              {movie.title}
+            </h3>
+            <p className="text-sm text-gray-500">
+              Songs coming soon...
+            </p>
+          </div>
+        ))}
+      </section>
+
+      {/* 🔥 LATEST */}
+      <section className="px-6 py-6">
+        <h2 className="text-xl font-bold mb-4">
+          Latest Odia Songs
+        </h2>
+        {latest.map((movie) => (
+          <div key={movie.slug} className="mb-4">
+            <h3 className="text-lg text-orange-400">
+              {movie.title}
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {movie.songs?.slice(0, 4).map((song, i) => (
+                <p key={i} className="text-sm text-gray-300">
+                  {song.title}
+                </p>
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* 🔥 MAIN SONG GRID */}
+      <SongsClient
+        songs={songs}
+        singers={[]}
+        directors={[]}
+        active={{}}
+        total={total}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        pageSize={PAGE_SIZE}
+      />
+
+      {/* 🔥 SEO CONTENT */}
+      <section className="px-6 py-10 max-w-4xl mx-auto">
+        <h2 className="text-xl font-bold mb-3">
+          Odia Songs 2026
+        </h2>
+        <p className="text-gray-400 text-sm leading-relaxed">
+          Odia songs 2026 are set to bring a fresh wave of music from the
+          ever-evolving Ollywood industry, featuring soulful melodies,
+          romantic tracks, and energetic dance numbers. With upcoming Odia
+          movies, fans can expect songs from singers like Human Sagar and
+          music directors like Prem Anand. Explore more songs by visiting
+          /songs/singer/human-sagar or browse movies via
+          /movies/[movieSlug]. This year promises exciting musical trends
+          and unforgettable tracks.
+        </p>
+      </section>
+    </>
   );
 }
