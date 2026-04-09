@@ -7,7 +7,7 @@ const PAGE_SIZE = 24;
 
 // 🔥 Dynamic SEO Metadata
 export async function generateMetadata({ searchParams }): Promise<Metadata> {
-  const { singer, year } = searchParams;
+  const { singer, year } = searchParams || {};
 
   let title = "Odia Songs 2026 | Latest & Upcoming Ollywood Songs";
   let description =
@@ -37,14 +37,13 @@ export async function generateMetadata({ searchParams }): Promise<Metadata> {
   };
 }
 
-// 🔥 NEW: 3 SECTION DATA
+// 🔥 UPCOMING + LATEST SECTIONS
 async function getSongsSections() {
   await connectDB();
   const today = new Date();
 
-  // Upcoming
   const upcoming = await Movie.aggregate([
-    { $match: { releaseDate: { $gt: today } } },
+    { $match: { releaseDate: { $gt: today }, "media.songs.0": { $exists: true } } },
     { $sort: { releaseDate: 1 } },
     { $limit: 10 },
     {
@@ -57,9 +56,8 @@ async function getSongsSections() {
     },
   ]);
 
-  // Latest
   const latest = await Movie.aggregate([
-    { $match: { releaseDate: { $lte: today } } },
+    { $match: { releaseDate: { $lte: today }, "media.songs.0": { $exists: true } } },
     { $sort: { releaseDate: -1 } },
     { $limit: 10 },
     {
@@ -75,34 +73,43 @@ async function getSongsSections() {
   return { upcoming, latest };
 }
 
-// 🔥 EXISTING SONGS LIST
+// 🔥 FIXED SONGS LIST (IMPORTANT)
 async function getSongs({ page = 1 }) {
   await connectDB();
 
   const skip = (page - 1) * PAGE_SIZE;
 
-  const songs = await Movie.aggregate([
-    { $unwind: "$media.songs" },
-    { $sort: { releaseDate: -1 } },
-    { $skip: skip },
-    { $limit: PAGE_SIZE },
-    {
-      $project: {
-        title: "$media.songs.title",
-        singer: "$media.songs.singer",
-        musicDirector: "$media.songs.musicDirector",
-        ytId: "$media.songs.ytId",
-        thumbnailUrl: "$media.songs.thumbnailUrl",
-        movieTitle: "$title",
-        movieSlug: "$slug",
-        songIndex: "$media.songs.index",
+  const basePipeline = [
+    { $match: { "media.songs.0": { $exists: true } } },
+    { $unwind: { path: "$media.songs", includeArrayIndex: "songIndex" } },
+  ];
+
+  const [songs, countResult] = await Promise.all([
+    Movie.aggregate([
+      ...basePipeline,
+      { $sort: { releaseDate: -1 } },
+      { $skip: skip },
+      { $limit: PAGE_SIZE },
+      {
+        $project: {
+          _id: 0,
+          title: "$media.songs.title",
+          singer: "$media.songs.singer",
+          musicDirector: "$media.songs.musicDirector",
+          ytId: "$media.songs.ytId",
+          thumbnailUrl: "$media.songs.thumbnailUrl",
+          movieTitle: "$title",
+          movieSlug: "$slug",
+          songIndex: "$songIndex",
+        },
       },
-    },
+    ]),
+
+    // ✅ CORRECT TOTAL SONG COUNT
+    Movie.aggregate([...basePipeline, { $count: "total" }]),
   ]);
 
-  const total = await Movie.countDocuments({
-    "media.songs.0": { $exists: true },
-  });
+  const total = countResult[0]?.total || 0;
 
   return {
     songs,
