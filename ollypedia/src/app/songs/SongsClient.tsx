@@ -2,8 +2,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Play, X, Music, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Play, Music, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import clsx from "clsx";
 
 interface Song {
@@ -17,6 +17,8 @@ interface Song {
   lyrics?: string;
   movieTitle?: string;
   movieSlug?: string;
+  movieId?: string;
+  songIndex?: number;  // numeric position in movie's songs array
 }
 
 interface SongsClientProps {
@@ -24,21 +26,33 @@ interface SongsClientProps {
   singers: string[];
   directors: string[];
   active: { singer?: string; musicDirector?: string; movie?: string };
+  total: number;
+  currentPage: number;
+  totalPages: number;
+  pageSize: number;
 }
 
-export function SongsClient({ songs, singers, directors, active }: SongsClientProps) {
+// Build the song detail URL — uses /songs/ prefix to match the folder
+function songDetailUrl(song: Song): string {
+  const movieSlug = song.movieSlug || song.movieId || "";
+  const idx       = song.songIndex ?? 0;
+  const titleSlug = String(song.title || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim() || "song";
+  return `/songs/${movieSlug}/${idx}/${titleSlug}`;
+}
+
+export function SongsClient({
+  songs, singers, directors, active,
+  total, currentPage, totalPages, pageSize,
+}: SongsClientProps) {
   const router = useRouter();
-  const [playing, setPlaying] = useState<Song | null>(null);
   const [search, setSearch] = useState("");
 
-  function filter(key: string, value: string | null) {
-    const params = new URLSearchParams();
-    if (active.singer       && key !== "singer")        params.set("singer",        active.singer);
-    if (active.musicDirector && key !== "musicDirector") params.set("musicDirector", active.musicDirector);
-    if (value) params.set(key, value);
-    router.push(`/songs?${params.toString()}`);
-  }
-
+  // Client-side search filters the current page's songs
   const filtered = search.trim()
     ? songs.filter((s) =>
         s.title?.toLowerCase().includes(search.toLowerCase()) ||
@@ -47,15 +61,43 @@ export function SongsClient({ songs, singers, directors, active }: SongsClientPr
       )
     : songs;
 
+  function buildFilterUrl(key: string, value: string | null, page = 1) {
+    const params = new URLSearchParams();
+    if (active.singer        && key !== "singer")        params.set("singer",        active.singer);
+    if (active.musicDirector && key !== "musicDirector") params.set("musicDirector", active.musicDirector);
+    if (value) params.set(key, value);
+    if (page > 1) params.set("page", String(page));
+    return `/songs?${params.toString()}`;
+  }
+
+  function gotoPage(p: number) {
+    const params = new URLSearchParams();
+    if (active.singer)        params.set("singer",        active.singer);
+    if (active.musicDirector) params.set("musicDirector", active.musicDirector);
+    if (active.movie)         params.set("movie",         active.movie);
+    if (p > 1) params.set("page", String(p));
+    router.push(`/songs?${params.toString()}`);
+  }
+
   const pillBase = "px-3 py-1.5 text-xs font-medium rounded-full border transition-all cursor-pointer whitespace-nowrap";
   const pillOn   = "bg-orange-500/20 border-orange-500/50 text-orange-400";
   const pillOff  = "border-[#2a2a2a] text-gray-400 hover:border-orange-500/30 hover:text-white";
 
+  const start = (currentPage - 1) * pageSize + 1;
+  const end   = Math.min(currentPage * pageSize, total);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+      {/* Header */}
       <div className="mb-8">
         <h1 className="section-title mb-1">Odia Songs</h1>
-        <p className="text-gray-500 text-sm">{filtered.length} songs in our database</p>
+        <p className="text-gray-500 text-sm">
+          {total.toLocaleString()} songs in our database
+          {total > pageSize && !search.trim() && (
+            <span className="ml-1.5 text-gray-600">· showing {start}–{end}</span>
+          )}
+        </p>
       </div>
 
       {/* Search bar */}
@@ -68,24 +110,33 @@ export function SongsClient({ songs, singers, directors, active }: SongsClientPr
           placeholder="Search songs, singers, movies…"
           className="w-full pl-10 pr-4 py-2.5 bg-[#111] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-orange-500/50"
         />
+        {search && (
+          <button
+            onClick={() => setSearch("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-xs"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       {/* Singer filter */}
       {singers.length > 0 && (
         <div className="mb-5">
           <p className="text-xs text-gray-500 uppercase tracking-widest mb-2">Singer</p>
-          <div className="flex gap-2 scroll-x pb-1">
-            <button onClick={() => filter("singer", null)} className={clsx(pillBase, !active.singer ? pillOn : pillOff)}>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <Link href={buildFilterUrl("singer", null)}
+              className={clsx(pillBase, !active.singer ? pillOn : pillOff)}>
               All Singers
-            </button>
-            {singers.slice(0, 20).map((s) => (
-              <button
+            </Link>
+            {singers.slice(0, 30).map((s) => (
+              <Link
                 key={s}
-                onClick={() => filter("singer", active.singer === s ? null : s)}
+                href={buildFilterUrl("singer", active.singer === s ? null : s)}
                 className={clsx(pillBase, active.singer === s ? pillOn : pillOff)}
               >
                 {s}
-              </button>
+              </Link>
             ))}
           </div>
         </div>
@@ -95,127 +146,139 @@ export function SongsClient({ songs, singers, directors, active }: SongsClientPr
       {directors.length > 0 && (
         <div className="mb-8">
           <p className="text-xs text-gray-500 uppercase tracking-widest mb-2">Music Director</p>
-          <div className="flex gap-2 scroll-x pb-1">
-            <button onClick={() => filter("musicDirector", null)} className={clsx(pillBase, !active.musicDirector ? pillOn : pillOff)}>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <Link href={buildFilterUrl("musicDirector", null)}
+              className={clsx(pillBase, !active.musicDirector ? pillOn : pillOff)}>
               All
-            </button>
-            {directors.slice(0, 15).map((d) => (
-              <button
+            </Link>
+            {directors.slice(0, 20).map((d) => (
+              <Link
                 key={d}
-                onClick={() => filter("musicDirector", active.musicDirector === d ? null : d)}
+                href={buildFilterUrl("musicDirector", active.musicDirector === d ? null : d)}
                 className={clsx(pillBase, active.musicDirector === d ? pillOn : pillOff)}
               >
                 {d}
-              </button>
+              </Link>
             ))}
           </div>
         </div>
       )}
-
-      {/* SEO blurb */}
-      <div className="mb-8 p-5 bg-[#111] border border-[#1f1f1f] rounded-xl">
-        <p className="text-gray-400 text-sm leading-relaxed">
-          Explore Ollypedia's vast collection of Odia film songs spanning multiple decades of Ollywood music.
-          From soulful devotional melodies to foot-tapping dance numbers, our music database covers songs from
-          every major Odia film. Filter songs by your favourite singer or music director to find your preferred
-          tracks quickly. Click any song to watch the official YouTube video.
-        </p>
-      </div>
 
       {/* Songs Grid */}
       {filtered.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filtered.map((song, i) => {
             const thumb = song.thumbnailUrl ||
-              (song.ytId ? `https://img.youtube.com/vi/${song.ytId}/mqdefault.jpg` : "/placeholder-song.jpg");
+              (song.ytId ? `https://img.youtube.com/vi/${song.ytId}/mqdefault.jpg` : null);
+            const url = songDetailUrl(song);
+
             return (
-              <div
+              <Link
                 key={i}
+                href={url}
                 className="card flex items-center gap-3 p-3 cursor-pointer group hover:border-orange-500/30 transition-all"
-                onClick={() => song.ytId && setPlaying(song)}
               >
-                <div className="relative w-20 h-14 rounded-lg overflow-hidden flex-shrink-0">
-                  <Image src={thumb} alt={song.title || "Song"} fill className="object-cover" />
-                  {song.ytId && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Play className="w-5 h-5 text-white fill-white" />
-                    </div>
+                {/* Thumbnail */}
+                <div className="relative w-20 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-[#1a1a1a]">
+                  {thumb ? (
+                    <Image src={thumb} alt={song.title || "Song"} fill className="object-cover" sizes="80px" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-xl text-gray-600">🎵</div>
                   )}
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Play className="w-5 h-5 text-white fill-white" />
+                  </div>
                 </div>
+
+                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-white text-sm line-clamp-1 group-hover:text-orange-400 transition-colors">
                     {song.title || "Untitled"}
                   </p>
                   {song.singer && (
                     <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
-                      <Music className="w-3 h-3" /> {song.singer}
+                      <Music className="w-3 h-3" />
+                      <span className="truncate">{song.singer}</span>
                     </p>
                   )}
                   {song.movieTitle && (
-                    <Link
-                      href={`/movie/${song.movieSlug}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-xs text-gray-600 hover:text-orange-400 transition-colors truncate block mt-0.5"
-                    >
-                      {song.movieTitle}
-                    </Link>
+                    <p className="text-xs text-gray-600 truncate mt-0.5">{song.movieTitle}</p>
                   )}
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
       ) : (
         <div className="text-center py-20 text-gray-500">
-          {songs.length === 0
+          {search.trim()
+            ? `No songs match "${search}"`
+            : songs.length === 0
             ? "No songs in database yet."
-            : "No songs match your search."}
+            : "No songs match your filters."}
         </div>
       )}
 
-      {/* YouTube Modal */}
-      {playing && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setPlaying(null)}
-        >
-          <div
-            className="w-full max-w-2xl bg-[#111] border border-[#2a2a2a] rounded-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
+      {/* Pagination — only show when not doing a client-side search */}
+      {!search.trim() && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-10">
+          <button
+            onClick={() => gotoPage(currentPage - 1)}
+            disabled={currentPage <= 1}
+            className="flex items-center gap-1 px-3 py-2 rounded-lg border border-[#2a2a2a] text-sm text-gray-400
+              hover:border-orange-500/40 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
           >
-            <div className="flex items-center justify-between p-4 border-b border-[#1f1f1f]">
-              <div>
-                <h3 className="font-bold text-white">{playing.title}</h3>
-                {playing.singer && <p className="text-sm text-gray-400">{playing.singer}</p>}
-              </div>
+            <ChevronLeft className="w-4 h-4" /> Prev
+          </button>
+
+          {/* Page numbers */}
+          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+            let p: number;
+            if (totalPages <= 7) {
+              p = i + 1;
+            } else if (currentPage <= 4) {
+              p = i + 1;
+            } else if (currentPage >= totalPages - 3) {
+              p = totalPages - 6 + i;
+            } else {
+              p = currentPage - 3 + i;
+            }
+            return (
               <button
-                onClick={() => setPlaying(null)}
-                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                key={p}
+                onClick={() => gotoPage(p)}
+                className={clsx(
+                  "w-9 h-9 rounded-lg text-sm font-medium transition-all border",
+                  p === currentPage
+                    ? "bg-orange-500/20 border-orange-500/50 text-orange-400"
+                    : "border-[#2a2a2a] text-gray-400 hover:border-orange-500/30 hover:text-white"
+                )}
               >
-                <X className="w-5 h-5" />
+                {p}
               </button>
-            </div>
-            {playing.ytId ? (
-              <div className="yt-wrapper">
-                <iframe
-                  src={`https://www.youtube.com/embed/${playing.ytId}?autoplay=1&rel=0`}
-                  title={playing.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            ) : (
-              <div className="p-8 text-center text-gray-500">No video available</div>
-            )}
-            {playing.lyrics && (
-              <div className="p-4 max-h-48 overflow-y-auto border-t border-[#1f1f1f]">
-                <p className="text-xs text-gray-500 mb-2 uppercase tracking-widest">Lyrics</p>
-                <p className="text-sm text-gray-300 whitespace-pre-line">{playing.lyrics}</p>
-              </div>
-            )}
-          </div>
+            );
+          })}
+
+          <button
+            onClick={() => gotoPage(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+            className="flex items-center gap-1 px-3 py-2 rounded-lg border border-[#2a2a2a] text-sm text-gray-400
+              hover:border-orange-500/40 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            Next <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       )}
+
+      {/* SEO blurb */}
+      <div className="mt-10 p-5 bg-[#111] border border-[#1f1f1f] rounded-xl">
+        <p className="text-gray-400 text-sm leading-relaxed">
+          Explore Ollypedia's vast collection of Odia film songs spanning multiple decades of Ollywood music.
+          From soulful devotional melodies to foot-tapping dance numbers, our music database covers songs from
+          every major Odia film. Filter songs by your favourite singer or music director to find your preferred
+          tracks quickly. Click any song to open the song detail page with lyrics and full YouTube player.
+        </p>
+      </div>
     </div>
   );
 }
