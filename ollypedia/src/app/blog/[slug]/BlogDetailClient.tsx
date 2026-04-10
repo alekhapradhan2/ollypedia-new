@@ -11,7 +11,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api").replace(/\/$/, "");
+const API_BASE = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:4000/api").replace(/\/$/, "");
 
 // ─── Font loader ──────────────────────────────────────────────────────────────
 // Using <link> instead of @import inside <style> — @import is blocked by
