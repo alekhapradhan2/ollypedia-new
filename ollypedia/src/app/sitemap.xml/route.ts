@@ -158,6 +158,34 @@ export async function GET() {
     console.error("Sitemap generation error:", err);
   }
 
+  // ── SEO Footer Pages ─────────────────────
+const seoPages = [
+  "/movies/2026",
+  "/movies/2025",
+  "/movies/2024",
+  "/movies/upcoming",
+  "/movies/latest",
+  "/movies/blockbuster",
+
+  "/songs/category/2026",
+  "/songs/category/latest",
+  "/songs/category/trending",
+  "/songs/category/classics",
+  "/songs/category/singers",
+
+  "/blog/odia-guides/odia-movies",
+  "/blog/odia-guides/history-of-ollywood",
+  "/blog/odia-guides/top-10-odia-movies",
+  "/blog/odia-guides/best-odia-songs",
+  "/blog/odia-guides/odia-actors",
+];
+
+seoPages.forEach((path) => {
+  entries.push(
+    urlEntry(`${SITE_URL}${path}`, today, "weekly", "0.7")
+  );
+});
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${entries.join("\n")}
