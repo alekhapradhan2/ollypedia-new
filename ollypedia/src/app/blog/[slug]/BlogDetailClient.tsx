@@ -12,7 +12,8 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
   const [post, setPost] = useState<any>(null);
   const [related, setRelated] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showShare, setShowShare] = useState(false);
+
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -43,18 +44,13 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
     })();
   }, [slug]);
 
-  if (loading) {
-    return <div className="text-white p-10">Loading...</div>;
-  }
-
-  if (!post) {
-    return <div className="text-white p-10">Not Found</div>;
-  }
+  if (loading) return <div className="text-white p-10">Loading...</div>;
+  if (!post) return <div className="text-white p-10">Not Found</div>;
 
   return (
     <div className="bg-black text-white min-h-screen">
 
-      {/* 🔥 Banner */}
+      {/* 🎬 Banner */}
       {post.coverImage && (
         <div className="relative h-[420px]">
           <img
@@ -90,7 +86,7 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
       {/* Layout */}
       <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10 p-6">
 
-        {/* 📝 ARTICLE */}
+        {/* 📝 Article */}
         <div className="md:col-span-2">
 
           <div className="article">
@@ -109,23 +105,39 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
           </div>
         </div>
 
-        {/* 📊 SIDEBAR */}
+        {/* 📊 Sidebar */}
         <aside className="space-y-6">
 
           {/* Share */}
           <div className="box">
-            <h3>Share</h3>
+            <h3 className="mb-3 text-sm text-gray-400 uppercase">
+              Share
+            </h3>
+
             <button
               className="share-btn"
-              onClick={() => setShowShare(true)}
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
             >
               🔗 Share Article
             </button>
+
+            {copied && (
+              <p className="text-green-400 text-xs mt-2">
+                ✅ Link copied!
+              </p>
+            )}
           </div>
 
           {/* Related */}
           <div className="box">
-            <h3>Related</h3>
+            <h3 className="mb-3 text-sm text-gray-400 uppercase">
+              Related
+            </h3>
+
             {related.map((r) => (
               <div
                 key={r._id}
@@ -136,54 +148,13 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
               </div>
             ))}
           </div>
-
         </aside>
       </div>
 
-      {/* 🔥 SHARE MODAL */}
-      {showShare && (
-        <div className="overlay" onClick={() => setShowShare(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Share this article</h3>
-
-            <button
-              onClick={() =>
-                window.open(
-                  `https://twitter.com/intent/tweet?url=${window.location.href}`
-                )
-              }
-            >
-              Twitter
-            </button>
-
-            <button
-              onClick={() =>
-                window.open(
-                  `https://www.facebook.com/sharer/sharer.php?u=${window.location.href}`
-                )
-              }
-            >
-              Facebook
-            </button>
-
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-                alert("Copied!");
-              }}
-            >
-              Copy Link
-            </button>
-
-            <button onClick={() => setShowShare(false)}>Close</button>
-          </div>
-        </div>
-      )}
-
-      {/* 🎨 STYLES */}
+      {/* 🎨 Styles */}
       <style jsx>{`
         .article p {
-          margin-bottom: 1.5rem;
+          margin-bottom: 1.6rem;
           line-height: 1.9;
           color: rgba(255,255,255,0.8);
         }
@@ -211,37 +182,26 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
         .rel {
           cursor: pointer;
           padding: 8px 0;
+          font-size: 14px;
+        }
+
+        .rel:hover {
+          color: #f97316;
         }
 
         .share-btn {
           width: 100%;
           padding: 10px;
           background: #222;
+          border: 1px solid #333;
+          cursor: pointer;
         }
 
-        .overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.8);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .modal {
-          background: #111;
-          padding: 20px;
-          width: 300px;
-        }
-
-        .modal button {
-          display: block;
-          width: 100%;
-          margin-top: 10px;
-          padding: 10px;
-          background: #222;
+        .share-btn:hover {
+          background: #333;
         }
       `}</style>
     </div>
   );
 }
+
