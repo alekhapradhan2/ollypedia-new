@@ -114,22 +114,36 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
               Share
             </h3>
 
-            <button
-              className="share-btn"
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              }}
-            >
-              🔗 Share Article
-            </button>
+<button
+  className="share-btn"
+  onClick={() => {
+    const url = window.location.href;
 
-            {copied && (
-              <p className="text-green-400 text-xs mt-2">
-                ✅ Link copied!
-              </p>
-            )}
+    try {
+      // Try modern method
+      navigator.clipboard.writeText(url);
+    } catch {
+      // Fallback (NO PERMISSION POPUP)
+      const textArea = document.createElement("textarea");
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+    }
+
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }}
+>
+  🔗 Share Article
+</button>
+
+{copied && (
+  <p className="text-green-400 text-xs mt-2">
+    ✅ Link copied!
+  </p>
+)}
           </div>
 
           {/* Related */}
