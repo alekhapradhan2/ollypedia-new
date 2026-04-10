@@ -101,14 +101,35 @@ async function getMovies(category: string): Promise<MovieDoc[]> {
   await connectDB();
   const today = new Date().toISOString();
 
-  const queryMap: Record<string, object> = {
-    "2026":      { releaseYear: 2026 },
-    "2025":      { releaseYear: 2025 },
-    "2024":      { releaseYear: 2024 },
-    upcoming:    { releaseDate: { $gt: today } },
-    latest:      {},
-    blockbuster: { $or: [{ rating: { $gte: 8 } }, { views: { $gte: 100000 } }] },
-  };
+const queryMap: Record<string, any> = {
+  "2026": {
+    releaseDate: {
+      $regex: "^2026"   // ✅ matches "2026-01-01"
+    }
+  },
+  "2025": {
+    releaseDate: {
+      $regex: "^2025"
+    }
+  },
+  "2024": {
+    releaseDate: {
+      $regex: "^2024"
+    }
+  },
+  upcoming: {
+    releaseDate: { $gt: new Date().toISOString() }
+  },
+  latest: {
+  releaseDate: { $lte: new Date().toISOString() }
+    },
+blockbuster: {
+  $or: [
+    { rating: { $gte: 7 } },     // lower threshold
+    { views: { $gte: 1000 } }    // realistic
+  ]
+}
+};
 
   const sortMap: Record<string, Record<string, 1 | -1>> = {
     latest:   { releaseDate: -1 },
@@ -313,6 +334,23 @@ export default async function MovieCategoryPage({
                   View all <ChevronRight className="w-3 h-3" />
                 </Link>
               </div>
+              <div className="mt-12 text-gray-400 text-sm leading-relaxed max-w-4xl">
+  <h2 className="text-lg font-semibold text-white mb-3">
+    About {cfg.title}
+  </h2>
+
+  <p className="mb-3">
+    {cfg.title} is a curated collection of Odia (Ollywood) films including
+    latest releases, upcoming movies, and blockbuster hits. Each movie
+    includes detailed information such as cast, release date, songs,
+    ratings, and storyline.
+  </p>
+
+  <p>
+    Stay updated with the latest trends in Ollywood cinema, discover new
+    movies, and explore top-rated films all in one place on Ollypedia.
+  </p>
+</div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {movies.map((movie) => (
                   <MovieCard key={movie._id} movie={movie} />
@@ -359,6 +397,7 @@ export default async function MovieCategoryPage({
     </>
   );
 }
+
 
 // ─── Static Params ────────────────────────────────────────────────────────────
 export function generateStaticParams() {
