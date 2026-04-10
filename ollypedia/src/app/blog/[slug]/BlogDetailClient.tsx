@@ -7,11 +7,28 @@
 // sidebar (share WITHOUT clipboard permission, article info, related articles/movies).
 //
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api").replace(/\/$/, "");
+
+// ─── Font loader ──────────────────────────────────────────────────────────────
+// Using <link> instead of @import inside <style> — @import is blocked by
+// strict MIME checking in production (causes "not a supported stylesheet" error).
+function Fonts() {
+  return (
+    <>
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+      <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap"
+        rel="stylesheet"
+      />
+    </>
+  );
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Review {
@@ -343,7 +360,8 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
   // ─────────────────────────────────────────────────────────────────────────────
   if (loading) return (
     <>
-      <style>{CSS}</style>
+      <Fonts />
+      <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className="bp-root">
         <div className="bp-sk" style={{ width: "100%", height: 400 }} />
         <div style={{ maxWidth: 900, margin: "40px auto", padding: "0 24px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -357,7 +375,8 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
 
   if (notFound) return (
     <>
-      <style>{CSS}</style>
+      <Fonts />
+      <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className="bp-root">
         <div className="bp-404">
           <div className="bp-404-ico">📭</div>
@@ -392,7 +411,8 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
 
   return (
     <>
-      <style>{CSS}</style>
+      <Fonts />
+      <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className="bp-root">
 
         {/* ── Cinematic Banner ── */}
@@ -706,9 +726,10 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
   );
 }
 
-// ─── Scoped CSS (injected via <style> tag, same approach as original) ─────────
+// ─── Scoped CSS ───────────────────────────────────────────────────────────────
+// Fonts are loaded via <link> in JSX (not @import inside <style>) to avoid
+// the "MIME type not supported" error that blocks @import in production.
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
 
 @keyframes bp-up     { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:none} }
 @keyframes bp-shimmer{ 0%{background-position:-600px 0} 100%{background-position:600px 0} }
