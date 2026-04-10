@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import type { MovieData, SongData } from "./types";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -247,7 +248,7 @@ function ShareModal({ song, movie, onClose }: { song: SongData; movie: MovieData
           </div>
           <div className="flex gap-2">
             <button onClick={handleShare} className="flex-1 py-2 bg-orange-500 text-black text-sm font-bold rounded-lg">
-              {typeof navigator !== "undefined" && navigator.share ? "📤 Share" : "🔗 Copy Link"}
+              {typeof navigator !== "undefined" && typeof navigator.share === "function" ? "📤 Share" : "🔗 Copy Link"}
             </button>
             {song.ytId && (
               <a href={`https://www.youtube.com/watch?v=${song.ytId}`} target="_blank" rel="noreferrer"

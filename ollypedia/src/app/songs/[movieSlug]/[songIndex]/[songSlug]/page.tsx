@@ -12,8 +12,8 @@ import { notFound } from "next/navigation";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 import { buildMeta } from "@/lib/seo";
-import { SongDetailClient } from "../../../SongDetailClient";
-import type { MovieData, SongData } from "../types";
+import { SongDetailClient } from "../SongDetailClient";
+import type { MovieData } from "../types";
 
 // ─── Shared data helpers ──────────────────────────────────────────────────────
 async function getMovieWithSongs(movieSlug: string): Promise<MovieData | null> {

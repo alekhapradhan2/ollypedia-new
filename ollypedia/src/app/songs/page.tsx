@@ -6,7 +6,7 @@ import { SongsClient } from "./SongsClient";
 const PAGE_SIZE = 24;
 
 // 🔥 Dynamic SEO Metadata
-export async function generateMetadata({ searchParams }): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: { searchParams: Record<string, string | undefined> }): Promise<Metadata> {
   const { singer, year } = searchParams || {};
 
   let title = "Odia Songs 2026 | Latest & Upcoming Ollywood Songs";
@@ -120,7 +120,7 @@ async function getSongs({ page = 1 }) {
 }
 
 // 🔥 MAIN PAGE
-export default async function SongsPage({ searchParams }) {
+export default async function SongsPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const page = Number(searchParams?.page) || 1;
 
   const [{ upcoming, latest }, songData] = await Promise.all([
@@ -180,7 +180,7 @@ export default async function SongsPage({ searchParams }) {
               {movie.title}
             </h3>
             <div className="grid grid-cols-2 gap-2">
-              {movie.songs?.slice(0, 4).map((song, i) => (
+              {movie.songs?.slice(0, 4).map((song: { title: string }, i) => (
                 <p key={i} className="text-sm text-gray-300">
                   {song.title}
                 </p>
