@@ -119,18 +119,12 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
   onClick={() => {
     const url = window.location.href;
 
-    try {
-      // Try modern method
-      navigator.clipboard.writeText(url);
-    } catch {
-      // Fallback (NO PERMISSION POPUP)
-      const textArea = document.createElement("textarea");
-      textArea.value = url;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textArea);
-    }
+    const textArea = document.createElement("textarea");
+    textArea.value = url;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textArea);
 
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
