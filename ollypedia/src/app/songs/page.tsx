@@ -180,7 +180,7 @@ export default async function SongsPage({ searchParams }: { searchParams: Record
               {movie.title}
             </h3>
             <div className="grid grid-cols-2 gap-2">
-              {movie.songs?.slice(0, 4).map((song: { title: string }, i) => (
+              {movie.songs?.slice(0, 4).map((song: { title: string }, i: number) => (
                 <p key={i} className="text-sm text-gray-300">
                   {song.title}
                 </p>
