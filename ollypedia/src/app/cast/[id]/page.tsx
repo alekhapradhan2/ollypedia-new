@@ -13,11 +13,13 @@ import { Calendar, MapPin, Globe, Instagram, Film } from "lucide-react";
 export const revalidate = 3600;
 export const dynamicParams = true;
 
-export async function generateStaticParams() {
-  await connectDB();
-  const cast = await Cast.find({}, "_id").lean();
-  return cast.map((c: any) => ({ id: String(c._id) }));
-}
+// export async function generateStaticParams() {
+//   await connectDB();
+//   const cast = await Cast.find({}, "_id")
+//     .limit(500)
+//     .lean();
+//   return cast.map((c: any) => ({ id: String(c._id) }));
+// }
 
 async function getCastMember(id: string) {
   await connectDB();

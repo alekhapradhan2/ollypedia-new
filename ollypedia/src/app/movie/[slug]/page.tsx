@@ -20,7 +20,10 @@ import { Calendar, Clock, User, DollarSign, Film, Star, Clapperboard, Music } fr
 
 export async function generateStaticParams() {
   await connectDB();
-  const movies = await Movie.find({}, "slug _id").lean();
+  const movies = await Movie.find({}, "slug _id")
+    .sort({ releaseDate: -1 })
+    .limit(500)
+    .lean();
   return movies.map((m: any) => ({ slug: m.slug || String(m._id) }));
 }
 

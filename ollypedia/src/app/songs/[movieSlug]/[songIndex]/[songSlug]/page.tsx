@@ -18,19 +18,21 @@ import type { MovieData } from "../types";
 export const revalidate = 3600;
 export const dynamicParams = true;
 
-export async function generateStaticParams() {
-  await connectDB();
-  const movies = await (Movie as any)
-    .find({ "media.songs.0": { $exists: true } }, "slug media.songs")
-    .lean();
-  return movies.flatMap((m: any) =>
-    (m.media?.songs || []).map((s: any, i: number) => ({
-      movieSlug: m.slug || String(m._id),
-      songIndex: String(i),
-      songSlug:  s.slug || s.title?.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || String(i),
-    }))
-  );
-}
+// export async function generateStaticParams() {
+//   await connectDB();
+//   const movies = await (Movie as any)
+//     .find({ "media.songs.0": { $exists: true } }, "slug media.songs")
+//     .sort({ releaseDate: -1 })
+//     .limit(100)
+//     .lean();
+//   return movies.flatMap((m: any) =>
+//     (m.media?.songs || []).map((s: any, i: number) => ({
+//       movieSlug: m.slug || String(m._id),
+//       songIndex: String(i),
+//       songSlug:  s.slug || s.title?.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || String(i),
+//     }))
+//   );
+// }
 
 // ─── Shared data helpers ──────────────────────────────────────────────────────
 async function getMovieWithSongs(movieSlug: string): Promise<MovieData | null> {

@@ -8,7 +8,10 @@ export const dynamicParams = true;
 
 export async function generateStaticParams() {
   await connectDB();
-  const blogs = await Blog.find({ published: true }, "slug").lean();
+  const blogs = await Blog.find({ published: true }, "slug")
+    .sort({ createdAt: -1 })
+    .limit(500)
+    .lean();
   return blogs.map((b: any) => ({ slug: b.slug }));
 }
 

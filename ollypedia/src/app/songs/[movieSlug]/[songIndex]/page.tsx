@@ -9,18 +9,20 @@ import type { MovieData, SongData } from "./types";
 export const revalidate = 3600;
 export const dynamicParams = true;
 
-export async function generateStaticParams() {
-  await connectDB();
-  const movies = await (Movie as any)
-    .find({ "media.songs.0": { $exists: true } }, "slug media.songs")
-    .lean();
-  return movies.flatMap((m: any) =>
-    (m.media?.songs || []).map((_: any, i: number) => ({
-      movieSlug: m.slug || String(m._id),
-      songIndex: String(i),
-    }))
-  );
-}
+// export async function generateStaticParams() {
+//   await connectDB();
+//   const movies = await (Movie as any)
+//     .find({ "media.songs.0": { $exists: true } }, "slug media.songs")
+//     .sort({ releaseDate: -1 })
+//     .limit(100)
+//     .lean();
+//   return movies.flatMap((m: any) =>
+//     (m.media?.songs || []).map((_: any, i: number) => ({
+//       movieSlug: m.slug || String(m._id),
+//       songIndex: String(i),
+//     }))
+//   );
+// }
 
 // Re-export for [songSlug]/page.tsx to import
 export type { MovieData, SongData };
