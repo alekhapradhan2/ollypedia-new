@@ -1,14 +1,23 @@
 import type { Metadata } from "next";
 import BlogDetailClient from "./BlogDetailClient";
+import { connectDB } from "@/lib/db";
+import Blog from "@/models/Blog";
 
-export const dynamic = "force-dynamic"; // 🔥 IMPORTANT
+export const revalidate = 3600;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  await connectDB();
+  const blogs = await Blog.find({ published: true }, "slug").lean();
+  return blogs.map((b: any) => ({ slug: b.slug }));
+}
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
 async function getBlog(slug: string) {
   try {
     const res = await fetch(`${API_BASE}/blog/${slug}`, {
-      cache: "no-store",
+      next: { revalidate: 3600 },
     });
     if (!res.ok) return null;
     return res.json();

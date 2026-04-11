@@ -96,6 +96,8 @@ const CATEGORY_CONFIG: Record<
   },
 };
 
+export const revalidate = 3600; // Revalidate every hour to keep data fresh
+
 // ─── DB Query — mirrors your getBlog() pattern exactly ───────────────────────
 async function getMovies(category: string): Promise<MovieDoc[]> {
   await connectDB();

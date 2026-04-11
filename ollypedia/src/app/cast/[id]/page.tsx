@@ -10,6 +10,15 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { Calendar, MapPin, Globe, Instagram, Film } from "lucide-react";
 
+export const revalidate = 3600;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  await connectDB();
+  const cast = await Cast.find({}, "_id").lean();
+  return cast.map((c: any) => ({ id: String(c._id) }));
+}
+
 async function getCastMember(id: string) {
   await connectDB();
   const isOid = /^[a-f0-9]{24}$/i.test(id);

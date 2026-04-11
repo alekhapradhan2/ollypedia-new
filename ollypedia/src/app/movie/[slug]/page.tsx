@@ -1,6 +1,9 @@
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+
+export const revalidate = 3600; // ISR: re-fetch every 1 hour
+export const dynamicParams = true; // build unknown slugs on-demand
 import Image from "next/image";
 import Link from "next/link";
 import { connectDB } from "@/lib/db";
@@ -14,6 +17,12 @@ import { MovieCard } from "@/components/movie/MovieCard";
 import { StarRating } from "@/components/ui/StarRating";
 import { SongRowClient } from "@/components/movie/SongRowClient";
 import { Calendar, Clock, User, DollarSign, Film, Star, Clapperboard, Music } from "lucide-react";
+
+export async function generateStaticParams() {
+  await connectDB();
+  const movies = await Movie.find({}, "slug _id").lean();
+  return movies.map((m: any) => ({ slug: m.slug || String(m._id) }));
+}
 
 async function getMovie(slug: string) {
   await connectDB();

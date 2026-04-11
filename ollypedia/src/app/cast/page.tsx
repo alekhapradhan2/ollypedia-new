@@ -6,6 +6,8 @@ import Cast from "@/models/Cast";
 import { buildMeta } from "@/lib/seo";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = buildMeta({
   title: "Odia Actors & Actresses – Ollywood Cast Directory",
   description:

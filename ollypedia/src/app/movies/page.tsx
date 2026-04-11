@@ -6,6 +6,8 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { MoviesFilter } from "./MoviesFilter";
 import { buildMeta } from "@/lib/seo";
 
+export const revalidate = 3600; // ISR: re-fetch every 1 hour
+
 export const metadata: Metadata = buildMeta({
   title: "Odia Movies – Complete Ollywood Film Database",
   description:

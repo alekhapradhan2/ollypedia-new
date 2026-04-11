@@ -6,6 +6,8 @@ import Blog from "@/models/Blog";
 import { buildMeta } from "@/lib/seo";
 import { Clock, User, Calendar } from "lucide-react";
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = buildMeta({
   title: "Ollywood Blog | Odia Cinema News, Reviews & Guides",
   description: "Read the latest Ollywood blog posts — movie reviews, actor profiles, song guides, and everything about Odia cinema.",

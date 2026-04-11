@@ -12,6 +12,8 @@ import { buildMeta, SITE_NAME } from "@/lib/seo";
 import { Film, Star, Music, Newspaper, TrendingUp, Award } from "lucide-react";
 import HeroCarousel, { type HeroMovie } from "@/components/layout/HeroCarousel";
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = buildMeta({
   title: `${SITE_NAME} – The Odia Film Encyclopedia`,
   description:
