@@ -1,42 +1,170 @@
-import Link from "next/link";
+"use client";
+// components/cast/CastCard.tsx
+// Cinema film-strip style card. Receives PlainPerson (serialised, no ObjectIds).
+
 import Image from "next/image";
-import { Film } from "lucide-react";
+import CastCardLink from "./CastCardLink";
+import type { PlainPerson } from "@/app/cast/page";
 
 interface CastCardProps {
-  cast: {
-    _id: string;
-    name: string;
-    photo?: string;
-    type?: string;
-    roles?: string[];
-    movies?: any[];
-  };
+  person:   PlainPerson;
+  priority?: boolean;
 }
 
-export function CastCard({ cast }: CastCardProps) {
-  const image = cast.photo || "/placeholder-person.jpg";
-  const roles = cast.roles?.length ? cast.roles.join(", ") : cast.type || "Artist";
+export default function CastCard({ person, priority = false }: CastCardProps) {
+  const { _id, name, photo, type, filmCount } = person;
+  const role = type ?? "Artist";
 
   return (
-    <Link href={`/cast/${cast._id}`} className="group block text-center">
-      <div className="relative w-24 h-24 mx-auto rounded-full overflow-hidden border-2 border-[#2a2a2a] group-hover:border-orange-500/50 transition-colors mb-3">
-        <Image
-          src={image}
-          alt={cast.name}
-          fill
-          sizes="96px"
-          className="object-cover group-hover:scale-110 transition-transform duration-500"
-        />
+    <CastCardLink href={`/cast/${_id}`} style={{ flexShrink: 0, width: 136 }}>
+      <div className="cast-card-root">
+
+        {/* Film-strip top */}
+        <div className="strip">
+          {Array.from({ length: 5 }).map((_, i) => <span key={i} className="hole" />)}
+        </div>
+
+        {/* Photo */}
+        <div className="cast-photo-wrap">
+          {photo ? (
+            <Image
+              src={photo}
+              alt={`${name} – Odia ${role}`}
+              fill sizes="136px"
+              priority={priority}
+              className="cast-photo-img"
+            />
+          ) : (
+            <div className="cast-placeholder">
+              <span style={{ fontSize: "2.6rem", opacity: .45 }}>🎭</span>
+            </div>
+          )}
+          <div className="cast-overlay" />
+          {filmCount > 0 && (
+            <div className="cast-badge">🎬 {filmCount}</div>
+          )}
+        </div>
+
+        {/* Film-strip bottom */}
+        <div className="strip">
+          {Array.from({ length: 5 }).map((_, i) => <span key={i} className="hole" />)}
+        </div>
+
+        {/* Info */}
+        <div className="cast-info">
+          <p className="cast-name">{name}</p>
+          <p className="cast-role">{role}</p>
+        </div>
+
+        {/* Hover shimmer */}
+        <div className="cast-shimmer" />
       </div>
-      <p className="font-semibold text-white text-sm line-clamp-1 group-hover:text-orange-400 transition-colors">
-        {cast.name}
-      </p>
-      <p className="text-xs text-gray-500 mt-0.5">{roles}</p>
-      {cast.movies && cast.movies.length > 0 && (
-        <p className="text-xs text-gray-600 mt-0.5 flex items-center justify-center gap-1">
-          <Film className="w-3 h-3" /> {cast.movies.length} films
-        </p>
-      )}
-    </Link>
+
+      <style>{`
+        .cast-card-root {
+          position: relative;
+          width: 136px;
+          border-radius: 10px;
+          overflow: hidden;
+          background: #111;
+          border: 1px solid rgba(255,255,255,.07);
+          box-shadow: 0 6px 20px rgba(0,0,0,.55);
+          transition:
+            transform .22s cubic-bezier(.34,1.56,.64,1),
+            box-shadow .22s ease,
+            border-color .22s ease;
+          cursor: pointer;
+        }
+        .cast-card-root:hover {
+          transform: translateY(-5px) scale(1.02);
+          box-shadow: 0 18px 40px rgba(0,0,0,.75), 0 0 0 1px rgba(201,151,58,.4);
+          border-color: rgba(201,151,58,.35);
+        }
+
+        /* Film strip */
+        .strip {
+          display: flex;
+          justify-content: space-around;
+          align-items: center;
+          background: #0a0a0a;
+          padding: 3px 6px;
+        }
+        .hole {
+          display: inline-block;
+          width: 10px; height: 7px;
+          border-radius: 2px;
+          background: rgba(255,255,255,.12);
+          border: 1px solid rgba(255,255,255,.06);
+        }
+
+        /* Photo area */
+        .cast-photo-wrap {
+          position: relative;
+          width: 136px; height: 170px;
+          overflow: hidden;
+          background: #1c1c1c;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .cast-placeholder {
+          position: absolute; inset: 0;
+          display: flex; align-items: center; justify-content: center;
+          background: linear-gradient(135deg,#1a1a1a,#222);
+        }
+        .cast-photo-img {
+          object-fit: cover;
+          transition: transform .4s ease;
+        }
+        .cast-card-root:hover .cast-photo-img {
+          transform: scale(1.07);
+        }
+        .cast-overlay {
+          position: absolute; inset: 0; pointer-events: none;
+          background: linear-gradient(to top,rgba(0,0,0,.82) 0%,rgba(0,0,0,.05) 55%,transparent 100%);
+        }
+        .cast-badge {
+          position: absolute; bottom: 7px; right: 7px;
+          background: rgba(0,0,0,.72);
+          border: 1px solid rgba(201,151,58,.4);
+          border-radius: 20px;
+          padding: 2px 8px;
+          font-size: .57rem; font-weight: 800; color: #c9973a;
+          backdrop-filter: blur(4px);
+        }
+
+        /* Info */
+        .cast-info {
+          padding: 9px 10px 11px;
+          background: linear-gradient(to bottom,#111,#0d0d0d);
+        }
+        .cast-name {
+          margin: 0;
+          font-size: .76rem; font-weight: 800; color: #fff;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          letter-spacing: .01em; line-height: 1.25;
+        }
+        .cast-role {
+          margin: 3px 0 0;
+          font-size: .59rem; font-weight: 700; color: #c9973a;
+          letter-spacing: .06em; text-transform: uppercase;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* Gold shimmer on hover */
+        .cast-shimmer {
+          position: absolute; inset: 0; border-radius: 10px;
+          background: linear-gradient(115deg,transparent 30%,rgba(201,151,58,.1) 50%,transparent 70%);
+          background-size: 200% 100%; background-position: 200% 0;
+          opacity: 0; pointer-events: none; transition: opacity .2s;
+        }
+        .cast-card-root:hover .cast-shimmer {
+          opacity: 1;
+          animation: shimmer-sweep .55s ease forwards;
+        }
+        @keyframes shimmer-sweep {
+          from { background-position: 200% 0; }
+          to   { background-position: -50% 0; }
+        }
+      `}</style>
+    </CastCardLink>
   );
 }
