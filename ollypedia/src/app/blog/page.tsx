@@ -1,10 +1,14 @@
+// app/blog/page.tsx
+// Only change from original: <Link> on each card replaced with <LoadingCard>
+// which gives the same gold outline + blur + spin + shimmer as CastCardLink.
+
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import { connectDB } from "@/lib/db";
 import Blog from "@/models/Blog";
 import { buildMeta } from "@/lib/seo";
 import { Clock, User, Calendar } from "lucide-react";
+import { LoadingCard } from "@/components/ui/LoadingCard";
 
 export const revalidate = 3600;
 
@@ -25,7 +29,7 @@ async function getBlogs() {
 }
 
 export default async function BlogPage() {
-  const blogs = await getBlogs();
+  const blogs    = await getBlogs();
   const featured = blogs.filter((b) => b.featured);
   const rest     = blogs.filter((b) => !b.featured);
 
@@ -48,8 +52,11 @@ export default async function BlogPage() {
             <p className="text-xs font-bold uppercase tracking-widest text-orange-400 mb-4">Featured</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {featured.slice(0, 2).map((b) => (
-                <Link key={String(b._id)} href={`/blog/${b.slug}`}
-                  className="group block card overflow-hidden hover:-translate-y-0.5 transition-all duration-300">
+                <LoadingCard
+                  key={String(b._id)}
+                  href={`/blog/${b.slug}`}
+                  className="group card overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
+                >
                   {b.coverImage && (
                     <div className="relative aspect-video">
                       <Image src={b.coverImage} alt={b.title} fill
@@ -64,15 +71,13 @@ export default async function BlogPage() {
                     <h2 className="font-bold text-white text-lg leading-snug mb-2 group-hover:text-orange-400 transition-colors line-clamp-2">
                       {b.title}
                     </h2>
-                    {b.excerpt && (
-                      <p className="text-gray-400 text-sm line-clamp-2 mb-3">{b.excerpt}</p>
-                    )}
+                    {b.excerpt && <p className="text-gray-400 text-sm line-clamp-2 mb-3">{b.excerpt}</p>}
                     <div className="flex items-center gap-3 text-xs text-gray-500">
                       <span className="flex items-center gap-1"><User className="w-3 h-3" />{b.author || "Ollypedia Team"}</span>
                       <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{b.readTime || 5} min</span>
                     </div>
                   </div>
-                </Link>
+                </LoadingCard>
               ))}
             </div>
           </section>
@@ -84,8 +89,11 @@ export default async function BlogPage() {
             <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">All Articles</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {rest.map((b) => (
-                <Link key={String(b._id)} href={`/blog/${b.slug}`}
-                  className="group block card overflow-hidden hover:-translate-y-0.5 transition-all duration-300">
+                <LoadingCard
+                  key={String(b._id)}
+                  href={`/blog/${b.slug}`}
+                  className="group card overflow-hidden hover:-translate-y-0.5 transition-all duration-300"
+                >
                   {b.coverImage && (
                     <div className="relative aspect-video">
                       <Image src={b.coverImage} alt={b.title} fill
@@ -97,9 +105,7 @@ export default async function BlogPage() {
                     <h2 className="font-semibold text-white text-sm leading-snug mt-1 mb-2 group-hover:text-orange-400 transition-colors line-clamp-2">
                       {b.title}
                     </h2>
-                    {b.excerpt && (
-                      <p className="text-gray-500 text-xs line-clamp-2 mb-3">{b.excerpt}</p>
-                    )}
+                    {b.excerpt && <p className="text-gray-500 text-xs line-clamp-2 mb-3">{b.excerpt}</p>}
                     <div className="flex items-center gap-3 text-xs text-gray-600">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
@@ -108,7 +114,7 @@ export default async function BlogPage() {
                       <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{b.readTime || 5} min</span>
                     </div>
                   </div>
-                </Link>
+                </LoadingCard>
               ))}
             </div>
           </section>

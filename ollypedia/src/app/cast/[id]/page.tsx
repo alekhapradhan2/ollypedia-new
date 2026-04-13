@@ -46,7 +46,7 @@ const VERDICT_COLOR: Record<string, string> = {
 // ─── Static params ─────────────────────────────────────────────
 export async function generateStaticParams() {
   await connectDB();
-  const cast = await Cast.find({}, "_id").limit(1000).lean(); // raised from 500
+  const cast = await Cast.find({}, "_id").limit(200).lean();
   return cast.map((c: any) => ({ id: String(c._id) }));
 }
 

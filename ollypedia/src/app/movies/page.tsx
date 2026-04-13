@@ -1,12 +1,17 @@
+// app/movies/page.tsx
+// Only change from original: MovieCard is wrapped in <LoadingCard>
+// which gives the same gold outline + blur + spin + shimmer as CastCardLink.
+
 import type { Metadata } from "next";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { MoviesFilter } from "./MoviesFilter";
+import { LoadingCard } from "@/components/ui/LoadingCard";
 import { buildMeta } from "@/lib/seo";
 
-export const revalidate = 3600; // ISR: re-fetch every 1 hour
+export const revalidate = 3600;
 
 export const metadata: Metadata = buildMeta({
   title: "Odia Movies – Complete Ollywood Film Database",
@@ -16,27 +21,25 @@ export const metadata: Metadata = buildMeta({
   url: "/movies",
 });
 
-const GENRES = ["Action", "Romance", "Drama", "Comedy", "Thriller", "Horror", "Devotional", "Family", "Historical"];
+const GENRES   = ["Action", "Romance", "Drama", "Comedy", "Thriller", "Horror", "Devotional", "Family", "Historical"];
 const VERDICTS = ["Hit", "Superhit", "Blockbuster", "Average", "Flop", "Upcoming"];
 
-async function getMovies({
-  genre, verdict, sort, page,
-}: {
+async function getMovies({ genre, verdict, sort, page }: {
   genre?: string; verdict?: string; sort?: string; page?: number;
 }) {
   await connectDB();
-  const LIMIT = 20;
-  const skip  = ((page || 1) - 1) * LIMIT;
+  const LIMIT  = 20;
+  const skip   = ((page || 1) - 1) * LIMIT;
   const filter: any = {};
   if (genre)   filter.genre   = { $in: [genre] };
   if (verdict) filter.verdict = verdict;
 
   const sortMap: Record<string, any> = {
-    latest:     { releaseDate: -1 },
-    oldest:     { releaseDate: 1  },
-    az:         { title: 1 },
-    za:         { title: -1 },
-    rating:     { imdbRating: -1 },
+    latest: { releaseDate: -1 },
+    oldest: { releaseDate:  1 },
+    az:     { title:        1 },
+    za:     { title:       -1 },
+    rating: { imdbRating:  -1 },
   };
   const sortBy = sortMap[sort || "latest"] || sortMap.latest;
 
@@ -65,7 +68,6 @@ export default async function MoviesPage({
         subtitle={`${total} films in our database`}
       />
 
-      {/* Filter bar — client component */}
       <MoviesFilter
         genres={GENRES}
         verdicts={VERDICTS}
@@ -73,21 +75,23 @@ export default async function MoviesPage({
         totalPages={pages}
       />
 
-      {/* SEO intro */}
       <div className="mb-8 p-5 bg-[#111] border border-[#1f1f1f] rounded-xl">
         <p className="text-gray-400 text-sm leading-relaxed">
           Welcome to Ollypedia's comprehensive Odia movie database — the most complete listing of Odia films
           (Ollywood movies) on the internet. Browse through hundreds of Odia films spanning multiple decades,
           from classic Odia movies to the latest Ollywood blockbusters. Each movie page includes full cast
-          details, songs, box office collection, synopsis, reviews, and trailer. Use the filters above to find
-          movies by genre, verdict, or release year.
+          details, songs, box office collection, synopsis, reviews, and trailer.
         </p>
       </div>
 
       {movies.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {movies.map((m: any) => (
-            <MovieCard key={String(m._id)} movie={m} />
+            // LoadingCard wraps MovieCard without touching MovieCard's own styling.
+            // borderRadius=12 matches the typical card border-radius — adjust if yours differs.
+            <LoadingCard key={String(m._id)} href={`/movie/${m.slug}`} borderRadius={12}>
+              <MovieCard movie={m} />
+            </LoadingCard>
           ))}
         </div>
       ) : (

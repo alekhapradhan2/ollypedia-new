@@ -31,7 +31,7 @@ export async function generateStaticParams() {
   await connectDB();
   const movies = await Movie.find({}, "slug _id")
     .sort({ releaseDate: -1 })
-    .limit(500)
+    .limit(200)
     .lean();
   return movies.map((m: any) => ({ slug: m.slug || String(m._id) }));
 }
