@@ -162,6 +162,17 @@ function HighlightedPara({ text }: { text: string }) {
 }
 
 function ColorfulArticle({ content }: { content: string }) {
+  // If content contains HTML tags (e.g. box office blogs with <article>, <table>, <h1> etc.)
+  // render it directly as HTML so tags aren't shown as raw text.
+  const isHtml = /<[a-z][\s\S]*>/i.test(content || "");
+  if (isHtml) {
+    return (
+      <div
+        className="bp-article bp-article-html"
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    );
+  }
   const paras = (content || "").split(/\n\n+/).filter((p) => p.trim());
   return (
     <div className="bp-article">
@@ -779,6 +790,19 @@ const CSS = `
 .bp-article{font-family:'DM Sans',system-ui,sans-serif;font-size:1.02rem;line-height:1.9;color:rgba(255,255,255,.78);word-break:break-word;}
 .bp-article p{margin:0 0 1.4em;position:relative;}
 .bp-article p:first-of-type::first-letter{font-family:'Playfair Display',serif;font-size:4.2rem;font-weight:900;line-height:.72;float:left;margin-right:.12em;margin-top:.08em;color:var(--gold);}
+
+/* ── HTML blog content (box office articles with inline HTML) ── */
+.bp-article-html p:first-of-type::first-letter{all:unset;}
+.bp-article-html article{display:block;}
+.bp-article-html h1{font-size:1.5rem;font-weight:800;line-height:1.3;margin:0 0 1em;color:#fff;}
+.bp-article-html h2{font-size:1.15rem;font-weight:700;margin:1.6em 0 .7em;color:var(--gold);}
+.bp-article-html p{margin:0 0 1.2em;}
+.bp-article-html table{width:100%;border-collapse:collapse;font-size:0.92em;}
+.bp-article-html thead tr{background:#141414;}
+.bp-article-html th{padding:11px 14px;text-align:left;font-size:0.7em;color:#888;text-transform:uppercase;letter-spacing:0.07em;border-bottom:2px solid #2a2a2a;}
+.bp-article-html td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.bp-article-html tfoot tr{background:rgba(201,151,58,0.06);border-top:2px solid #2a2a2a;}
+.bp-article-html em{color:rgba(255,255,255,.5);font-size:0.85em;}
 
 .bp-pullquote{margin:2em 0;padding:20px 24px;border-left:3px solid var(--gold);background:rgba(201,151,58,.06);border-radius:0 6px 6px 0;font-family:'DM Serif Display',serif;font-style:italic;font-size:1.08rem;color:rgba(255,255,255,.7);line-height:1.7;}
 

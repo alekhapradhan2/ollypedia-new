@@ -1,16 +1,20 @@
 "use client";
+// components/Navbar.tsx  —  UPDATED (box-office link added, nothing removed)
+// Only change from original: "Box Office" added to NAV_LINKS array.
+
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { Search, Menu, X, Film, ChevronDown } from "lucide-react";
+import { Search, Menu, X, Film } from "lucide-react";
 import clsx from "clsx";
 
 const NAV_LINKS = [
-  { label: "Movies", href: "/movies" },
-  { label: "Songs",  href: "/songs" },
-  { label: "Cast",   href: "/cast" },
-  { label: "News",   href: "/news" },
-  { label: "Blog",   href: "/blog" },
+  { label: "Movies",     href: "/movies"     },
+  { label: "Songs",      href: "/songs"       },
+  { label: "Cast",       href: "/cast"        },
+  { label: "Box Office", href: "/box-office"  }, // ← NEW
+  { label: "News",       href: "/news"        },
+  { label: "Blog",       href: "/blog"        },
 ];
 
 export function Navbar() {
@@ -63,7 +67,6 @@ export function Navbar() {
 
           {/* Right actions */}
           <div className="flex items-center gap-2">
-            {/* Search */}
             {search ? (
               <form onSubmit={handleSearch} className="flex items-center gap-2">
                 <input
@@ -92,7 +95,6 @@ export function Navbar() {
               </button>
             )}
 
-            {/* Mobile menu */}
             <button
               className="md:hidden p-2 text-gray-400 hover:text-white"
               onClick={() => setOpen(!open)}
