@@ -6,8 +6,6 @@
 //  - Songs category links preserved (pages exist at /songs/category/[category]/page.tsx)
 //  - Movies filter links (/movies/2026 etc.) point to /movies with a hash — safe fallback
 //    until app/movies/[filter]/page.tsx is built. Replace with real hrefs once pages exist.
-//  - Blog guide links (/blog/odia-guides/*) temporarily removed — they 404.
-//    Re-add once app/blog/odia-guides/[slug]/page.tsx is built.
 
 import Link from "next/link";
 import { Film, Instagram, Twitter, Youtube, ChevronRight, Clock, Star } from "lucide-react";
@@ -221,14 +219,12 @@ const SEO_LINKS = {
     { label: "Top Singers",             href: "/songs/category/singers"   },  // ✅ exists
   ],
   // ── Blog guide section ────────────────────────────────────────────────────
-  // ⚠️  These /blog/odia-guides/* routes do NOT exist yet — pointing to /blog as safe fallback.
-  // Build app/blog/odia-guides/[slug]/page.tsx then restore original hrefs.
   "Learn / Discover": [
-    { label: "Know About Odia Movies",  href: "/blog"  },  // TODO: /blog/odia-guides/odia-movies
-    { label: "History of Ollywood",     href: "/blog"  },  // TODO: /blog/odia-guides/history-of-ollywood
-    { label: "Top 10 Odia Movies",      href: "/blog"  },  // TODO: /blog/odia-guides/top-10-odia-movies
-    { label: "Best Odia Songs List",    href: "/blog"  },  // TODO: /blog/odia-guides/best-odia-songs
-    { label: "Famous Odia Actors",      href: "/blog"  },  // TODO: /blog/odia-guides/odia-actors
+    { label: "Know About Odia Movies",  href: "/blog/odia-guides/odia-movies" },
+    { label: "History of Ollywood",     href: "/blog/odia-guides/history-of-ollywood" },
+    { label: "Top 10 Odia Movies",      href: "/blog/odia-guides/top-10-odia-movies" },
+    { label: "Best Odia Songs List",    href: "/blog/odia-guides/best-odia-songs" },
+    { label: "Famous Odia Actors",      href: "/blog/odia-guides/odia-actors" },
   ],
 };
 
