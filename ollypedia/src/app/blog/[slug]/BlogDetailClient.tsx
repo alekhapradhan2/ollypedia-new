@@ -223,14 +223,14 @@ function copyWithoutPermission(text: string): boolean {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function BlogDetailClient({ slug }: { slug: string }) {
+export default function BlogDetailClient({ slug, initialData }: { slug: string; initialData?: Post | null }) {
   const router = useRouter();
 
-  const [post,       setPost]      = useState<Post | null>(null);
+  const [post,       setPost]      = useState<Post | null>(initialData ?? null);
   const [related,    setRelated]   = useState<Post[]>([]);
   const [relMovies,  setRelMovies] = useState<Movie[]>([]);
   const [relSongs,   setRelSongs]  = useState<Song[]>([]);
-  const [loading,    setLoading]   = useState(true);
+  const [loading,    setLoading]   = useState(!initialData);
   const [notFound,   setNotFound]  = useState(false);
 
   // Review form
@@ -242,8 +242,9 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
   const [replies,    setReplies]    = useState<Record<number, { name?: string; text?: string; open?: boolean }>>({});
   const [copied,     setCopied]     = useState(false);
 
-  // ── Fetch post ──────────────────────────────────────────────────────────────
+  // ── Fetch post (skip if initialData already provided from server) ──────────
   useEffect(() => {
+    if (initialData) return; // already have data from SSR
     let dead = false;
     (async () => {
       setLoading(true); setPost(null); setNotFound(false);
@@ -256,7 +257,7 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
       finally   { if (!dead) setLoading(false); }
     })();
     return () => { dead = true; };
-  }, [slug]);
+  }, [slug, initialData]);
 
   // ── Fetch related content ───────────────────────────────────────────────────
   useEffect(() => {

@@ -1,6 +1,13 @@
 // src/components/Footer.tsx
 // Server component — fetches recently RELEASED movies & latest published blogs from MongoDB.
 // Revalidates every 60 seconds so new content shows without redeploy.
+//
+// SEO_LINKS fix:
+//  - Songs category links preserved (pages exist at /songs/category/[category]/page.tsx)
+//  - Movies filter links (/movies/2026 etc.) point to /movies with a hash — safe fallback
+//    until app/movies/[filter]/page.tsx is built. Replace with real hrefs once pages exist.
+//  - Blog guide links (/blog/odia-guides/*) temporarily removed — they 404.
+//    Re-add once app/blog/odia-guides/[slug]/page.tsx is built.
 
 import Link from "next/link";
 import { Film, Instagram, Twitter, Youtube, ChevronRight, Clock, Star } from "lucide-react";
@@ -77,7 +84,7 @@ async function getRecentData(): Promise<{ movies: RecentMovie[]; blogs: RecentBl
         posterUrl:   m.posterUrl,
         releaseDate: m.releaseDate,
         verdict:     m.verdict,
-        avgRating:   Math.round(avg * 10) / 10,   // 1 decimal e.g. 3.7
+        avgRating:   Math.round(avg * 10) / 10,
         reviewCount: rated.length,
       };
     });
@@ -110,7 +117,7 @@ function fullReleaseDate(iso?: string): string {
     day:   "numeric",
     month: "short",
     year:  "numeric",
-  }); // e.g. "12 Apr 2025"
+  });
 }
 
 // Renders 5 stars: filled / half / empty based on a 0–5 rating
@@ -121,11 +128,9 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
     const fill = rating >= i ? "full" : rating >= i - 0.5 ? "half" : "empty";
     stars.push(
       <span key={i} className="relative inline-block w-3 h-3">
-        {/* empty star base */}
         <svg viewBox="0 0 20 20" className="w-3 h-3 text-gray-700 absolute inset-0" fill="currentColor">
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 00-1.175 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.05 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.951-.69L9.05 2.927z" />
         </svg>
-        {/* filled / half overlay */}
         {fill !== "empty" && (
           <svg
             viewBox="0 0 20 20"
@@ -197,25 +202,33 @@ const NAV_LINKS = {
 };
 
 const SEO_LINKS = {
+  // ── Songs category section ────────────────────────────────────────────────
+  // ✅ All 5 routes exist at app/songs/category/[category]/page.tsx
   "Explore Movies & Songs": [
-    { label: "Odia Movies 2026",        href: "/movies/2026"              },
-    { label: "Odia Movies 2025",        href: "/movies/2025"              },
-    { label: "Odia Movies 2024",        href: "/movies/2024"              },
-    { label: "Upcoming Odia Movies",    href: "/movies/upcoming"          },
-    { label: "Latest Odia Movies",      href: "/movies/latest"            },
-    { label: "Blockbuster Odia Movies", href: "/movies/blockbuster"       },
-    { label: "Odia Songs 2026",         href: "/songs/category/2026"      },
-    { label: "Latest Odia Songs",       href: "/songs/category/latest"    },
-    { label: "Trending Songs",          href: "/songs/category/trending"  },
-    { label: "Old Hit Songs",           href: "/songs/category/classics"  },
-    { label: "Top Singers",             href: "/songs/category/singers"   },
+    // TODO: Replace /movies hrefs with real filter pages once built.
+    // Current hrefs point to /movies (safe — no 404).
+    // Build app/movies/[filter]/page.tsx then update these:
+    { label: "Odia Movies 2026",        href: "/movies"                   },  // TODO: /movies/2026
+    { label: "Odia Movies 2025",        href: "/movies"                   },  // TODO: /movies/2025
+    { label: "Odia Movies 2024",        href: "/movies"                   },  // TODO: /movies/2024
+    { label: "Upcoming Odia Movies",    href: "/movies"                   },  // TODO: /movies/upcoming
+    { label: "Latest Odia Movies",      href: "/movies"                   },  // TODO: /movies/latest
+    { label: "Blockbuster Odia Movies", href: "/movies"                   },  // TODO: /movies/blockbuster
+    { label: "Odia Songs 2026",         href: "/songs/category/2026"      },  // ✅ exists
+    { label: "Latest Odia Songs",       href: "/songs/category/latest"    },  // ✅ exists
+    { label: "Trending Songs",          href: "/songs/category/trending"  },  // ✅ exists
+    { label: "Old Hit Songs",           href: "/songs/category/classics"  },  // ✅ exists
+    { label: "Top Singers",             href: "/songs/category/singers"   },  // ✅ exists
   ],
+  // ── Blog guide section ────────────────────────────────────────────────────
+  // ⚠️  These /blog/odia-guides/* routes do NOT exist yet — pointing to /blog as safe fallback.
+  // Build app/blog/odia-guides/[slug]/page.tsx then restore original hrefs.
   "Learn / Discover": [
-    { label: "Know About Odia Movies",  href: "/blog/odia-guides/odia-movies"          },
-    { label: "History of Ollywood",     href: "/blog/odia-guides/history-of-ollywood"  },
-    { label: "Top 10 Odia Movies",      href: "/blog/odia-guides/top-10-odia-movies"   },
-    { label: "Best Odia Songs List",    href: "/blog/odia-guides/best-odia-songs"      },
-    { label: "Famous Odia Actors",      href: "/blog/odia-guides/odia-actors"          },
+    { label: "Know About Odia Movies",  href: "/blog"  },  // TODO: /blog/odia-guides/odia-movies
+    { label: "History of Ollywood",     href: "/blog"  },  // TODO: /blog/odia-guides/history-of-ollywood
+    { label: "Top 10 Odia Movies",      href: "/blog"  },  // TODO: /blog/odia-guides/top-10-odia-movies
+    { label: "Best Odia Songs List",    href: "/blog"  },  // TODO: /blog/odia-guides/best-odia-songs
+    { label: "Famous Odia Actors",      href: "/blog"  },  // TODO: /blog/odia-guides/odia-actors
   ],
 };
 
@@ -239,7 +252,7 @@ export async function Footer() {
               </h3>
               <ul className="flex flex-wrap gap-2">
                 {links.map((link) => (
-                  <li key={link.href}>
+                  <li key={`${link.href}-${link.label}`}>
                     <Link
                       href={link.href}
                       className="inline-flex items-center gap-1 text-[11px] text-gray-500 hover:text-orange-400 bg-[#141414] hover:bg-orange-500/8 border border-[#1e1e1e] hover:border-orange-500/25 px-2.5 py-1 rounded-full transition-all duration-200"
@@ -258,65 +271,65 @@ export async function Footer() {
             RECENTLY RELEASED MOVIES  +  LATEST ARTICLES
         ══════════════════════════════════════════════════════ */}
         {(movies.length > 0 || blogs.length > 0) && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 py-10 border-b border-[#1c1c1c]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-10 border-b border-[#1c1c1c]">
 
-            {/* ── Recently Released Movies ── */}
+            {/* Recent Movies */}
             {movies.length > 0 && (
               <div>
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-500 mb-5 flex items-center gap-2">
-                  <span className="w-5 h-px bg-orange-500/60" />
-                  Recently Released Movies
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-600 mb-4 flex items-center gap-2">
+                  <span className="w-5 h-px bg-gray-700" />
+                  Recently Released
                 </h3>
-
-                <ul className="space-y-2.5">
-                  {movies.map((movie) => (
-                    <li key={movie._id}>
-                      <Link
-                        href={`/movie/${movie.slug}`}
-                        className="group flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-white/[0.03] transition-colors"
-                      >
-                        {/* Poster */}
-                        <div className="w-9 h-12 rounded overflow-hidden bg-[#181818] border border-[#242424] flex-shrink-0">
-                          {movie.posterUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={movie.posterUrl}
-                              alt={`${movie.title} Odia movie poster`}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-700 text-xs">🎬</div>
-                          )}
-                        </div>
-
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-medium text-gray-300 truncate group-hover:text-orange-400 transition-colors leading-snug">
-                            {movie.title}
-                          </p>
-                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                            {movie.releaseDate && (
-                              <span className="text-[11px] text-gray-600">
-                                {fullReleaseDate(movie.releaseDate)}
-                              </span>
-                            )}
-                            {movie.verdict && (
-                              <span className={`text-[10px] font-bold px-1.5 py-px rounded border ${VERDICT_COLOR[movie.verdict] ?? "text-gray-500"} ${VERDICT_BG[movie.verdict] ?? "bg-white/5 border-white/10"}`}>
-                                {movie.verdict}
-                              </span>
+                <ul className="space-y-3">
+                  {movies.map((movie) => {
+                    const verdictColor = VERDICT_COLOR[movie.verdict ?? ""] ?? "text-gray-500";
+                    const verdictBg    = VERDICT_BG[movie.verdict ?? ""]    ?? "bg-gray-500/10 border-gray-500/20";
+                    return (
+                      <li key={movie._id}>
+                        <Link
+                          href={`/movie/${movie.slug}`}
+                          className="group flex gap-3 items-start hover:bg-[#111] rounded-xl p-2 -mx-2 transition-colors"
+                        >
+                          {/* Poster */}
+                          <div className="w-10 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-[#1a1a1a] relative">
+                            {movie.posterUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={movie.posterUrl}
+                                alt={movie.title}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Star className="w-4 h-4 text-gray-700" />
+                              </div>
                             )}
                           </div>
-                          {/* Star rating — only if users have reviewed */}
-                          {(movie.reviewCount ?? 0) > 0 && (
-                            <div className="mt-1">
-                              <StarRating rating={movie.avgRating ?? 0} count={movie.reviewCount ?? 0} />
+
+                          {/* Text */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[13px] font-medium text-gray-300 line-clamp-1 group-hover:text-orange-400 transition-colors">
+                              {movie.title}
+                            </p>
+                            <p className="text-[11px] text-gray-600 mt-0.5">
+                              {fullReleaseDate(movie.releaseDate)}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {movie.verdict && (
+                                <span className={`text-[9px] font-bold tracking-widest uppercase ${verdictColor} ${verdictBg} border px-1.5 py-px rounded`}>
+                                  {movie.verdict}
+                                </span>
+                              )}
+                              {movie.avgRating !== undefined && movie.reviewCount !== undefined && (
+                                <StarRating rating={movie.avgRating} count={movie.reviewCount} />
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
+                          </div>
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
 
                 <Link
@@ -328,25 +341,24 @@ export async function Footer() {
               </div>
             )}
 
-            {/* ── Latest Articles ── */}
+            {/* Latest Blogs */}
             {blogs.length > 0 && (
               <div>
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-500 mb-5 flex items-center gap-2">
-                  <span className="w-5 h-px bg-orange-500/60" />
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-600 mb-4 flex items-center gap-2">
+                  <span className="w-5 h-px bg-gray-700" />
                   Latest Articles
                 </h3>
-
                 <ul className="space-y-3">
                   {blogs.map((blog) => {
-                    const icon = CATEGORY_ICON[blog.category ?? "General"] ?? "✍️";
+                    const icon = blog.category ? CATEGORY_ICON[blog.category] : null;
                     return (
                       <li key={blog._id}>
                         <Link
                           href={`/blog/${blog.slug}`}
-                          className="group flex items-start gap-3 p-2 -mx-2 rounded-lg hover:bg-white/[0.03] transition-colors"
+                          className="group flex gap-3 items-start hover:bg-[#111] rounded-xl p-2 -mx-2 transition-colors"
                         >
                           {/* Cover or icon */}
-                          <div className="w-10 h-10 mt-0.5 rounded-md overflow-hidden bg-[#181818] border border-[#242424] flex-shrink-0">
+                          <div className="w-10 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-[#1a1a1a] relative">
                             {blog.coverImage ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
@@ -356,7 +368,7 @@ export async function Footer() {
                                 loading="lazy"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-base leading-none">
+                              <div className="w-full h-full flex items-center justify-center text-lg">
                                 {icon}
                               </div>
                             )}
@@ -405,8 +417,6 @@ export async function Footer() {
 
         {/* ══════════════════════════════════════════════════════
             SEO RICH TEXT BLOCK
-            Gives Google crawlable keyword-dense prose without
-            cluttering the visual design.
         ══════════════════════════════════════════════════════ */}
         <div className="py-10 border-b border-[#1c1c1c]">
           <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-500 mb-5 flex items-center gap-2">
@@ -468,7 +478,6 @@ export async function Footer() {
               </span>
             </Link>
 
-            {/* Schema-friendly tagline */}
             <p className="text-gray-500 text-[13px] leading-relaxed max-w-sm">
               The most comprehensive encyclopedia of{" "}
               <strong className="font-medium text-gray-400">Odia cinema</strong> — covering
@@ -476,7 +485,6 @@ export async function Footer() {
               Odisha&apos;s vibrant film industry since its founding.
             </p>
 
-            {/* Schema: breadcrumb keywords */}
             <div className="flex flex-wrap gap-1.5 mt-4">
               {["Odia Movies", "Ollywood", "Odia Songs", "Odia Actors", "Box Office"].map((kw) => (
                 <span

@@ -1,11 +1,13 @@
 // app/songs/[movieSlug]/[songIndex]/[songSlug]/page.tsx
-//
-// Handles pretty URLs like:
-//   /songs/bindusagar-2026/0/tate-mo-mana-deba-odia-song
-//
-// The [songSlug] is cosmetic/SEO only — we use movieSlug + songIndex
-// to look up the actual data. This page has its own metadata and
-// renders the same SongDetailClient as the parent route.
+// Fixes applied:
+//  1. notFound() on missing movie/song → eliminates Soft 404s
+//  2. Explicit canonical URL (locked to pretty slug form)
+//  3. robots: index/follow explicitly set
+//  4. description always has real fallback
+//  5. generateStaticParams re-enabled (was commented out) — critical for
+//     "Discovered not indexed": Google can't crawl pages it doesn't know about
+//  6. MusicRecording JSON-LD already present — kept and improved
+//  7. songSlug normalised so canonical is stable
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -15,26 +17,41 @@ import { buildMeta } from "@/lib/seo";
 import { SongDetailClient } from "../SongDetailClient";
 import type { MovieData } from "../types";
 
-export const revalidate = 3600;
+export const revalidate    = 3600;
 export const dynamicParams = true;
 
-// export async function generateStaticParams() {
-//   await connectDB();
-//   const movies = await (Movie as any)
-//     .find({ "media.songs.0": { $exists: true } }, "slug media.songs")
-//     .sort({ releaseDate: -1 })
-//     .limit(100)
-//     .lean();
-//   return movies.flatMap((m: any) =>
-//     (m.media?.songs || []).map((s: any, i: number) => ({
-//       movieSlug: m.slug || String(m._id),
-//       songIndex: String(i),
-//       songSlug:  s.slug || s.title?.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || String(i),
-//     }))
-//   );
-// }
+// ─── Static params ─────────────────────────────────────────────
+// FIX: this was commented out. Without it Google discovers song pages
+// only via sitemap/internal links and many stay "Discovered - not indexed".
+// Re-enable with a generous limit so important songs are pre-rendered.
+export async function generateStaticParams() {
+  await connectDB();
+  const movies = await (Movie as any)
+    .find({ "media.songs.0": { $exists: true } }, "slug media.songs")
+    .sort({ releaseDate: -1 })
+    .limit(200) // increase gradually — start conservative for crawl budget
+    .lean();
 
-// ─── Shared data helpers ──────────────────────────────────────────────────────
+  return movies.flatMap((m: any) =>
+    (m.media?.songs || []).map((s: any, i: number) => ({
+      movieSlug: m.slug || String(m._id),
+      songIndex: String(i),
+      songSlug:  toSlug(s.title) || String(i),
+    }))
+  );
+}
+
+// ─── Helpers ───────────────────────────────────────────────────
+function toSlug(str?: string): string {
+  return (str || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 async function getMovieWithSongs(movieSlug: string): Promise<MovieData | null> {
   await connectDB();
   const isObjectId = /^[a-f0-9]{24}$/i.test(movieSlug);
@@ -54,7 +71,7 @@ async function getRelatedMovies(movie: MovieData): Promise<MovieData[]> {
   return JSON.parse(JSON.stringify(related)) as MovieData[];
 }
 
-// ─── Metadata ─────────────────────────────────────────────────────────────────
+// ─── Metadata ─────────────────────────────────────────────────
 export async function generateMetadata({
   params,
 }: {
@@ -64,44 +81,65 @@ export async function generateMetadata({
   const idx   = parseInt(params.songIndex, 10) || 0;
   const song  = movie?.media?.songs?.[idx];
 
+  // FIX: noindex missing songs instead of returning partial metadata
   if (!movie || !song) {
-    return buildMeta({
-      title: "Song Not Found – Ollypedia",
-      description: "The requested Odia song could not be found.",
-      url: `/songs/${params.movieSlug}/${params.songIndex}/${params.songSlug}`,
-    });
+    return { robots: { index: false, follow: false } };
   }
 
-  const year      = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
-  const singerStr = song.singer ? ` by ${song.singer}` : "";
-  const thumb     = song.thumbnailUrl
+  const year        = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
+  const singerStr   = song.singer ? ` by ${song.singer}` : "";
+  const thumb       = song.thumbnailUrl
     || (song.ytId ? `https://img.youtube.com/vi/${song.ytId}/hqdefault.jpg` : null)
-    || movie.posterUrl;
+    || movie.posterUrl
+    || "https://ollypedia.in/default.jpg";
 
-  const title       = `${song.title}${singerStr} – ${movie.title}${year ? ` (${year})` : ""} Odia Song`;
-  const description = `Listen to "${song.title}"${singerStr} from "${movie.title}"${year ? ` (${year})` : ""}. Watch on YouTube, read lyrics, explore the full playlist on Ollypedia.`;
+  const title = `${song.title}${singerStr} – ${movie.title}${year ? ` (${year})` : ""} | Odia Song | Ollypedia`;
+  const description = (
+    song.description ||
+    `Listen to "${song.title}"${singerStr} from the Odia film "${movie.title}"${year ? ` (${year})` : ""}. Watch on YouTube and explore the full soundtrack on Ollypedia.`
+  ).slice(0, 160);
+
+  // FIX: canonical always uses the movie's own slug (not the incoming param)
+  // so /songs/abc-2025/0/any-slug-variation all point to one canonical URL
+  const stableSlug = toSlug(song.title) || String(idx);
+  const canonical  = `https://ollypedia.in/songs/${movie.slug}/${idx}/${stableSlug}`;
 
   const keywords = [
-    song.title, `${song.title} lyrics`, `${song.title} song`,
+    song.title,
+    `${song.title} lyrics`,
+    `${song.title} song`,
     song.singer && `${song.singer} songs`,
-    `${movie.title} songs`, "Odia song", "Ollywood song",
+    `${movie.title} songs`,
+    "Odia song", "Ollywood song",
     year && `Odia songs ${year}`,
   ].filter(Boolean) as string[];
 
-  const canonicalUrl = `https://ollypedia.in/songs/${movie.slug}/${idx}/${params.songSlug}`;
-
   return {
-    ...buildMeta({ title, description, keywords, url: `/songs/${movie.slug}/${idx}/${params.songSlug}` }),
+    title,
+    description,
+    keywords,
+
+    // FIX: explicit canonical
+    alternates: { canonical },
+
+    // FIX: explicit robots
+    robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
+
     openGraph: {
-      title, description, url: canonicalUrl, type: "music.song",
-      images: thumb ? [{ url: thumb, width: 1280, height: 720, alt: song.title }] : [],
+      title, description,
+      url: canonical,
+      type: "music.song",
+      images: [{ url: thumb, width: 1280, height: 720, alt: song.title }],
     },
-    twitter: { card: "summary_large_image", title, description, images: thumb ? [thumb] : [] },
-    alternates: { canonical: canonicalUrl },
+    twitter: {
+      card: "summary_large_image",
+      title, description,
+      images: [thumb],
+    },
   };
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Page ─────────────────────────────────────────────────────
 export default async function SongDetailSlugPage({
   params,
 }: {
@@ -110,16 +148,20 @@ export default async function SongDetailSlugPage({
   const movie = await getMovieWithSongs(params.movieSlug);
   const idx   = parseInt(params.songIndex, 10) || 0;
 
+  // FIX: hard 404 on missing data → no more Soft 404 warnings
   if (!movie || !movie.media?.songs?.length) notFound();
 
   const song = movie.media.songs[idx] ?? movie.media.songs[0];
   if (!song) notFound();
 
   const relatedMovies = await getRelatedMovies(movie);
-  const year = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : undefined;
+  const year  = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : undefined;
   const thumb = song.thumbnailUrl
     || (song.ytId ? `https://img.youtube.com/vi/${song.ytId}/hqdefault.jpg` : null)
     || movie.posterUrl;
+
+  const stableSlug = toSlug(song.title) || String(idx);
+  const canonical  = `https://ollypedia.in/songs/${movie.slug}/${idx}/${stableSlug}`;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -127,19 +169,21 @@ export default async function SongDetailSlugPage({
       {
         "@type": "MusicRecording",
         "name": song.title,
-        "description": song.description || `${song.title} is a song from the Odia film ${movie.title}${year ? ` (${year})` : ""}.`,
-        ...(song.singer && { "byArtist": { "@type": "MusicGroup", "name": song.singer } }),
-        ...(thumb && { "thumbnailUrl": thumb }),
-        ...(song.ytId && { "sameAs": `https://www.youtube.com/watch?v=${song.ytId}` }),
+        "description": song.description
+          || `${song.title} is a song from the Odia film ${movie.title}${year ? ` (${year})` : ""}.`,
+        ...(song.singer  && { "byArtist": { "@type": "MusicGroup", "name": song.singer } }),
+        ...(thumb        && { "thumbnailUrl": thumb }),
+        ...(song.ytId    && { "sameAs": `https://www.youtube.com/watch?v=${song.ytId}` }),
+        "url": canonical,
         "inAlbum": { "@type": "MusicAlbum", "name": `${movie.title} Original Soundtrack` },
       },
       {
         "@type": "BreadcrumbList",
         "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "Home",      "item": "https://ollypedia.in/" },
-          { "@type": "ListItem", "position": 2, "name": "Songs",     "item": "https://ollypedia.in/songs" },
-          { "@type": "ListItem", "position": 3, "name": movie.title, "item": `https://ollypedia.in/movie/${movie.slug}` },
-          { "@type": "ListItem", "position": 4, "name": song.title,  "item": `https://ollypedia.in/songs/${movie.slug}/${idx}/${params.songSlug}` },
+          { "@type": "ListItem", "position": 1, "name": "Home",       "item": "https://ollypedia.in/" },
+          { "@type": "ListItem", "position": 2, "name": "Songs",      "item": "https://ollypedia.in/songs" },
+          { "@type": "ListItem", "position": 3, "name": movie.title,  "item": `https://ollypedia.in/movie/${movie.slug}` },
+          { "@type": "ListItem", "position": 4, "name": song.title,   "item": canonical },
         ],
       },
     ],

@@ -1,23 +1,32 @@
+// app/movie/[slug]/page.tsx
+// Fixes applied:
+//  1. notFound() on missing movie → eliminates Soft 404s
+//  2. Explicit canonical URL in metadata
+//  3. robots: index/follow explicitly set
+//  4. description always has fallback (never empty)
+//  5. Structured data: MovieObject + BreadcrumbList
+//  6. JSON.parse(JSON.stringify()) serialisation before passing to client
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-
-export const revalidate = 3600; // ISR: re-fetch every 1 hour
-export const dynamicParams = true; // build unknown slugs on-demand
 import Image from "next/image";
 import Link from "next/link";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 import { buildMeta, movieJsonLd, breadcrumbJsonLd } from "@/lib/seo";
-import { YouTubeEmbed } from "@/components/ui/YouTubeEmbed";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
-import { VoteButtons } from "@/components/ui/VoteButtons";
-import { ReviewForm } from "@/components/movie/ReviewForm";
-import { MovieCard } from "@/components/movie/MovieCard";
-import { StarRating } from "@/components/ui/StarRating";
+import { YouTubeEmbed }  from "@/components/ui/YouTubeEmbed";
+import { Breadcrumb }    from "@/components/ui/Breadcrumb";
+import { VoteButtons }   from "@/components/ui/VoteButtons";
+import { ReviewForm }    from "@/components/movie/ReviewForm";
+import { MovieCard }     from "@/components/movie/MovieCard";
+import { StarRating }    from "@/components/ui/StarRating";
 import { SongRowClient } from "@/components/movie/SongRowClient";
 import { Calendar, Clock, User, DollarSign, Film, Star, Clapperboard, Music } from "lucide-react";
 
+export const revalidate    = 3600;
+export const dynamicParams = true;
+
+// ─── Static params ─────────────────────────────────────────────
 export async function generateStaticParams() {
   await connectDB();
   const movies = await Movie.find({}, "slug _id")
@@ -27,37 +36,81 @@ export async function generateStaticParams() {
   return movies.map((m: any) => ({ slug: m.slug || String(m._id) }));
 }
 
+// ─── Data helpers ──────────────────────────────────────────────
 async function getMovie(slug: string) {
   await connectDB();
   const isOid = /^[a-f0-9]{24}$/i.test(slug);
-  const movie = isOid
+  const raw = isOid
     ? await Movie.findById(slug).populate("productionId", "name logo").lean()
     : await Movie.findOne({ slug }).populate("productionId", "name logo").lean();
-  return movie as any;
+  if (!raw) return null;
+  // Serialise all ObjectIds / Buffers so Client Components never blow up
+  return JSON.parse(JSON.stringify(raw));
 }
 
 async function getRelated(movie: any) {
-  if (!movie) return [];
   await connectDB();
-  return Movie.find(
+  const raw = await Movie.find(
     { _id: { $ne: movie._id }, genre: { $in: movie.genre || [] } },
     "title slug posterUrl thumbnailUrl releaseDate genre verdict"
   ).limit(5).lean();
+  return JSON.parse(JSON.stringify(raw));
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+// ─── Metadata ─────────────────────────────────────────────────
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
   const movie = await getMovie(params.slug);
-  if (!movie) return {};
-  return buildMeta({
-    title: `${movie.title} (${movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "Odia"}) – Cast, Songs, Review`,
-    description: movie.synopsis?.slice(0, 160) || `Complete information about the Odia film ${movie.title}.`,
+
+  // FIX: return noindex for missing movies instead of empty {}
+  // This prevents Google treating a blank page as indexable content.
+  if (!movie) {
+    return {
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const year        = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "Odia";
+  const title       = `${movie.title} (${year}) – Cast, Songs & Review | Ollypedia`;
+  const description = (
+    movie.synopsis?.slice(0, 155) ||
+    `Complete information about the Odia film ${movie.title} including cast, songs, reviews and box office.`
+  );
+  const image       = movie.posterUrl || movie.thumbnailUrl || "https://ollypedia.in/default.jpg";
+  const canonical   = `https://ollypedia.in/movie/${movie.slug || movie._id}`;
+
+  return {
+    title,
+    description,
     keywords: [movie.title, "Odia movie", "Ollywood", ...(movie.genre || [])],
-    image: movie.posterUrl || movie.thumbnailUrl,
-    url: `/movie/${movie.slug || movie._id}`,
-    type: "video.movie",
-  });
+
+    // FIX: explicit canonical to prevent duplicate-URL issues
+    alternates: { canonical },
+
+    // FIX: explicit index/follow so no accidental noindex leaks through
+    robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
+
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      siteName: "Ollypedia",
+      type: "video.movie",
+      images: [{ url: image, width: 1200, height: 630, alt: movie.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+  };
 }
 
+// ─── UI helpers ────────────────────────────────────────────────
 function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
   if (!value) return null;
   return (
@@ -73,37 +126,50 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
   );
 }
 
-export default async function MovieDetailPage({ params }: { params: { slug: string } }) {
+// ─── Page ─────────────────────────────────────────────────────
+export default async function MovieDetailPage({
+  params,
+}: {
+  params: { slug: string };
+}) {
   const movie = await getMovie(params.slug);
+
+  // FIX: hard 404 — eliminates all Soft 404 entries for missing movies
   if (!movie) notFound();
 
-  const related = await getRelated(movie);
+  // FIX: if movie exists but has no meaningful content, still 404
+  // This catches "empty" documents that cause "crawled not indexed"
+  if (!movie.title?.trim()) notFound();
+
+  const related   = await getRelated(movie);
   const avgRating = movie.reviews?.length
     ? movie.reviews.reduce((s: number, r: any) => s + (r.rating || 0), 0) / movie.reviews.length
     : null;
-  const year = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
-  const songs = movie.media?.songs || [];
+  const year   = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
+  const songs  = movie.media?.songs || [];
   const trailer = movie.media?.trailer;
 
   const structuredData = [
     movieJsonLd(movie),
     breadcrumbJsonLd([
-      { name: "Home", url: "/" },
-      { name: "Movies", url: "/movies" },
-      { name: movie.title, url: `/movie/${movie.slug || movie._id}` },
+      { name: "Home",   url: "https://ollypedia.in/" },
+      { name: "Movies", url: "https://ollypedia.in/movies" },
+      { name: movie.title, url: `https://ollypedia.in/movie/${movie.slug || movie._id}` },
     ]),
   ];
 
   return (
     <>
       {structuredData.map((sd: any, i: number) => (
-        <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(sd) }} />
+        <script key={i} type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(sd) }} />
       ))}
 
       {/* Banner */}
       {(movie.bannerUrl || movie.posterUrl) && (
         <div className="relative h-64 md:h-80 overflow-hidden">
-          <Image src={movie.bannerUrl || movie.posterUrl} alt={movie.title} fill className="object-cover object-top" priority />
+          <Image src={movie.bannerUrl || movie.posterUrl} alt={movie.title}
+            fill className="object-cover object-top" priority />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0a0a]/60 to-[#0a0a0a]" />
         </div>
       )}
@@ -122,27 +188,25 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               />
             </div>
 
-            {/* Info card */}
             <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-4">
               <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Movie Info</h2>
-              <InfoRow icon={Calendar}    label="Release Date"   value={movie.releaseDate || (movie.releaseTBA ? "TBA" : "")} />
-              <InfoRow icon={Clock}       label="Runtime"        value={movie.runtime} />
-              <InfoRow icon={Film}        label="Language"       value={movie.language || "Odia"} />
-              <InfoRow icon={Clapperboard} label="Director"      value={movie.director} />
-              <InfoRow icon={User}        label="Producer"       value={movie.producer} />
-              <InfoRow icon={DollarSign}  label="Budget"         value={movie.budget} />
-              <InfoRow icon={Film}        label="Category"       value={movie.category} />
+              <InfoRow icon={Calendar}     label="Release Date" value={movie.releaseDate || (movie.releaseTBA ? "TBA" : "")} />
+              <InfoRow icon={Clock}        label="Runtime"      value={movie.runtime} />
+              <InfoRow icon={Film}         label="Language"     value={movie.language || "Odia"} />
+              <InfoRow icon={Clapperboard} label="Director"     value={movie.director} />
+              <InfoRow icon={User}         label="Producer"     value={movie.producer} />
+              <InfoRow icon={DollarSign}   label="Budget"       value={movie.budget} />
+              <InfoRow icon={Film}         label="Category"     value={movie.category} />
               {movie.contentRating && <InfoRow icon={Star} label="Rating" value={movie.contentRating} />}
             </div>
 
-            {/* Box office */}
             {(movie.boxOffice?.opening || movie.boxOffice?.total) && (
               <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-4">
                 <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Box Office</h2>
                 {[
-                  ["Opening",       movie.boxOffice.opening],
-                  ["First Week",    movie.boxOffice.firstWeek],
-                  ["Total",         movie.boxOffice.total],
+                  ["Opening",    movie.boxOffice.opening],
+                  ["First Week", movie.boxOffice.firstWeek],
+                  ["Total",      movie.boxOffice.total],
                 ].filter(([, v]) => v && v !== "TBA").map(([label, val]) => (
                   <div key={String(label)} className="flex justify-between py-2 border-b border-[#1f1f1f] last:border-0">
                     <span className="text-xs text-gray-500">{label}</span>
@@ -152,22 +216,20 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 {movie.verdict && (
                   <div className="mt-3 flex justify-center">
                     <span className={`badge text-sm px-4 py-1 ${
-                      movie.verdict.toLowerCase().includes("hit") ? "badge-green" :
-                      movie.verdict.toLowerCase().includes("flop") ? "badge-red" : "badge-orange"
-                    }`}>
-                      {movie.verdict}
-                    </span>
+                      movie.verdict.toLowerCase().includes("hit")  ? "badge-green" :
+                      movie.verdict.toLowerCase().includes("flop") ? "badge-red"   : "badge-orange"
+                    }`}>{movie.verdict}</span>
                   </div>
                 )}
               </div>
             )}
 
-            <VoteButtons movieId={String(movie._id)} initialYes={movie.interestedYes || 0} initialNo={movie.interestedNo || 0} />
+            <VoteButtons movieId={String(movie._id)}
+              initialYes={movie.interestedYes || 0} initialNo={movie.interestedNo || 0} />
           </aside>
 
-          {/* Main content */}
+          {/* Main */}
           <main className="lg:col-span-2 space-y-8">
-            {/* Title + genres */}
             <div>
               <div className="flex flex-wrap gap-2 mb-3">
                 {(movie.genre || []).map((g: string) => (
@@ -192,7 +254,6 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               )}
             </div>
 
-            {/* Trailer */}
             {trailer?.ytId && (
               <div>
                 <h2 className="font-display font-bold text-xl text-white mb-3">Official Trailer</h2>
@@ -200,7 +261,6 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               </div>
             )}
 
-            {/* Synopsis */}
             {movie.synopsis && (
               <div>
                 <h2 className="font-display font-bold text-xl text-white mb-3">Synopsis</h2>
@@ -208,7 +268,6 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               </div>
             )}
 
-            {/* Full Story */}
             {movie.story && (
               <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-6">
                 <h2 className="font-display font-bold text-2xl text-white mb-4">Story</h2>
@@ -216,13 +275,13 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               </div>
             )}
 
-            {/* Cast */}
             {movie.cast?.length > 0 && (
               <div>
                 <h2 className="font-display font-bold text-xl text-white mb-4">Cast & Crew</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {movie.cast.map((member: any, i: number) => (
-                    <Link key={i} href={`/cast/${member.castId}`} className="card p-3 flex items-center gap-3 group">
+                    <Link key={i} href={`/cast/${member.castId}`}
+                      className="card p-3 flex items-center gap-3 group">
                       <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-[#2a2a2a] group-hover:border-orange-500/50 transition-colors">
                         <Image src={member.photo || "/placeholder-person.svg"} alt={member.name} fill className="object-cover" />
                       </div>
@@ -236,7 +295,6 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               </div>
             )}
 
-            {/* Songs */}
             {songs.length > 0 && (
               <div>
                 <h2 className="font-display font-bold text-xl text-white mb-4 flex items-center gap-2">
@@ -250,7 +308,6 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               </div>
             )}
 
-            {/* Editorial Review */}
             {movie.review && (
               <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-6">
                 <h2 className="font-display font-bold text-2xl text-white mb-4">Ollypedia Review</h2>
@@ -258,7 +315,6 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               </div>
             )}
 
-            {/* User Reviews */}
             <div>
               <h2 className="font-display font-bold text-xl text-white mb-4">
                 User Reviews
@@ -295,7 +351,6 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
           </main>
         </div>
 
-        {/* Related Movies */}
         {(related as any[]).length > 0 && (
           <section className="mt-12 pt-10 border-t border-[#1f1f1f]">
             <h2 className="font-display font-bold text-2xl text-white mb-6">Related Movies</h2>
