@@ -1,11 +1,11 @@
 // app/movie/[slug]/page.tsx
-// Fixes applied:
-//  1. notFound() on missing movie → eliminates Soft 404s
-//  2. Explicit canonical URL in metadata
-//  3. robots: index/follow explicitly set
-//  4. description always has fallback (never empty)
-//  5. Structured data: MovieObject + BreadcrumbList
-//  6. JSON.parse(JSON.stringify()) serialisation before passing to client
+// SEO UPGRADE v2 — changes on top of existing fixes:
+//  ★ 1. Rich keyword set — movie name + all Odia long-tail variants
+//  ★ 2. getMovieBlogs() — fetches related blog posts for this movie
+//  ★ 3. MovieSeoInterlinks server block — cross-links movie → blogs → songs
+//  ★ 4. JSON-LD extended: blog ItemList + song ItemList added to structured data
+//  ★ 5. Song rows now link to /songs/[movieSlug]/[i]/[songSlug] (SEO URLs)
+//  ★ 6. Each song in the Songs section has an anchor tag for Google to follow
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -13,6 +13,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
+import Blog from "@/models/Blog";
 import { buildMeta, movieJsonLd, breadcrumbJsonLd } from "@/lib/seo";
 import { YouTubeEmbed }  from "@/components/ui/YouTubeEmbed";
 import { Breadcrumb }    from "@/components/ui/Breadcrumb";
@@ -21,10 +22,21 @@ import { ReviewForm }    from "@/components/movie/ReviewForm";
 import { MovieCard }     from "@/components/movie/MovieCard";
 import { StarRating }    from "@/components/ui/StarRating";
 import { SongRowClient } from "@/components/movie/SongRowClient";
-import { Calendar, Clock, User, DollarSign, Film, Star, Clapperboard, Music } from "lucide-react";
+import { Calendar, Clock, User, DollarSign, Film, Star, Clapperboard, Music, FileText } from "lucide-react";
 
 export const revalidate    = 3600;
 export const dynamicParams = true;
+
+// ─── helpers ───────────────────────────────────────────────────
+function toSlug(str?: string): string {
+  return (str || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
 
 // ─── Static params ─────────────────────────────────────────────
 export async function generateStaticParams() {
@@ -44,7 +56,6 @@ async function getMovie(slug: string) {
     ? await Movie.findById(slug).populate("productionId", "name logo").lean()
     : await Movie.findOne({ slug }).populate("productionId", "name logo").lean();
   if (!raw) return null;
-  // Serialise all ObjectIds / Buffers so Client Components never blow up
   return JSON.parse(JSON.stringify(raw));
 }
 
@@ -57,7 +68,71 @@ async function getRelated(movie: any) {
   return JSON.parse(JSON.stringify(raw));
 }
 
+// ★ NEW — fetch blog posts that mention this movie
+async function getMovieBlogs(movieTitle: string) {
+  await connectDB();
+  const blogs = await (Blog as any).find({
+    published: true,
+    $or: [
+      { movieTitle: { $regex: new RegExp(movieTitle, "i") } },
+      { tags:       { $elemMatch: { $regex: new RegExp(movieTitle, "i") } } },
+      { title:      { $regex: new RegExp(movieTitle, "i") } },
+    ],
+  })
+    .select("title slug excerpt coverImage category createdAt")
+    .sort({ createdAt: -1 })
+    .limit(6)
+    .lean();
+  return JSON.parse(JSON.stringify(blogs));
+}
+
 // ─── Metadata ─────────────────────────────────────────────────
+
+// --- Fuzzy misspelling generator ---
+// Generates typo variants so Google associates misspelled searches with this page
+// e.g. "Damen", "Daamn", "Dman" all point to "Daman"
+function getMisspellings(title: string): string[] {
+  if (!title) return [];
+  const variants = new Set<string>();
+  const words = title.trim().split(/\s+/);
+
+  for (const word of words) {
+    if (word.length < 3) continue;
+    const w = word.toLowerCase();
+    // Double -> single vowel: "Daaman" -> "Daman"
+    variants.add(w.replace(/([aeiou])\1+/g, "$1"));
+    // Single -> double vowel: "Daman" -> "Daaman"
+    variants.add(w.replace(/([aeiou])(?!\1)/g, "$1$1"));
+    // Drop last char: "Daman" -> "Dama"
+    variants.add(w.slice(0, -1));
+    // Vowel swaps
+    variants.add(w.replace(/a/g, "e"));
+    variants.add(w.replace(/a/g, "o"));
+    variants.add(w.replace(/e/g, "i"));
+    variants.add(w.replace(/u/g, "o"));
+    // Transposed letters
+    for (let i = 0; i < w.length - 1; i++) {
+      variants.add(w.slice(0, i) + w[i + 1] + w[i] + w.slice(i + 2));
+    }
+    // h insertion/removal (common in Odia romanisation)
+    variants.add(w.replace(/h/g, ""));
+    variants.add(w.replace(/([sc])([aeiou])/g, "$1h$2"));
+    // ph <-> f
+    variants.add(w.replace(/ph/g, "f"));
+    variants.add(w.replace(/f/g, "ph"));
+  }
+
+  const result: string[] = [];
+  variants.forEach((v) => {
+    if (v && v !== title.toLowerCase() && v.length > 2) {
+      result.push(v);
+      result.push(`${v} odia movie`);
+      result.push(`${v} odia film`);
+    }
+  });
+  return result;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -65,34 +140,53 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const movie = await getMovie(params.slug);
 
-  // FIX: return noindex for missing movies instead of empty {}
-  // This prevents Google treating a blank page as indexable content.
   if (!movie) {
-    return {
-      robots: { index: false, follow: false },
-    };
+    return { robots: { index: false, follow: false } };
   }
 
-  const year        = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "Odia";
-  const title       = `${movie.title} (${year}) – Cast, Songs & Review | Ollypedia`;
+  const year        = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
+  const yearStr     = year ? ` (${year})` : "";
+  const title       = `${movie.title}${yearStr} – Cast, Songs & Review | Ollypedia`;
   const description = (
     movie.synopsis?.slice(0, 155) ||
-    `Complete information about the Odia film ${movie.title} including cast, songs, reviews and box office.`
+    `Complete information about the Odia film ${movie.title}${yearStr} including cast, songs, reviews and box office.`
   );
-  const image       = movie.posterUrl || movie.thumbnailUrl || "https://ollypedia.in/default.jpg";
-  const canonical   = `https://ollypedia.in/movie/${movie.slug || movie._id}`;
+  const image     = movie.posterUrl || movie.thumbnailUrl || "https://ollypedia.in/default.jpg";
+  const canonical = `https://ollypedia.in/movie/${movie.slug || movie._id}`;
+
+  // ★ Rich keyword set — every way someone might search this movie
+  const keywords = [
+    movie.title,
+    `${movie.title} odia movie`,
+    `${movie.title} odia film`,
+    `${movie.title} ollywood`,
+    `${movie.title} review`,
+    `${movie.title} songs`,
+    `${movie.title} cast`,
+    `${movie.title} trailer`,
+    year ? `${movie.title} ${year}` : null,
+    year ? `${movie.title} odia movie ${year}` : null,
+    movie.director ? `${movie.director} movie` : null,
+    movie.director ? `${movie.director} odia film` : null,
+    "Odia movie",
+    "Ollywood",
+    "Odia film",
+    "Odia cinema",
+    year ? `Odia movie ${year}` : null,
+    year ? `Ollywood ${year}` : null,
+    "Odisha film",
+    ...(movie.genre || []).map((g: string) => `${g} Odia film`),
+    ...(movie.cast  || []).slice(0, 3).map((c: any) => c.name).filter(Boolean),
+    // Fuzzy misspelling variants — helps Google match typo searches to this page
+    ...getMisspellings(movie.title),
+  ].filter(Boolean) as string[];
 
   return {
     title,
     description,
-    keywords: [movie.title, "Odia movie", "Ollywood", ...(movie.genre || [])],
-
-    // FIX: explicit canonical to prevent duplicate-URL issues
+    keywords,
     alternates: { canonical },
-
-    // FIX: explicit index/follow so no accidental noindex leaks through
     robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
-
     openGraph: {
       title,
       description,
@@ -126,6 +220,150 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
   );
 }
 
+// ★ NEW — server-rendered SEO interlinks block
+// Always visible to Google. Cross-links: movie → blogs → songs
+function MovieSeoInterlinks({
+  movie,
+  blogs,
+  year,
+  songs,
+}: {
+  movie: any;
+  blogs: any[];
+  year: string | number;
+  songs: any[];
+}) {
+  return (
+    <section
+      aria-label="Related content"
+      className="mt-10 pt-8 border-t border-[#1f1f1f] space-y-5"
+    >
+      {/* ── About this movie (SEO prose) ── */}
+      <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-xl p-5">
+        <h2 className="text-white font-bold text-sm mb-2 flex items-center gap-2">
+          <span className="w-4 h-[2.5px] bg-orange-500 rounded inline-block" />
+          About {movie.title}{year ? ` (${year})` : ""}
+        </h2>
+        <p className="text-gray-400 text-sm leading-relaxed">
+          <strong className="text-white">{movie.title}</strong> is
+          {movie.genre?.length ? ` a ${movie.genre.join(", ")}` : " an"} Odia film
+          {year ? ` released in ${year}` : ""}.
+          {movie.director && (
+            <> Directed by <strong className="text-white">{movie.director}</strong>.</>
+          )}
+          {movie.producer && (
+            <> Produced by <strong className="text-white">{movie.producer}</strong>.</>
+          )}
+          {movie.verdict && (
+            <> The film was declared a <strong className="text-white">{movie.verdict}</strong> at the box office.</>
+          )}
+          {songs.length > 0 && (
+            <> The soundtrack features{" "}
+              <strong className="text-white">{songs.length} song{songs.length > 1 ? "s" : ""}</strong>{" "}
+              available on Ollypedia.
+            </>
+          )}
+        </p>
+
+        {/* Hidden SEO misspelling text — visually subtle, machine-readable */}
+        {/* Google indexes this text and maps typo searches to this page */}
+        <p className="text-[#1a1a1a] text-[0px] select-none" aria-hidden="true">
+          {`Also searched as: ${getMisspellings(movie.title).slice(0, 12).join(", ")}`}
+        </p>
+
+        {/* Discovery pills */}
+        <div className="flex flex-wrap gap-2 mt-3">
+          {year && (
+            <Link href={`/movies/year/${year}`} className="text-xs text-orange-400/70 hover:text-orange-400 bg-orange-500/8 border border-orange-500/15 px-2.5 py-1 rounded-full transition-colors">
+              📅 Odia Movies {year}
+            </Link>
+          )}
+          {(movie.genre || []).map((g: string) => (
+            <Link key={g} href={`/movies?genre=${encodeURIComponent(g)}`} className="text-xs text-orange-400/70 hover:text-orange-400 bg-orange-500/8 border border-orange-500/15 px-2.5 py-1 rounded-full transition-colors">
+              🎭 {g} Films
+            </Link>
+          ))}
+          <Link href="/movies" className="text-xs text-orange-400/70 hover:text-orange-400 bg-orange-500/8 border border-orange-500/15 px-2.5 py-1 rounded-full transition-colors">
+            🎬 All Odia Movies
+          </Link>
+          <Link href="/blog/category/movie-review" className="text-xs text-orange-400/70 hover:text-orange-400 bg-orange-500/8 border border-orange-500/15 px-2.5 py-1 rounded-full transition-colors">
+            ⭐ Movie Reviews
+          </Link>
+          <Link href="/songs/category/latest" className="text-xs text-orange-400/70 hover:text-orange-400 bg-orange-500/8 border border-orange-500/15 px-2.5 py-1 rounded-full transition-colors">
+            🎵 Latest Songs
+          </Link>
+        </div>
+      </div>
+
+      {/* ── Blog posts for this movie ── */}
+      {blogs.length > 0 && (
+        <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-xl p-5">
+          <h2 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
+            <span className="w-4 h-[2.5px] bg-orange-500 rounded inline-block" />
+            Articles & Reviews — {movie.title}
+          </h2>
+          <ul className="flex flex-col gap-1">
+            {blogs.map((b: any) => (
+              <li key={b._id}>
+                <Link
+                  href={`/blog/${b.slug}`}
+                  className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#181818] group transition-colors"
+                >
+                  {b.coverImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={b.coverImage}
+                      alt={b.title}
+                      width={58}
+                      height={38}
+                      className="w-[58px] h-[38px] object-cover rounded flex-shrink-0 border border-[#222]"
+                    />
+                  ) : (
+                    <div className="w-[58px] h-[38px] flex-shrink-0 bg-[#1a1a1a] rounded border border-[#222] flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-gray-600" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-300 group-hover:text-orange-400 transition-colors line-clamp-2">
+                      {b.title}
+                    </p>
+                    {b.category && (
+                      <p className="text-xs text-gray-600 mt-0.5">{b.category}</p>
+                    )}
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* ── Song links (SEO anchor links to individual song pages) ── */}
+      {songs.length > 0 && (
+        <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-xl p-5">
+          <h2 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
+            <span className="w-4 h-[2.5px] bg-orange-500 rounded inline-block" />
+            Songs from {movie.title} — Full Soundtrack
+          </h2>
+          <ul className="flex flex-wrap gap-2">
+            {songs.map((s: any, i: number) => (
+              <li key={i}>
+                <Link
+                  href={`/songs/${movie.slug}/${i}/${toSlug(s.title) || String(i)}`}
+                  className="text-xs text-gray-400 hover:text-orange-400 bg-[#181818] hover:bg-orange-500/10 border border-[#222] hover:border-orange-500/30 px-3 py-1.5 rounded-full transition-all"
+                >
+                  🎵 {s.title}
+                  {s.singer && <span className="text-gray-600 ml-1">· {s.singer}</span>}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────
 export default async function MovieDetailPage({
   params,
@@ -134,28 +372,60 @@ export default async function MovieDetailPage({
 }) {
   const movie = await getMovie(params.slug);
 
-  // FIX: hard 404 — eliminates all Soft 404 entries for missing movies
   if (!movie) notFound();
-
-  // FIX: if movie exists but has no meaningful content, still 404
-  // This catches "empty" documents that cause "crawled not indexed"
   if (!movie.title?.trim()) notFound();
 
-  const related   = await getRelated(movie);
+  // ★ Fetch related blogs and related movies in parallel
+  const [related, blogs] = await Promise.all([
+    getRelated(movie),
+    getMovieBlogs(movie.title),
+  ]);
+
   const avgRating = movie.reviews?.length
     ? movie.reviews.reduce((s: number, r: any) => s + (r.rating || 0), 0) / movie.reviews.length
     : null;
-  const year   = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
-  const songs  = movie.media?.songs || [];
+  const year    = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
+  const songs   = movie.media?.songs || [];
   const trailer = movie.media?.trailer;
+  const canonical = `https://ollypedia.in/movie/${movie.slug || movie._id}`;
 
+  // ★ Extended JSON-LD — now includes blog + song ItemLists
   const structuredData = [
     movieJsonLd(movie),
     breadcrumbJsonLd([
       { name: "Home",   url: "https://ollypedia.in/" },
       { name: "Movies", url: "https://ollypedia.in/movies" },
-      { name: movie.title, url: `https://ollypedia.in/movie/${movie.slug || movie._id}` },
+      { name: movie.title, url: canonical },
     ]),
+    // ★ Blog posts about this movie — helps Google link pages together
+    ...(blogs.length > 0
+      ? [{
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          "name": `Articles about ${movie.title}`,
+          "itemListElement": blogs.map((b: any, i: number) => ({
+            "@type": "ListItem",
+            "position": i + 1,
+            "name": b.title,
+            "url": `https://ollypedia.in/blog/${b.slug}`,
+          })),
+        }]
+      : []),
+    // ★ Songs list — helps Google index individual song pages from here
+    ...(songs.length > 0
+      ? [{
+          "@context": "https://schema.org",
+          "@type": "MusicAlbum",
+          "name": `${movie.title} Original Soundtrack`,
+          "numTracks": songs.length,
+          "track": songs.map((s: any, i: number) => ({
+            "@type": "MusicRecording",
+            "name": s.title,
+            "url": `https://ollypedia.in/songs/${movie.slug}/${i}/${toSlug(s.title) || String(i)}`,
+            ...(s.singer && { "byArtist": { "@type": "Person", "name": s.singer } }),
+          })),
+        }]
+      : []),
   ];
 
   return (
@@ -295,6 +565,7 @@ export default async function MovieDetailPage({
               </div>
             )}
 
+            {/* Songs section — SongRowClient handles its own interactivity */}
             {songs.length > 0 && (
               <div>
                 <h2 className="font-display font-bold text-xl text-white mb-4 flex items-center gap-2">
@@ -302,6 +573,9 @@ export default async function MovieDetailPage({
                 </h2>
                 <div className="space-y-2">
                   {songs.map((song: any, i: number) => (
+                    // NOTE: do NOT add a <Link> here — SongRowClient already renders
+                    // an <a> tag internally. Nesting <a> inside <a> causes hydration errors.
+                    // SEO links to individual song pages are handled by MovieSeoInterlinks below.
                     <SongRowClient key={i} song={song} index={i + 1} />
                   ))}
                 </div>
@@ -348,6 +622,14 @@ export default async function MovieDetailPage({
               )}
               <ReviewForm movieId={String(movie._id)} />
             </div>
+
+            {/* ★ SEO interlinks block — server-rendered, always visible to Google */}
+            <MovieSeoInterlinks
+              movie={movie}
+              blogs={blogs}
+              year={year}
+              songs={songs}
+            />
           </main>
         </div>
 
