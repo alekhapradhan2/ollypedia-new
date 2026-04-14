@@ -252,6 +252,8 @@ export default function BlogDetailClient({ slug, initialData }: { slug: string; 
   const [submitted,  setSubmitted]  = useState(false);
   const [replies,    setReplies]    = useState<Record<number, { name?: string; text?: string; open?: boolean }>>({});
   const [copied,     setCopied]     = useState(false);
+  const [boxOfficeDays, setBoxOfficeDays] = useState<any[]>([]);
+  const [boxOfficeSlug, setBoxOfficeSlug] = useState<string>("");
 
   // ── Fetch post (skip if initialData already provided from server) ──────────
   useEffect(() => {
@@ -283,7 +285,7 @@ export default function BlogDetailClient({ slug, initialData }: { slug: string; 
       } catch {}
     })();
 
-    // Related movies + songs
+    // Related movies + songs + box office
     if (post.movieTitle) {
       (async () => {
         try {
@@ -299,6 +301,19 @@ export default function BlogDetailClient({ slug, initialData }: { slug: string; 
                 songIndex: idx,
               }))
             );
+          }
+          // ★ Box office cross-link
+          if (movies[0]?.slug) {
+            try {
+              const br = await fetch(`${API_BASE}/movies/${movies[0]._id}/boxoffice-days`);
+              if (br.ok) {
+                const bdays = await br.json();
+                if (Array.isArray(bdays) && bdays.length > 0) {
+                  setBoxOfficeDays(bdays);
+                  setBoxOfficeSlug(movies[0].slug);
+                }
+              }
+            } catch {}
           }
         } catch {}
       })();
@@ -729,6 +744,68 @@ export default function BlogDetailClient({ slug, initialData }: { slug: string; 
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+            {/* ★ Box Office cross-link sidebar */}
+            {boxOfficeDays.length > 0 && boxOfficeSlug && (
+              <div className="bp-sidebar-box">
+                <div className="bp-sidebar-hd">📊 Box Office Collection</div>
+                <div className="bp-sidebar-body" style={{ padding: "10px 14px" }}>
+                  {boxOfficeDays.slice(0, 7).map((d: any) => {
+                    const net = parseFloat(String(d.net || "0").replace(/[^0-9.]/g, "")) || 0;
+                    const maxN = Math.max(...boxOfficeDays.slice(0, 7).map((x: any) => parseFloat(String(x.net || "0").replace(/[^0-9.]/g, "")) || 0), 1);
+                    const pct = Math.max(4, (net / maxN) * 100);
+                    const fmt = (v: number) => v >= 1e7 ? `₹${(v/1e7).toFixed(2)} Cr` : v >= 1e5 ? `₹${(v/1e5).toFixed(2)} L` : `₹${v.toLocaleString("en-IN")}`;
+                    return (
+                      <div key={d.day} style={{ marginBottom: 8 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".68rem", marginBottom: 3 }}>
+                          <span style={{ color: "var(--gold)", fontWeight: 700 }}>Day {d.day}</span>
+                          <span style={{ color: "var(--text)", fontWeight: 600 }}>{fmt(net)}</span>
+                        </div>
+                        <div style={{ height: 4, background: "var(--bg4)", borderRadius: 2 }}>
+                          <div style={{ height: "100%", background: "var(--gold)", borderRadius: 2, width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {boxOfficeDays.length > 7 && (
+                    <div style={{ fontSize: ".65rem", color: "var(--muted)", marginTop: 6 }}>
+                      + {boxOfficeDays.length - 7} more days tracked
+                    </div>
+                  )}
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+                    <a href={`/box-office/${boxOfficeSlug}`}
+                      style={{ fontSize: ".72rem", color: "var(--gold)", fontWeight: 700, textDecoration: "none" }}>
+                      View full box office data →
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ★ Movie explore links */}
+            {post.movieTitle && relMovies[0] && (
+              <div className="bp-sidebar-box">
+                <div className="bp-sidebar-hd">Explore {post.movieTitle}</div>
+                <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+                  {[
+                    { href: `/movie/${relMovies[0].slug || relMovies[0]._id}`, icon: "🎬", label: "Full Movie Info", sub: "Cast, story, trailer" },
+                    ...(relSongs.length > 0 ? [{ href: `/songs/${relMovies[0].slug || relMovies[0]._id}/0/${(relSongs[0]?.title || "").toLowerCase().replace(/[^a-z0-9]/g, "-")}`, icon: "🎵", label: `${post.movieTitle} Songs`, sub: `${relSongs.length} tracks` }] : []),
+                    ...(boxOfficeSlug ? [{ href: `/box-office/${boxOfficeSlug}`, icon: "📊", label: "Box Office", sub: "Day-wise collection" }] : []),
+                    { href: `/blog?movie=${encodeURIComponent(post.movieTitle)}`, icon: "📰", label: "All Articles", sub: "Reviews & blogs" },
+                  ].map(link => (
+                    <a key={link.href} href={link.href}
+                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "var(--bg4)", border: "1px solid var(--border)", borderRadius: 6, textDecoration: "none", transition: "border-color .15s" }}
+                      onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(201,151,58,.4)")}
+                      onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}>
+                      <span style={{ fontSize: "1rem" }}>{link.icon}</span>
+                      <div>
+                        <div style={{ fontSize: ".76rem", fontWeight: 700, color: "var(--text)" }}>{link.label}</div>
+                        <div style={{ fontSize: ".62rem", color: "var(--muted)" }}>{link.sub}</div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
               </div>
             )}
           </aside>

@@ -1,9 +1,5 @@
 // app/box-office/page.tsx
-// ─────────────────────────────────────────────────────────────────────────────
-//  Box Office listing page  —  NEW FILE
-//  Route: /box-office
-//  Shows all movies that have box office data, sorted by collection
-// ─────────────────────────────────────────────────────────────────────────────
+// Box Office listing — sorted by total net, no auto-calculated verdict
 
 import type { Metadata } from "next";
 import Link              from "next/link";
@@ -13,13 +9,14 @@ import Movie             from "@/models/Movie";
 export const revalidate = 1800;
 
 export const metadata: Metadata = {
-  title:       "Odia Box Office Collection 2025 | Ollypedia",
-  description: "Complete Odia (Ollywood) box office collection report. Day-wise net and gross earnings, hit or flop verdict for all latest Odia movies.",
+  title:       "Odia Box Office Collection 2026 | Ollypedia",
+  description: "Complete Odia (Ollywood) box office collection report. Day-wise net and gross earnings for all latest Odia movies — updated daily on Ollypedia.",
   alternates:  { canonical: "https://ollypedia.in/box-office" },
   robots:      { index: true, follow: true },
+  keywords:    ["Odia box office", "Ollywood collection", "Odia movie collection", "Odia cinema box office 2026"],
   openGraph: {
     title:       "Odia Box Office Collection | Ollypedia",
-    description: "Track day-wise Odia cinema box office collection. Hit, Flop & Blockbuster verdicts updated daily.",
+    description: "Track day-wise Odia cinema box office collection. Net and gross earnings updated daily.",
     url:         "https://ollypedia.in/box-office",
     siteName:    "Ollypedia",
     type:        "website",
@@ -32,46 +29,18 @@ function parseNum(s: unknown): number {
 }
 
 function fmtINR(n: number): string {
-  if (!n) return "TBA";
+  if (!n) return "—";
   if (n >= 1_00_00_000) return `₹${(n / 1_00_00_000).toFixed(2)} Cr`;
   if (n >= 1_00_000)    return `₹${(n / 1_00_000).toFixed(2)} L`;
   return `₹${n.toLocaleString("en-IN")}`;
 }
-
-function getVerdict(totalNet: number, budget?: string): string {
-  if (!totalNet) return "Pending";
-  const b = parseNum(budget);
-  if (b > 0) {
-    const r = totalNet / b;
-    if (r >= 3) return "Blockbuster";
-    if (r >= 2) return "Super Hit";
-    if (r >= 1.2) return "Hit";
-    if (r >= 0.8) return "Average";
-    return "Flop";
-  }
-  if (totalNet > 5_00_00_000) return "Blockbuster";
-  if (totalNet > 2_00_00_000) return "Super Hit";
-  if (totalNet > 1_00_00_000) return "Hit";
-  if (totalNet > 50_00_000)   return "Average";
-  return "Flop";
-}
-
-const VERDICT_COLORS: Record<string, string> = {
-  Blockbuster: "#4caf82",
-  "Super Hit": "#4caf82",
-  Hit:         "#7ec8a0",
-  Average:     "#c9973a",
-  Flop:        "#e87a6a",
-  Disaster:    "#e05555",
-  Pending:     "#666",
-};
 
 async function getBoxOfficeMovies() {
   await connectDB();
   const movies = await (Movie as any)
     .find(
       { "boxOfficeDays.0": { $exists: true } },
-      "title slug posterUrl bannerUrl releaseDate language verdict budget boxOfficeDays"
+      "title slug posterUrl thumbnailUrl releaseDate language verdict boxOfficeDays updatedAt"
     )
     .sort({ updatedAt: -1 })
     .lean();
@@ -81,23 +50,21 @@ async function getBoxOfficeMovies() {
 export default async function BoxOfficePage() {
   const movies = await getBoxOfficeMovies();
 
-  const enriched = movies.map((m: any) => {
-    const days      = (m.boxOfficeDays || []).sort((a: any, b: any) => a.day - b.day);
-    const totalNet  = days.reduce((s: number, d: any) => s + parseNum(d.net),   0);
-    const totalGross= days.reduce((s: number, d: any) => s + parseNum(d.gross), 0);
-    const lastDay   = days[days.length - 1]?.day || 0;
-    const verdict   = getVerdict(totalNet, m.budget);
-    return { ...m, days, totalNet, totalGross, lastDay, verdict };
-  });
-
-  // Sort by totalNet descending
-  enriched.sort((a: any, b: any) => b.totalNet - a.totalNet);
+  const enriched = movies
+    .map((m: any) => {
+      const days       = (m.boxOfficeDays || []).sort((a: any, b: any) => a.day - b.day);
+      const totalNet   = days.reduce((s: number, d: any) => s + parseNum(d.net),   0);
+      const totalGross = days.reduce((s: number, d: any) => s + parseNum(d.gross), 0);
+      const lastDay    = days[days.length - 1]?.day || 0;
+      return { ...m, days, totalNet, totalGross, lastDay };
+    })
+    .sort((a: any, b: any) => b.totalNet - a.totalNet);
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type":    "CollectionPage",
     "name":     "Odia Box Office Collection | Ollypedia",
-    "description": "Complete day-wise box office collection for Odia (Ollywood) movies.",
+    "description": "Complete day-wise box office collection for Odia (Ollywood) movies. Updated daily.",
     "url":      "https://ollypedia.in/box-office",
   };
 
@@ -130,70 +97,87 @@ export default async function BoxOfficePage() {
               <p className="text-sm mt-2">Check back soon for collection reports.</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {enriched.map((m: any, idx: number) => {
-                const vc = VERDICT_COLORS[m.verdict] || "#666";
-                const slug = m.slug || String(m.title || "").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-                return (
-                  <Link
-                    key={m._id}
-                    href={`/box-office/${slug}`}
-                    className="flex items-center gap-5 bg-[#111] border border-[#1f1f1f] rounded-xl p-4 hover:border-orange-500/30 transition-all group"
-                  >
-                    {/* Rank */}
-                    <div className="w-8 text-center text-lg font-black text-gray-600 flex-shrink-0">
-                      {idx + 1}
-                    </div>
+            <>
+              <div className="space-y-3">
+                {enriched.map((m: any, idx: number) => {
+                  const movieSlug = m.slug || String(m.title || "").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+                  // Use stored verdict only — never auto-calculate
+                  const storedVerdict = m.verdict && m.verdict !== "Upcoming" ? m.verdict : null;
 
-                    {/* Poster */}
-                    {(m.posterUrl || m.thumbnailUrl) ? (
-                      <img
-                        src={m.posterUrl || m.thumbnailUrl}
-                        alt={m.title}
-                        className="w-12 h-16 object-cover rounded-lg flex-shrink-0"
-                        style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.6)" }}
-                      />
-                    ) : (
-                      <div className="w-12 h-16 bg-[#1a1a1a] rounded-lg flex items-center justify-center flex-shrink-0 text-xl">🎬</div>
-                    )}
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-white group-hover:text-orange-400 transition-colors truncate">
-                        {m.title}
+                  return (
+                    <Link
+                      key={m._id}
+                      href={`/box-office/${movieSlug}`}
+                      className="flex items-center gap-4 bg-[#111] border border-[#1f1f1f] rounded-xl p-4 hover:border-orange-500/30 transition-all group"
+                    >
+                      {/* Rank */}
+                      <div className="w-7 text-center text-base font-black text-gray-600 flex-shrink-0">
+                        {idx + 1}
                       </div>
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        {m.releaseDate ? new Date(m.releaseDate).getFullYear() : "TBA"}
-                        {m.language ? ` · ${m.language}` : ""}
-                        {m.lastDay ? ` · ${m.lastDay} days` : ""}
+
+                      {/* Poster */}
+                      {(m.posterUrl || m.thumbnailUrl) ? (
+                        <img
+                          src={m.posterUrl || m.thumbnailUrl}
+                          alt={m.title}
+                          className="w-10 h-14 object-cover rounded-lg flex-shrink-0"
+                          style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.5)" }}
+                        />
+                      ) : (
+                        <div className="w-10 h-14 bg-[#1a1a1a] rounded-lg flex items-center justify-center flex-shrink-0 text-lg">🎬</div>
+                      )}
+
+                      {/* Title + meta */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-white group-hover:text-orange-400 transition-colors truncate text-sm">
+                          {m.title}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-2">
+                          {m.releaseDate && <span>{new Date(m.releaseDate).getFullYear()}</span>}
+                          {m.language && <span>· {m.language}</span>}
+                          {m.lastDay > 0 && <span>· {m.lastDay} day{m.lastDay !== 1 ? "s" : ""}</span>}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Net */}
-                    <div className="text-right hidden sm:block flex-shrink-0">
-                      <div className="text-xs text-gray-500 mb-0.5">Net</div>
-                      <div className="font-bold text-orange-400">{fmtINR(m.totalNet)}</div>
-                    </div>
+                      {/* Net */}
+                      <div className="text-right hidden sm:block flex-shrink-0">
+                        <div className="text-xs text-gray-500 mb-0.5">Net</div>
+                        <div className="font-bold text-orange-400 text-sm">{fmtINR(m.totalNet)}</div>
+                      </div>
 
-                    {/* Gross */}
-                    <div className="text-right hidden md:block flex-shrink-0">
-                      <div className="text-xs text-gray-500 mb-0.5">Gross</div>
-                      <div className="font-bold text-sky-300">{fmtINR(m.totalGross)}</div>
-                    </div>
+                      {/* Gross */}
+                      <div className="text-right hidden md:block flex-shrink-0">
+                        <div className="text-xs text-gray-500 mb-0.5">Gross</div>
+                        <div className="font-bold text-sky-300 text-sm">{fmtINR(m.totalGross)}</div>
+                      </div>
 
-                    {/* Verdict */}
-                    <div className="flex-shrink-0">
-                      <span
-                        className="text-xs font-bold px-2.5 py-1 rounded-full"
-                        style={{ color: vc, background: vc + "18", border: `1px solid ${vc}33` }}
-                      >
-                        {m.verdict}
-                      </span>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
+                      {/* Stored verdict only */}
+                      {storedVerdict && (
+                        <div className="flex-shrink-0">
+                          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-white/6 border border-white/10 text-gray-300">
+                            {storedVerdict}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex-shrink-0 text-gray-600 group-hover:text-orange-400 transition-colors text-xs">→</div>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* SEO content block */}
+              <div className="mt-12 p-6 bg-[#111] border border-[#1f1f1f] rounded-xl">
+                <h2 className="text-base font-bold text-white mb-3">Odia Box Office Collection 2026</h2>
+                <p className="text-sm text-gray-400 leading-relaxed">
+                  Ollypedia tracks day-wise box office collection for all Odia (Ollywood) movies. 
+                  Our box office section covers net collection, gross collection, and day-wise performance 
+                  of films from the Odia film industry. Data is sourced from industry estimates and 
+                  updated regularly to give fans and trade followers the most accurate figures available 
+                  for Odia cinema collections.
+                </p>
+              </div>
+            </>
           )}
         </div>
       </div>
