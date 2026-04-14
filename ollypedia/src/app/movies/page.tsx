@@ -11,7 +11,7 @@ import { MoviesFilter } from "./MoviesFilter";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { buildMeta } from "@/lib/seo";
 
-export const revalidate = 3600;
+export const revalidate = 600;
 
 export const metadata: Metadata = buildMeta({
   title: "Odia Movies – Complete Ollywood Film Database",

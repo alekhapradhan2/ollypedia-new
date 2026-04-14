@@ -10,7 +10,7 @@ import { buildMeta } from "@/lib/seo";
 import { Clock, User, Calendar } from "lucide-react";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 
-export const revalidate = 3600;
+export const revalidate = 600; // revalidate every 10 minutes to keep blog list fresh without too much overhead
 
 export const metadata: Metadata = buildMeta({
   title: "Ollywood Blog | Odia Cinema News, Reviews & Guides",

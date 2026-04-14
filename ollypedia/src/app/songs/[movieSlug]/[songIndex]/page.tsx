@@ -6,7 +6,7 @@ import { buildMeta } from "@/lib/seo";
 import { SongDetailClient } from "./SongDetailClient";
 import type { MovieData, SongData } from "./types";
 
-export const revalidate = 3600;
+export const revalidate = 600;
 export const dynamicParams = true;
 
 export async function generateStaticParams() {

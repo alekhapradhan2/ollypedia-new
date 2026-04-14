@@ -6,7 +6,7 @@ import { buildMeta } from "@/lib/seo";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Calendar, Newspaper } from "lucide-react";
 
-export const revalidate = 3600;
+export const revalidate = 600;
 
 export const metadata: Metadata = buildMeta({
   title: "Odia Film News – Latest Ollywood Updates",

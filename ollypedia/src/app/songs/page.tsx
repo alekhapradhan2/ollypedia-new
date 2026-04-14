@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 import { SongsClient } from "./SongsClient";
 
-export const revalidate = 3600;
+export const revalidate = 600;
 
 const PAGE_SIZE = 24;
 

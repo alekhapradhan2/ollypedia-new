@@ -8,7 +8,7 @@ import { buildMeta } from "@/lib/seo";
 import CastSearchBar from "@/components/cast/CastSearchBar";
 import CastCard      from "@/components/cast/CastCard";
 
-export const revalidate = 3600;
+export const revalidate = 600;
 
 const SECTION_LIMIT = 20;
 

@@ -13,7 +13,7 @@ import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 
 // ── Revalidate every 60 s ─────────────────────────────────────────────────────
-export const revalidate = 60;
+export const revalidate = 600;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface RecentMovie {
