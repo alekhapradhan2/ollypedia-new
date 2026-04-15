@@ -733,7 +733,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                 )}
 
                 {/* ── FAQ ── */}
-                <section itemScope itemType="https://schema.org/FAQPage">
+                <section>
                   <h2 className="text-lg font-bold mb-4 text-white">
                     Frequently Asked Questions — {movie.title} Box Office
                   </h2>
@@ -760,12 +760,9 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                         a: `You can read full reviews, cast analysis and Ollywood blogs about ${movie.title} on Ollypedia's blog section at ollypedia.in/blog.`,
                       },
                     ].map(({ q, a }, i) => (
-                      <div key={i} className="bg-[#111] border border-[#1f1f1f] rounded-xl p-4"
-                        itemScope itemType="https://schema.org/Question" itemProp="mainEntity">
-                        <p className="text-sm font-semibold text-white mb-1.5" itemProp="name">{q}</p>
-                        <div itemScope itemType="https://schema.org/Answer" itemProp="acceptedAnswer">
-                          <p className="text-sm text-gray-400 leading-relaxed" itemProp="text">{a}</p>
-                        </div>
+                      <div key={i} className="bg-[#111] border border-[#1f1f1f] rounded-xl p-4">
+                        <p className="text-sm font-semibold text-white mb-1.5">{q}</p>
+                        <p className="text-sm text-gray-400 leading-relaxed">{a}</p>
                       </div>
                     ))}
                   </div>
