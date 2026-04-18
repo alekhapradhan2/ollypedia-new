@@ -517,7 +517,6 @@ export default async function BlogPage({
   const blog  = await getBlog(params.slug);
   if (!blog) notFound();
 
-  // Fetch movie + recent blogs in parallel — no extra wait time
   const [movie, recentBlogs] = await Promise.all([
     getRelatedMovie(blog),
     getRecentBlogs(params.slug),
@@ -527,7 +526,6 @@ export default async function BlogPage({
   const movieCanon  = movie ? `https://ollypedia.in/movie/${movie.slug}` : undefined;
   const songs: any[] = movie?.media?.songs || [];
 
-  // ★ Article JSON-LD — now also includes mentions of the related movie & its songs
   const jsonLd: any = {
     "@context": "https://schema.org",
     "@graph": [
@@ -548,7 +546,6 @@ export default async function BlogPage({
           "@type": "WebPage",
           "@id": `https://ollypedia.in/blog/${blog.slug}`,
         },
-        // ★ Link blog → movie entity so Google understands context
         ...(movie && {
           "about": {
             "@type": "Movie",
@@ -557,19 +554,14 @@ export default async function BlogPage({
             ...(movieYear && { "dateCreated": String(movieYear) }),
           },
         }),
-        // ★ Keywords for entity disambiguation
         "keywords": [
-          blog.title,
-          movie?.title,
+          blog.title, movie?.title,
           movie && `${movie.title} review`,
           movie && `${movie.title} odia`,
-          "Odia movie",
-          "Ollywood",
-          "Odia cinema",
+          "Odia movie", "Ollywood", "Odia cinema",
           ...(blog.tags || []),
         ].filter(Boolean).join(", "),
       },
-      // ★ BreadcrumbList so Google shows path in SERP
       {
         "@type": "BreadcrumbList",
         "itemListElement": [
@@ -581,15 +573,12 @@ export default async function BlogPage({
           { "@type": "ListItem", "position": blog.category ? 4 : 3, "name": blog.title, "item": `https://ollypedia.in/blog/${blog.slug}` },
         ],
       },
-      // ★ ItemList of songs so Google can index them from the blog page
       ...(songs.length > 0
         ? [{
             "@type": "ItemList",
             "name": `Songs from ${movie?.title}`,
             "itemListElement": songs.slice(0, 10).map((s: any, i: number) => ({
-              "@type": "ListItem",
-              "position": i + 1,
-              "name": s.title,
+              "@type": "ListItem", "position": i + 1, "name": s.title,
               "url": `https://ollypedia.in/songs/${movie?.slug}/${i}/${toSlug(s.title) || String(i)}`,
             })),
           }]
@@ -597,16 +586,171 @@ export default async function BlogPage({
     ],
   };
 
+  const fmtDate = (iso?: string) =>
+    iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "";
+
+  const CAT_COLORS: Record<string, string> = {
+    "Movie Review":    "bg-yellow-500/15 text-yellow-400 border-yellow-500/20",
+    "Actor Spotlight": "bg-purple-500/15 text-purple-400 border-purple-500/20",
+    "Top 10":          "bg-orange-500/15 text-orange-400 border-orange-500/20",
+    "Box Office":      "bg-green-500/15  text-green-400  border-green-500/20",
+    News:              "bg-green-500/15  text-green-400  border-green-500/20",
+    Upcoming:          "bg-blue-500/15   text-blue-400   border-blue-500/20",
+    General:           "bg-pink-500/15   text-pink-400   border-pink-500/20",
+  };
+  const catClass = (cat?: string) => CAT_COLORS[cat || ""] || "bg-orange-500/15 text-orange-400 border-orange-500/20";
+
+  // ── Sidebar SEO content injected after Article Info ──
+  const sidebarContent = (
+    <>
+      {/* Related Articles */}
+      {recentBlogs.length > 0 && (
+        <div className="bp-sidebar-box" style={{ marginTop: 0 }}>
+          <div className="bp-sidebar-hd" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>Related Articles</span>
+            <Link href="/blog" style={{ fontSize: ".65rem", color: "rgba(201,151,58,.6)", textDecoration: "none", fontWeight: 600 }}>View all →</Link>
+          </div>
+          {recentBlogs.slice(0, 5).map((b: any) => (
+            <Link key={b._id} href={`/blog/${b.slug}`} style={{ textDecoration: "none" }}>
+              <div className="bp-rel-item">
+                {b.coverImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={b.coverImage} alt={b.title} className="bp-rel-thumb" loading="lazy" />
+                ) : (
+                  <div className="bp-rel-ph">📰</div>
+                )}
+                <div className="bp-rel-info">
+                  <div className="bp-rel-title">{b.title}</div>
+                  <div className="bp-rel-meta" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+                    {b.category && (
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${catClass(b.category)}`}>
+                        {b.category}
+                      </span>
+                    )}
+                    <span>{fmtDate(b.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* Trending Searches */}
+      <div className="bp-sidebar-box" style={{ marginTop: 0 }}>
+        <div className="bp-sidebar-hd">🔍 Trending Searches</div>
+        <div className="bp-sidebar-body" style={{ padding: "8px 0" }}>
+          {[
+            ...(blog.movieTitle ? [
+              `${blog.movieTitle} review`,
+              `${blog.movieTitle} box office`,
+              `${blog.movieTitle} cast`,
+              `${blog.movieTitle} songs`,
+              `${blog.movieTitle} story`,
+            ] : []),
+            "Latest Odia movies 2026",
+            "Ollywood box office collection",
+            "Best Odia films to watch",
+          ].slice(0, 7).map((term, i) => (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "7px 16px", borderBottom: "1px solid var(--border)",
+              fontSize: ".72rem", color: "rgba(255,255,255,.38)",
+            }}>
+              <span style={{ color: "rgba(201,151,58,.5)", flexShrink: 0 }}>🔍</span>
+              {term}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tags */}
+      {(blog.tags?.length > 0 || blog.category) && (
+        <div className="bp-sidebar-box" style={{ marginTop: 0 }}>
+          <div className="bp-sidebar-hd">🏷️ Tags</div>
+          <div className="bp-sidebar-body" style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {blog.category && (
+              <Link href={`/blog/category/${toSlug(blog.category)}`}
+                style={{ fontSize: ".68rem", padding: "4px 10px", background: "var(--bg4)", border: "1px solid var(--border2)", borderRadius: 3, color: "rgba(201,151,58,.85)", textDecoration: "none", fontWeight: 600 }}>
+                📰 {blog.category}
+              </Link>
+            )}
+            {(blog.tags || []).slice(0, 8).map((tag: string) => (
+              <Link key={tag} href={`/blog/tag/${toSlug(tag)}`}
+                style={{ fontSize: ".68rem", padding: "4px 10px", background: "var(--bg4)", border: "1px solid var(--border2)", borderRadius: 3, color: "rgba(255,255,255,.4)", textDecoration: "none" }}>
+                #{tag}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* About Ollypedia SEO box */}
+      <div className="bp-sidebar-box" style={{ marginTop: 0 }}>
+        <div className="bp-sidebar-hd">📖 About Ollypedia</div>
+        <div className="bp-sidebar-body" style={{ paddingTop: 10 }}>
+          <p style={{ fontSize: ".72rem", color: "rgba(255,255,255,.38)", lineHeight: 1.8, margin: "0 0 10px" }}>
+            Ollypedia is Odisha&apos;s complete Odia cinema database — covering{" "}
+            <Link href="/movies" style={{ color: "rgba(201,151,58,.8)", textDecoration: "none" }}>Ollywood movies</Link>,
+            {" "}actors, songs, box office and news.
+            {blog.movieTitle && (
+              <>{" "}Explore all <Link href={`/blog?movie=${encodeURIComponent(blog.movieTitle)}`}
+                style={{ color: "rgba(201,151,58,.8)", textDecoration: "none" }}>{blog.movieTitle} articles</Link> on Ollypedia.</>
+            )}
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "5px 8px" }}>
+            {[
+              { label: "🎬 Movies", href: "/movies" },
+              { label: "🎵 Songs", href: "/songs" },
+              { label: "⭐ Reviews", href: "/blog/category/movie-review" },
+              { label: "📊 Box Office", href: "/box-office" },
+              { label: "🗞️ News", href: "/blog/category/news" },
+            ].map(item => (
+              <Link key={item.href} href={item.href} style={{
+                fontSize: ".65rem", padding: "4px 10px",
+                background: "rgba(201,151,58,.08)", border: "1px solid rgba(201,151,58,.18)",
+                borderRadius: 3, color: "rgba(201,151,58,.75)", textDecoration: "none", fontWeight: 600,
+              }}>{item.label}</Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Author / E-E-A-T */}
+      <div className="bp-sidebar-box" style={{ marginTop: 0 }}>
+        <div className="bp-sidebar-hd">✍️ Author</div>
+        <div className="bp-sidebar-body" style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <div style={{
+            width: 34, height: 34, background: "rgba(201,151,58,.18)", borderRadius: "50%",
+            flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#c9973a", fontSize: ".8rem", fontWeight: 800,
+          }}>O</div>
+          <div>
+            <div style={{ fontSize: ".76rem", fontWeight: 700, color: "var(--text)" }}>
+              {blog.author || "Ollypedia Editorial Team"}
+            </div>
+            <div style={{ fontSize: ".65rem", color: "rgba(255,255,255,.3)", marginTop: 2 }}>
+              Specialists in Odia cinema coverage
+            </div>
+            {blog.createdAt && (
+              <div style={{ fontSize: ".62rem", color: "rgba(255,255,255,.22)", marginTop: 4 }}>
+                Published: {new Date(blog.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <BlogDetailClient slug={params.slug} initialData={blog} />
-      {/* Server-rendered interlinks — always visible to Google */}
+      <BlogDetailClient slug={params.slug} initialData={blog} sidebarContent={sidebarContent} />
       <SeoInterlinks blog={blog} movie={movie} />
-      {/* Recent blogs section */}
       <RecentBlogs blogs={recentBlogs} />
     </>
   );

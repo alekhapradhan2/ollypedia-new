@@ -109,10 +109,23 @@ const catStyle = (cat?: string) => {
 // We split the text by keyword matches and return React spans
 const ACCENT_COLORS = ["text-gold", "text-purple", "text-green", "text-pink", "text-blue"];
 const ODIA_KEYWORDS = [
-  "Ollywood","Odia","Odisha","Bhubaneswar","Cuttack","blockbuster","superhit",
+  // Cinema core
+  "Ollywood","Odia","Odisha","Bhubaneswar","Cuttack","blockbuster","superhit","hit",
   "director","producer","cinematography","soundtrack","music director","choreography",
-  "debut","award","release","theatre","cast","crew","action","drama","romance",
-  "comedy","thriller","family","historical","devotional","biography","sequel",
+  "debut","award","release","theatre","cast","crew",
+  // Genre
+  "action","drama","romance","comedy","thriller","family","historical","devotional",
+  "biography","sequel","prequel","remake",
+  // Performance
+  "box office","collection","first day","opening day","first week","verdict",
+  "net collection","gross collection","total collection","hit or flop",
+  // Talent
+  "actor","actress","singer","lyricist","story","screenplay","dialogue",
+  // Platform
+  "OTT","streaming","digital release","theatre release","Ollypedia",
+  // Review intent
+  "review","rating","worth watching","public review","story","plot","climax",
+  "emotional","powerful","entertaining","must watch","super hit",
 ];
 const ACCENT_CSS: Record<string, string> = {
   "text-gold":   "#c9973a",
@@ -233,8 +246,41 @@ function copyWithoutPermission(text: string): boolean {
   }
 }
 
+// ─── Accordion FAQ item ───────────────────────────────────────────────────────
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{
+      background: "var(--bg4)", border: "1px solid var(--border)",
+      borderRadius: 10, overflow: "hidden", marginBottom: 6,
+    }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center",
+          justifyContent: "space-between", gap: 12,
+          padding: "12px 16px", background: "none", border: "none",
+          textAlign: "left", cursor: "pointer",
+        }}
+      >
+        <span style={{ fontSize: ".82rem", fontWeight: 700, color: "var(--text)", lineHeight: 1.4 }}>{q}</span>
+        <span style={{
+          color: "var(--gold)", flexShrink: 0, fontSize: ".9rem",
+          transform: open ? "rotate(180deg)" : "none", transition: "transform .2s",
+        }}>▾</span>
+      </button>
+      {open && (
+        <div style={{ padding: "0 16px 14px", borderTop: "1px solid var(--border)" }}>
+          <p style={{ fontSize: ".8rem", color: "rgba(255,255,255,.58)", lineHeight: 1.75, margin: "10px 0 0" }}>{a}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function BlogDetailClient({ slug, initialData }: { slug: string; initialData?: Post | null }) {
+export default function BlogDetailClient({ slug, initialData, sidebarContent }: { slug: string; initialData?: Post | null; sidebarContent?: React.ReactNode }) {
   const router = useRouter();
 
   const [post,       setPost]      = useState<Post | null>(initialData ?? null);
@@ -475,6 +521,138 @@ export default function BlogDetailClient({ slug, initialData }: { slug: string; 
               </div>
             )}
 
+            {/* ── SEO keyword content block 1 — movie overview ─────────────── */}
+            {post.movieTitle && (
+              <div style={{
+                margin: "32px 0 0", padding: "18px 20px",
+                background: "var(--bg3)", border: "1px solid var(--border)",
+                borderRadius: 12,
+              }}>
+                <p style={{ fontSize: ".83rem", color: "rgba(255,255,255,.55)", lineHeight: 1.85, margin: 0 }}>
+                  The <strong style={{ color: "var(--text)" }}>{post.movieTitle} Odia movie</strong> has been
+                  covered extensively on Ollypedia. If you are looking for{" "}
+                  <em style={{ color: "rgba(255,255,255,.7)" }}>{post.movieTitle} movie review</em>,{" "}
+                  <em style={{ color: "rgba(255,255,255,.7)" }}>{post.movieTitle} story</em>,{" "}
+                  <em style={{ color: "rgba(255,255,255,.7)" }}>{post.movieTitle} cast and crew</em>, or the{" "}
+                  <em style={{ color: "rgba(255,255,255,.7)" }}>{post.movieTitle} box office collection</em>,
+                  {" "}you will find all of it on Ollypedia — Odisha&apos;s complete Odia cinema database.
+                </p>
+              </div>
+            )}
+
+            {/* ── SEO keyword content block 2 — long-tail intent ──────────────── */}
+            {post.movieTitle && (
+              <div style={{
+                margin: "12px 0 0", padding: "18px 20px",
+                background: "var(--bg3)", border: "1px solid var(--border)",
+                borderRadius: 12,
+              }}>
+                <p style={{ fontSize: ".83rem", color: "rgba(255,255,255,.5)", lineHeight: 1.85, margin: "0 0 10px" }}>
+                  Wondering if <em style={{ color: "rgba(255,255,255,.7)" }}>{post.movieTitle} is worth watching</em>?
+                  {" "}Read the <strong style={{ color: "var(--text)" }}>{post.movieTitle} public review</strong>{" "}
+                  and <em style={{ color: "rgba(255,255,255,.7)" }}>{post.movieTitle} rating</em> by viewers below.
+                  {" "}This article covers the <em style={{ color: "rgba(255,255,255,.7)" }}>{post.movieTitle} Ollywood movie</em>{" "}
+                  in detail — including story, performances, direction and music.
+                  {relMovies[0] && (
+                    <>{" "}You can also explore the{" "}
+                    <a href={`/movie/${relMovies[0].slug || relMovies[0]._id}`}
+                      style={{ color: "var(--gold)", fontWeight: 600, textDecoration: "none" }}>
+                      {post.movieTitle} full movie page
+                    </a>
+                    {" "}and{" "}
+                    <a href={`/box-office/${boxOfficeSlug || relMovies[0].slug || relMovies[0]._id}`}
+                      style={{ color: "var(--gold)", fontWeight: 600, textDecoration: "none" }}>
+                      {post.movieTitle} box office collection
+                    </a>
+                    {" "}on Ollypedia.</>
+                  )}
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px" }}>
+                  {relMovies[0] && (
+                    <a href={`/movie/${relMovies[0].slug || relMovies[0]._id}`}
+                      style={{ fontSize: ".72rem", color: "var(--gold)", textDecoration: "none", fontWeight: 600 }}>
+                      → {post.movieTitle} full details
+                    </a>
+                  )}
+                  {relSongs.length > 0 && relMovies[0] && (
+                    <a href={`/songs/${relMovies[0].slug || relMovies[0]._id}/0`}
+                      style={{ fontSize: ".72rem", color: "#4acf82", textDecoration: "none", fontWeight: 600 }}>
+                      → {post.movieTitle} songs
+                    </a>
+                  )}
+                  {boxOfficeSlug && (
+                    <a href={`/box-office/${boxOfficeSlug}`}
+                      style={{ fontSize: ".72rem", color: "#5aaae8", textDecoration: "none", fontWeight: 600 }}>
+                      → {post.movieTitle} box office
+                    </a>
+                  )}
+                  <a href={`/blog?movie=${encodeURIComponent(post.movieTitle!)}`}
+                    style={{ fontSize: ".72rem", color: "rgba(167,139,232,.9)", textDecoration: "none", fontWeight: 600 }}>
+                    → more {post.movieTitle} articles
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* ── FAQ Section ───────────────────────────────────────────────── */}
+            <div style={{ marginTop: 32 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                <div style={{ width: 20, height: 2.5, background: "var(--gold)", borderRadius: 2 }} />
+                <span style={{ fontSize: ".82rem", fontWeight: 800, color: "var(--text)", letterSpacing: ".04em" }}>
+                  {post.movieTitle
+                    ? `Frequently Asked Questions — ${post.movieTitle}`
+                    : "Frequently Asked Questions"}
+                </span>
+              </div>
+              <div>
+                {post.movieTitle ? (
+                  <>
+                    <FaqItem
+                      q={`What is ${post.movieTitle} Odia movie about?`}
+                      a={post.excerpt
+                        || (post.content?.slice(0, 220).replace(/\n/g, " ").trim() + "…")
+                        || `${post.movieTitle} is an Odia (Ollywood) film. This article covers the full story, cast, music and more.`}
+                    />
+                    <FaqItem
+                      q={`Is ${post.movieTitle} worth watching?`}
+                      a={`Based on user reviews and ratings on Ollypedia, you can decide if ${post.movieTitle} is worth watching. Read the full review and public ratings on this page.`}
+                    />
+                    <FaqItem
+                      q={`Who is in the cast of ${post.movieTitle}?`}
+                      a={`The full cast and crew of ${post.movieTitle} including lead actors, director, music director and more are listed on the ${post.movieTitle} movie page on Ollypedia.`}
+                    />
+                    <FaqItem
+                      q={`What is ${post.movieTitle} box office collection?`}
+                      a={`The day-wise box office collection of ${post.movieTitle} is tracked on Ollypedia. Visit the ${post.movieTitle} box office page for net and gross figures updated daily.`}
+                    />
+                    <FaqItem
+                      q={`Where can I watch ${post.movieTitle} songs?`}
+                      a={`All songs from ${post.movieTitle} including YouTube videos, lyrics, singers and music director credits are available on Ollypedia's songs section.`}
+                    />
+                    <FaqItem
+                      q={`Where can I find more articles about ${post.movieTitle}?`}
+                      a={`Ollypedia publishes in-depth articles, reviews, cast analysis and box office reports for all Odia movies including ${post.movieTitle}. Browse the blog section for all ${post.movieTitle} related content.`}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <FaqItem
+                      q="What is Ollypedia?"
+                      a="Ollypedia is Odisha's complete Odia cinema encyclopedia — covering Ollywood movies, actors, songs, box office data, trailers and news."
+                    />
+                    <FaqItem
+                      q="What kind of articles does Ollypedia publish?"
+                      a="Ollypedia publishes in-depth movie reviews, top 10 lists, actor spotlights, box office reports, cast analyses and Ollywood entertainment news."
+                    />
+                    <FaqItem
+                      q="How can I find reviews for a specific Odia movie?"
+                      a="Search for the movie name on Ollypedia's blog or visit the movie's dedicated page for user reviews, ratings and detailed articles."
+                    />
+                  </>
+                )}
+              </div>
+            </div>
+
             {/* Related Movies carousel */}
             {relMovies.length > 0 && (
               <div style={{ marginTop: 40 }}>
@@ -700,6 +878,8 @@ export default function BlogDetailClient({ slug, initialData }: { slug: string; 
             </div>
 
             {/* Related articles */}
+            {sidebarContent}
+
             {related.length > 0 && (
               <div className="bp-sidebar-box">
                 <div className="bp-sidebar-hd">Related Articles</div>

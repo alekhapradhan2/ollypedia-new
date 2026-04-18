@@ -28,31 +28,67 @@ function parseNum(s: unknown): number {
 }
 
 // Misspelling generator for movie title — helps capture common typos in search
+// ── Expanded fuzzy keyword generator ────────────────────────────────────────
+// Generates typo variants + intent-based phrase combinations for each word
+// in the movie title.  Result is a flat list of long-tail keyword strings.
 function getMisspellings(title: string): string[] {
   if (!title) return [];
+
+  // --- Suffix sets ---
+  const intentSuffixes = [
+    "movie", "film", "odia", "odia film", "odia movie", "ollywood",
+    "review", "story", "cast", "songs", "trailer", "box office",
+    "collection", "rating", "release date", "full movie",
+    "movie review", "public review", "movie story", "movie cast",
+    "movie trailer", "movie details", "worth watching",
+    "movie rating ollypedia", "movie in odisha", "bhubaneswar release",
+    "odia cinema", "odia movie review", "ollywood movie",
+  ];
+
   const variants = new Set<string>();
-  const words = title.trim().split(/\s+/);
+  const words    = title.trim().split(/\s+/);
+
   for (const word of words) {
     if (word.length < 3) continue;
     const w = word.toLowerCase();
-    variants.add(w.replace(/([aeiou])\1+/g, "$1"));
-    variants.add(w.replace(/a/g, "e"));
-    variants.add(w.replace(/a/g, "o"));
-    variants.add(w.replace(/e/g, "i"));
+
+    // Phonetic swaps
+    const typos: string[] = [
+      w.replace(/([aeiou])\1+/g, "$1"),   // double vowel removal
+      w.replace(/a/g, "e"),
+      w.replace(/a/g, "o"),
+      w.replace(/e/g, "i"),
+      w.replace(/u/g, "o"),
+      w.replace(/i/g, "e"),
+      w.replace(/h/g, ""),                 // silent-h drop
+      w.replace(/ck/g, "k"),
+      w.replace(/ph/g, "f"),
+      w + "a", w + "i", w + "u",          // trailing vowel additions
+      w.slice(0, -1),                      // drop last char
+      w.slice(1),                          // drop first char
+    ];
+
+    // Transpositions (adjacent letter swap)
     for (let i = 0; i < w.length - 1; i++) {
-      variants.add(w.slice(0, i) + w[i + 1] + w[i] + w.slice(i + 2));
+      typos.push(w.slice(0, i) + w[i + 1] + w[i] + w.slice(i + 2));
     }
-    variants.add(w.replace(/h/g, ""));
+
+    for (const typo of typos) {
+      if (!typo || typo === w || typo.length < 3) continue;
+      // Pair each typo with all intent suffixes
+      for (const suffix of intentSuffixes) {
+        variants.add(`${typo} ${suffix}`);
+      }
+    }
   }
-  const result: string[] = [];
-  variants.forEach((v) => {
-    if (v && v !== title.toLowerCase() && v.length > 2) {
-      result.push(`${v} box office`);
-      result.push(`${v} odia movie`);
-      result.push(`${v} collection`);
-    }
-  });
-  return result.slice(0, 10); // cap at 10 misspellings
+
+  // Also add clean title + all intent suffixes (no typo — just phrasing)
+  const cleanTitle = title.toLowerCase();
+  for (const suffix of intentSuffixes) {
+    variants.add(`${cleanTitle} ${suffix}`);
+  }
+
+  return [...variants].filter(v => v.length > 4).slice(0, 60); // cap at 60
 }
 
 // ─── Static params ────────────────────────────────────────────────────────────
@@ -131,6 +167,7 @@ export async function generateMetadata({
 
   // ★ Comprehensive keyword set — movie name first in every variant
   const keywords = [
+    // ── Core box-office keywords (movie name first = highest relevance) ──
     `${movie.title} box office collection`,
     `${movie.title} box office`,
     `${movie.title} collection`,
@@ -142,21 +179,75 @@ export async function generateMetadata({
     `${movie.title} opening day collection`,
     `${movie.title} net collection`,
     `${movie.title} gross collection`,
+    `${movie.title} worldwide collection`,
+    `${movie.title} earning`,
+
+    // ── Movie intent keywords ──────────────────────────────────────────────
+    `${movie.title} review`,
+    `${movie.title} full movie details`,
+    `${movie.title} story`,
+    `${movie.title} cast and crew`,
+    `${movie.title} cast`,
+    `${movie.title} director`,
+    `${movie.title} release date`,
+    `${movie.title} trailer`,
+    `${movie.title} songs`,
+    `${movie.title} movie`,
+    `${movie.title} film`,
+    `${movie.title} rating`,
+    `${movie.title} public review`,
+    `${movie.title} worth watching`,
+    `${movie.title} movie review`,
+    `${movie.title} movie story`,
+    `${movie.title} movie cast`,
+    `${movie.title} full movie review`,
+    `${movie.title} movie details`,
+    `${movie.title} movie rating ollypedia`,
+
+    // ── Regional + language ────────────────────────────────────────────────
     `${movie.title} odia movie`,
     `${movie.title} odia film`,
     `${movie.title} ollywood`,
-    `${movie.title} review`,
-    `${movie.title} songs`,
+    `${movie.title} ollywood movie`,
+    `${movie.title} odia cinema`,
+    `${movie.title} movie in odisha`,
+    `${movie.title} bhubaneswar release`,
+    `odia movie ${movie.title} review`,
+
+    // ── Long-tail intent ───────────────────────────────────────────────────
+    `${movie.title} movie review in odia`,
+    `${movie.title} movie public review`,
+    `${movie.title} movie worth watching`,
+    `${movie.title} movie rating ollypedia`,
+    year ? `latest odia movie ${movie.title} review ${year}` : "",
     year ? `${movie.title} ${year} box office` : "",
     year ? `${movie.title} ${year} collection` : "",
+    year ? `${movie.title} ${year} review` : "",
+    year ? `${movie.title} odia movie ${year}` : "",
+
+    // ── Director-based ────────────────────────────────────────────────────
     movie.director ? `${movie.director} movie collection` : "",
+    movie.director ? `${movie.director} odia film` : "",
+    movie.director ? `${movie.director} new movie` : "",
+    movie.director ? `${movie.director} movie review` : "",
+
+    // ── General Odia box office ───────────────────────────────────────────
     "odia box office collection",
     "ollywood box office",
     "odia film collection",
     "odia movie box office",
+    "odia film box office report",
+    "ollywood hit movie",
     year ? `odia movies ${year}` : "",
     year ? `ollywood ${year} collection` : "",
+    year ? `odia box office ${year}` : "",
+    year ? `best odia movie ${year}` : "",
+
+    // ── Genre-based ──────────────────────────────────────────────────────
     ...(movie.genre || []).map((g: string) => `${g} odia film box office`),
+    ...(movie.genre || []).map((g: string) => `${g} ollywood movie`),
+
+    // ── Fuzzy typo variants with intent phrases ───────────────────────────
     ...getMisspellings(movie.title),
   ].filter(Boolean) as string[];
 

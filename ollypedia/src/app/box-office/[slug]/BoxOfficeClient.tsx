@@ -301,6 +301,28 @@ function QuickLinksSidebar({ movie }: { movie: Movie }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+// ── Accordion FAQ item ──────────────────────────────────────────────────────
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="bg-[#111] border border-[#1f1f1f] rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between gap-3 px-5 py-3.5 text-left"
+      >
+        <span className="text-sm font-semibold text-white leading-snug">{q}</span>
+        <ChevronDown className={`w-4 h-4 text-orange-400 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="px-5 pb-4 pt-1 border-t border-[#1a1a1a]">
+          <p className="text-sm text-gray-400 leading-relaxed">{a}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGross }: Props) {
   const [showAll, setShowAll]       = useState(false);
   const [relBlogs, setRelBlogs]     = useState<BlogPost[]>([]);
@@ -450,8 +472,8 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
 
             {days.length > 0 && (
               <>
-                {/* ── SEO Summary ── */}
-                <section>
+                {/* ── SEO Summary + Keyword-injected content ── */}
+                <section className="space-y-4">
                   <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-6">
                     <h2 className="text-base font-bold text-white mb-3 flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-orange-400" />
@@ -460,8 +482,9 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                     <p className="text-gray-300 text-sm leading-relaxed">{summary}</p>
                     {days.length >= 2 && (
                       <p className="text-gray-400 text-sm leading-relaxed mt-3">
-                        The film released{movie.releaseDate ? ` on ${fmtDate(movie.releaseDate)}` : ""} in Odia (Ollywood) cinemas.
-                        {" "}Day-wise collection data is tracked and updated on Ollypedia, Odisha&apos;s dedicated cinema database.
+                        The <strong className="text-gray-300">{movie.title} Odia movie</strong> released
+                        {movie.releaseDate ? ` on ${fmtDate(movie.releaseDate)}` : ""} in Odia (Ollywood) cinemas.
+                        {" "}Day-wise collection data is tracked and updated on Ollypedia, Odisha&apos;s dedicated Odia film database.
                       </p>
                     )}
                     {/* Cross-links within SEO summary */}
@@ -475,12 +498,54 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                         </Link>
                       )}
                       <Link href={`/blog?movie=${encodeURIComponent(movie.title)}`} className="text-purple-400 hover:underline font-semibold">
-                        📝 {movie.title} Reviews & Articles →
+                        📝 {movie.title} Reviews &amp; Articles →
                       </Link>
                     </div>
                     <p className="text-xs text-gray-600 mt-3">
                       * Figures are approximate industry estimates. Source: Ollypedia Box Office Tracker.
                     </p>
+                  </div>
+
+                  {/* ── SEO keyword-rich paragraph 1 — movie overview ── */}
+                  <div className="bg-[#0d0d0d] border border-[#181818] rounded-xl p-5">
+                    <p className="text-sm text-gray-400 leading-relaxed">
+                      The <strong className="text-gray-200">{movie.title} Odia movie</strong> is one of the notable
+                      {year ? ` Ollywood films of ${year}` : " Ollywood films"}.
+                      {" "}If you are searching for <em className="text-gray-300">{movie.title} box office collection</em>,{" "}
+                      <em className="text-gray-300">{movie.title} first day collection</em>, or the{" "}
+                      <em className="text-gray-300">{movie.title} total collection</em>, Ollypedia provides verified
+                      day-wise figures updated regularly.
+                      {movie.director ? (
+                        <>{" "}Directed by <strong className="text-gray-200">{movie.director}</strong>, this{" "}
+                        {(movie.genre || []).join("/") || "Odia"} film has been tracked since its theatrical release.</>
+                      ) : null}
+                    </p>
+                  </div>
+
+                  {/* ── SEO keyword-rich paragraph 2 — intent content ── */}
+                  <div className="bg-[#0d0d0d] border border-[#181818] rounded-xl p-5">
+                    <p className="text-sm text-gray-400 leading-relaxed">
+                      Looking for the <em className="text-gray-300">{movie.title} movie review</em>,{" "}
+                      <em className="text-gray-300">{movie.title} cast and crew</em>, or{" "}
+                      <em className="text-gray-300">{movie.title} story details</em>?
+                      {" "}Ollypedia covers the complete <strong className="text-gray-200">{movie.title} Ollywood movie</strong> — from release date and trailer
+                      to songs and public reviews. This page specifically tracks the{" "}
+                      <em className="text-gray-300">{movie.title} day-wise box office collection</em>{" "}
+                      including net and gross earnings at Odia cinemas across Odisha.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                      <Link href={`/movie/${movie.slug}`} className="text-orange-400 hover:underline">
+                        → {movie.title} full movie details
+                      </Link>
+                      <Link href={`/blog?movie=${encodeURIComponent(movie.title)}`} className="text-purple-400 hover:underline">
+                        → {movie.title} movie review &amp; rating
+                      </Link>
+                      {songs.length > 0 && (
+                        <Link href={`/songs/${movie.slug}/0/${toSongSlug(songs[0]?.title) || "0"}`} className="text-green-400 hover:underline">
+                          → {movie.title} songs
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </section>
 
@@ -732,38 +797,50 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                   </section>
                 )}
 
-                {/* ── FAQ ── */}
+                {/* ── FAQ — 8 questions, keyword-rich ── */}
                 <section>
-                  <h2 className="text-lg font-bold mb-4 text-white">
-                    Frequently Asked Questions — {movie.title} Box Office
+                  <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
+                    <span className="text-orange-400">❓</span>
+                    {movie.title} — Frequently Asked Questions
                   </h2>
-                  <div className="space-y-3">
-                    {[
+                  <div className="space-y-2">
+                    {([
                       {
                         q: `What is the total box office collection of ${movie.title}?`,
-                        a: `${movie.title} has collected a total of ${fmtINR(totalNet)} net and ${fmtINR(totalGross)} gross at the box office in ${days.length} day${days.length !== 1 ? "s" : ""}.`,
+                        a: `${movie.title} has collected a total of ${fmtINR(totalNet)} net and ${fmtINR(totalGross)} gross at the Odia (Ollywood) box office in ${days.length} day${days.length !== 1 ? "s" : ""}. Ollypedia tracks daily earnings for all Odia films.`,
                       },
                       ...(days[0] ? [{
-                        q: `What was ${movie.title} Day 1 box office collection?`,
-                        a: `${movie.title} collected ${fmtINR(days[0].net)} net on Day 1${days[0].date ? ` (${fmtDate(days[0].date)})` : ""}.`,
+                        q: `What was ${movie.title} Day 1 opening box office collection?`,
+                        a: `${movie.title} collected ${fmtINR(days[0].net)} net (${fmtINR(days[0].gross)} gross) on opening day${days[0].date ? ` (${fmtDate(days[0].date)})` : ""}. ${days[0].screens ? `The film opened across ${days[0].screens} screens.` : ""}`,
                       }] : []),
                       ...(days.length >= 7 ? [{
                         q: `What is ${movie.title} first week collection?`,
-                        a: `${movie.title} collected ${fmtINR(days.slice(0,7).reduce((s,d)=>s+parseN(d.net),0))} net in its first week at the Odia box office.`,
+                        a: `In its first 7 days, ${movie.title} collected ${fmtINR(days.slice(0,7).reduce((s,d)=>s+parseN(d.net),0))} net at the Odia box office.`,
                       }] : []),
                       {
-                        q: `Where to find ${movie.title} box office data?`,
-                        a: `Ollypedia tracks and updates ${movie.title} day-wise box office collection including net and gross figures. Visit ollypedia.in/box-office/${movie.slug} for daily updates.`,
+                        q: `Is ${movie.title} a hit or flop?`,
+                        a: movie.verdict && movie.verdict !== "Upcoming"
+                          ? `According to Ollypedia, ${movie.title} is classified as "${movie.verdict}" at the box office with a total of ${fmtINR(totalNet)} net.`
+                          : `The ${movie.title} box office verdict will be updated as collection data comes in. Visit Ollypedia for the latest.`,
                       },
                       {
-                        q: `Where can I read reviews and blogs about ${movie.title}?`,
-                        a: `You can read full reviews, cast analysis and Ollywood blogs about ${movie.title} on Ollypedia's blog section at ollypedia.in/blog.`,
+                        q: `What is ${movie.title} story and cast?`,
+                        a: `${movie.title} is ${movie.genre?.length ? `a ${movie.genre.join("/")} ` : "an "}Odia film${movie.director ? ` directed by ${movie.director}` : ""}. ${cast.length > 0 ? `It stars ${cast.slice(0,3).map((c:any)=>c.name).join(", ")} in lead roles.` : ""} ${movie.synopsis ? movie.synopsis.slice(0,140)+"…" : "Visit the movie page for the full story and cast details."}`,
                       },
-                    ].map(({ q, a }, i) => (
-                      <div key={i} className="bg-[#111] border border-[#1f1f1f] rounded-xl p-4">
-                        <p className="text-sm font-semibold text-white mb-1.5">{q}</p>
-                        <p className="text-sm text-gray-400 leading-relaxed">{a}</p>
-                      </div>
+                      {
+                        q: `Where can I watch ${movie.title} trailer and songs?`,
+                        a: `The ${movie.title} trailer${songs.length > 0 ? ` and ${songs.length} song${songs.length>1?"s":""}` : ""} are available on Ollypedia. Visit the movie page for the official trailer, songs and lyrics.`,
+                      },
+                      {
+                        q: `Where to find ${movie.title} day-wise box office data?`,
+                        a: `Ollypedia publishes verified day-wise box office for ${movie.title} at ollypedia.in/box-office/${movie.slug}. Data includes net, gross, screens and occupancy updated daily.`,
+                      },
+                      {
+                        q: `Where can I read ${movie.title} movie review?`,
+                        a: `Full ${movie.title} movie review, cast analysis and Ollywood articles are on Ollypedia's blog at ollypedia.in/blog. User ratings and public reviews are also on the movie page.`,
+                      },
+                    ] as {q:string;a:string}[]).map(({ q, a }, i) => (
+                      <FaqItem key={i} q={q} a={a} />
                     ))}
                   </div>
                 </section>

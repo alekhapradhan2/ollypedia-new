@@ -204,6 +204,85 @@ export async function generateMetadata({
   };
 }
 
+// ─── FAQ schema helper ─────────────────────────────────────────
+function buildFaqJsonLd(movie: any, year: string | number, avgRating: number | null) {
+  const items: { question: string; answer: string }[] = [
+    {
+      question: `What is ${movie.title} movie about?`,
+      answer: movie.synopsis
+        ? movie.synopsis.slice(0, 300)
+        : `${movie.title} is an Odia ${movie.genre?.join(", ") || "drama"} film${year ? ` released in ${year}` : ""}${movie.director ? `, directed by ${movie.director}` : ""}.`,
+    },
+    {
+      question: `Who is in the cast of ${movie.title}?`,
+      answer: movie.cast?.length
+        ? `${movie.title} features ${movie.cast.slice(0, 5).map((c: any) => c.name).join(", ")}.`
+        : `The cast details of ${movie.title} are available on Ollypedia.`,
+    },
+    {
+      question: `What is the verdict for ${movie.title}?`,
+      answer: movie.verdict
+        ? `${movie.title} was declared a ${movie.verdict} at the box office.`
+        : `${movie.title} box office performance details are available on Ollypedia.`,
+    },
+  ];
+
+  if (avgRating !== null) {
+    items.push({
+      question: `Is ${movie.title} worth watching?`,
+      answer: `Based on user reviews on Ollypedia, ${movie.title} has an average rating of ${avgRating.toFixed(1)}/10 from ${movie.reviews?.length} reviews.`,
+    });
+  }
+
+  if (movie.boxOffice?.total || movie.boxOffice?.opening) {
+    items.push({
+      question: `What is the box office collection of ${movie.title}?`,
+      answer: [
+        movie.boxOffice?.opening ? `Opening: ${movie.boxOffice.opening}` : null,
+        movie.boxOffice?.firstWeek ? `First Week: ${movie.boxOffice.firstWeek}` : null,
+        movie.boxOffice?.total ? `Total: ${movie.boxOffice.total}` : null,
+      ].filter(Boolean).join(". ") || `Box office figures for ${movie.title} are tracked on Ollypedia.`,
+    });
+  }
+
+  if (movie.media?.songs?.length) {
+    items.push({
+      question: `How many songs does ${movie.title} have?`,
+      answer: `${movie.title} has ${movie.media.songs.length} song${movie.media.songs.length > 1 ? "s" : ""} in its soundtrack.`,
+    });
+  }
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": items.map((item) => ({
+      "@type": "Question",
+      "name": item.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": item.answer,
+      },
+    })),
+  };
+}
+
+// ─── AggregateRating schema helper ─────────────────────────────
+function buildAggregateRatingJsonLd(movie: any, avgRating: number) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Movie",
+    "name": movie.title,
+    "url": `https://ollypedia.in/movie/${movie.slug || movie._id}`,
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": avgRating.toFixed(1),
+      "bestRating": "10",
+      "worstRating": "1",
+      "reviewCount": String(movie.reviews?.length || 1),
+    },
+  };
+}
+
 // ─── UI helpers ────────────────────────────────────────────────
 function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
   if (!value) return null;
@@ -238,6 +317,44 @@ function MovieSeoInterlinks({
       aria-label="Related content"
       className="mt-10 pt-8 border-t border-[#1f1f1f] space-y-5"
     >
+      {/* ── FAQ Section (People Also Ask / Featured Snippets) ── */}
+      {movie.title && (
+        <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-xl p-5">
+          <h2 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
+            <span className="w-4 h-[2.5px] bg-orange-500 rounded inline-block" />
+            FAQs about {movie.title}
+          </h2>
+          <div className="space-y-3">
+            {[
+              {
+                q: `What is ${movie.title} movie about?`,
+                a: movie.synopsis?.slice(0, 220) || `${movie.title} is an Odia film${year ? ` released in ${year}` : ""}${movie.director ? `, directed by ${movie.director}` : ""}.`,
+              },
+              ...(movie.cast?.length ? [{
+                q: `Who are the main cast of ${movie.title}?`,
+                a: `${movie.title} features ${movie.cast.slice(0, 5).map((c: any) => c.name).join(", ")}.`,
+              }] : []),
+              ...(movie.verdict ? [{
+                q: `What is the box office verdict of ${movie.title}?`,
+                a: `${movie.title} was declared a ${movie.verdict} at the box office.`,
+              }] : []),
+              ...(songs.length > 0 ? [{
+                q: `How many songs does ${movie.title} have?`,
+                a: `${movie.title} has ${songs.length} song${songs.length > 1 ? "s" : ""} in its soundtrack.`,
+              }] : []),
+            ].map((faq, i) => (
+              <details key={i} className="group border border-[#222] rounded-lg">
+                <summary className="cursor-pointer p-3 text-sm font-semibold text-gray-200 list-none flex justify-between items-center gap-2 select-none hover:text-orange-400 transition-colors">
+                  {faq.q}
+                  <span className="text-gray-500 group-open:rotate-180 transition-transform text-xs flex-shrink-0">▼</span>
+                </summary>
+                <p className="px-3 pb-3 text-sm text-gray-400 leading-relaxed">{faq.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── About this movie (SEO prose) ── */}
       <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-xl p-5">
         <h2 className="text-white font-bold text-sm mb-2 flex items-center gap-2">
@@ -264,14 +381,6 @@ function MovieSeoInterlinks({
             </>
           )}
         </p>
-
-        {/* Hidden SEO misspelling text — visually subtle, machine-readable */}
-        {/* Google indexes this text and maps typo searches to this page */}
-        <p className="text-[#1a1a1a] text-[0px] select-none" aria-hidden="true">
-          {`Also searched as: ${getMisspellings(movie.title).slice(0, 12).join(", ")}`}
-        </p>
-
-        {/* Discovery pills */}
         <div className="flex flex-wrap gap-2 mt-3">
           {year && (
             <Link href={`/movies/year/${year}`} className="text-xs text-orange-400/70 hover:text-orange-400 bg-orange-500/8 border border-orange-500/15 px-2.5 py-1 rounded-full transition-colors">
@@ -300,7 +409,7 @@ function MovieSeoInterlinks({
         <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-xl p-5">
           <h2 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
             <span className="w-4 h-[2.5px] bg-orange-500 rounded inline-block" />
-            Articles & Reviews — {movie.title}
+            Articles &amp; Reviews — {movie.title}
           </h2>
           <ul className="flex flex-col gap-1">
             {blogs.map((b: any) => (
@@ -313,7 +422,7 @@ function MovieSeoInterlinks({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={b.coverImage}
-                      alt={b.title}
+                      alt={`${b.title} – Ollypedia`}
                       width={58}
                       height={38}
                       className="w-[58px] h-[38px] object-cover rounded flex-shrink-0 border border-[#222]"
@@ -389,7 +498,7 @@ export default async function MovieDetailPage({
   const trailer = movie.media?.trailer;
   const canonical = `https://ollypedia.in/movie/${movie.slug || movie._id}`;
 
-  // ★ Extended JSON-LD — now includes blog + song ItemLists
+  // ★ Extended JSON-LD — FAQ + AggregateRating + blog + song ItemLists
   const structuredData = [
     movieJsonLd(movie),
     breadcrumbJsonLd([
@@ -397,6 +506,10 @@ export default async function MovieDetailPage({
       { name: "Movies", url: "https://ollypedia.in/movies" },
       { name: movie.title, url: canonical },
     ]),
+    // ★ FAQ schema — boosts People Also Ask + Featured Snippets
+    buildFaqJsonLd(movie, year, avgRating),
+    // ★ AggregateRating — shows star ratings in Google results
+    ...(avgRating !== null ? [buildAggregateRatingJsonLd(movie, avgRating)] : []),
     // ★ Blog posts about this movie — helps Google link pages together
     ...(blogs.length > 0
       ? [{
@@ -438,7 +551,7 @@ export default async function MovieDetailPage({
       {/* Banner */}
       {(movie.bannerUrl || movie.posterUrl) && (
         <div className="relative h-64 md:h-80 overflow-hidden">
-          <Image src={movie.bannerUrl || movie.posterUrl} alt={movie.title}
+          <Image src={movie.bannerUrl || movie.posterUrl} alt={`${movie.title}${year ? ` ${year}` : ""} Odia film banner`}
             fill className="object-cover object-top" priority />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0a0a]/60 to-[#0a0a0a]" />
         </div>
@@ -453,7 +566,7 @@ export default async function MovieDetailPage({
             <div className="relative aspect-[2/3] rounded-2xl overflow-hidden border border-[#2a2a2a] shadow-2xl">
               <Image
                 src={movie.posterUrl || movie.thumbnailUrl || "/placeholder-movie.svg"}
-                alt={`${movie.title} poster`}
+                alt={`${movie.title}${year ? ` (${year})` : ""} Odia movie poster`}
                 fill className="object-cover" priority
               />
             </div>
@@ -496,6 +609,68 @@ export default async function MovieDetailPage({
 
             <VoteButtons movieId={String(movie._id)}
               initialYes={movie.interestedYes || 0} initialNo={movie.interestedNo || 0} />
+
+            {/* ── Sidebar: Trending Searches ── */}
+            <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-4">
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Trending Searches</h2>
+              <ul className="flex flex-col gap-1.5">
+                {[
+                  `${movie.title} review`,
+                  `${movie.title} box office`,
+                  `${movie.title} cast`,
+                  `${movie.title} songs`,
+                  `${movie.title} trailer`,
+                  ...(movie.director ? [`${movie.director} films`] : []),
+                ].map((term, i) => (
+                  <li key={i} className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className="text-orange-500/60">🔍</span>
+                    <span>{term}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* ── Sidebar: People Also Search For ── */}
+            <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-4">
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">People Also Search</h2>
+              <div className="flex flex-col gap-1.5">
+                {[
+                  { label: "Latest Odia Movies", href: "/movies?sort=latest" },
+                  { label: "Top Rated Films", href: "/movies?sort=rating" },
+                  { label: "Odia Songs", href: "/songs" },
+                  { label: "Movie Reviews", href: "/blog/category/movie-review" },
+                  ...(year ? [{ label: `Odia Movies ${year}`, href: `/movies/year/${year}` }] : []),
+                  ...(movie.genre?.[0] ? [{ label: `${movie.genre[0]} Films`, href: `/movies?genre=${encodeURIComponent(movie.genre[0])}` }] : []),
+                ].map((item) => (
+                  <Link key={item.href} href={item.href}
+                    className="text-xs text-gray-400 hover:text-orange-400 flex items-center gap-2 py-1 transition-colors group">
+                    <span className="w-1 h-1 rounded-full bg-orange-500/50 group-hover:bg-orange-400 flex-shrink-0 transition-colors" />
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Sidebar: Author / E-E-A-T ── */}
+            <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-4 flex items-start gap-3">
+              <div className="w-8 h-8 bg-orange-500/20 rounded-full flex-shrink-0 flex items-center justify-center text-orange-400 text-xs font-bold mt-0.5">O</div>
+              <div>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Reviewed by{" "}
+                  <Link href="/about" className="text-orange-400/80 hover:text-orange-400 underline underline-offset-2 transition-colors">
+                    Ollypedia Editorial Team
+                  </Link>
+                </p>
+                {(movie.updatedAt || year) && (
+                  <p className="text-[11px] text-gray-600 mt-1">
+                    Updated:{" "}
+                    {movie.updatedAt
+                      ? new Date(movie.updatedAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" })
+                      : year}
+                  </p>
+                )}
+              </div>
+            </div>
           </aside>
 
           {/* Main */}
@@ -553,7 +728,7 @@ export default async function MovieDetailPage({
                     <Link key={i} href={`/cast/${member.castId}`}
                       className="card p-3 flex items-center gap-3 group">
                       <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-[#2a2a2a] group-hover:border-orange-500/50 transition-colors">
-                        <Image src={member.photo || "/placeholder-person.svg"} alt={member.name} fill className="object-cover" />
+                        <Image src={member.photo || "/placeholder-person.svg"} alt={`${member.name} in ${movie.title} – ${member.role || member.type || "cast"}`} fill className="object-cover" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-white line-clamp-1 group-hover:text-orange-400 transition-colors">{member.name}</p>
@@ -635,7 +810,9 @@ export default async function MovieDetailPage({
 
         {(related as any[]).length > 0 && (
           <section className="mt-12 pt-10 border-t border-[#1f1f1f]">
-            <h2 className="font-display font-bold text-2xl text-white mb-6">Related Movies</h2>
+            <h2 className="font-display font-bold text-2xl text-white mb-6">
+              Odia Movies Similar to {movie.title}
+            </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
               {(related as any[]).map((m) => (
                 <MovieCard key={String(m._id)} movie={m} />
