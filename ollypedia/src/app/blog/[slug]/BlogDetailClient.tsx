@@ -76,6 +76,7 @@ interface Post {
   createdAt?: string;
   movieTitle?: string;
   reviews?: Review[];
+  youtubeVideoId?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -530,6 +531,35 @@ export default function BlogDetailClient({ slug, initialData, sidebarContent }: 
           {/* ── Main column ── */}
           <div>
             <ColorfulArticle content={post.content} />
+
+            {/* ── YouTube Video Embed ── */}
+            {post.youtubeVideoId && (
+              <div style={{ margin: "32px 0 0" }}>
+                <div className="bp-related-title">🎬 Watch Video</div>
+                <div style={{
+                  position: "relative",
+                  width: "100%",
+                  paddingBottom: "56.25%", // 16:9 ratio
+                  borderRadius: 10,
+                  overflow: "hidden",
+                  border: "1px solid var(--border)",
+                  background: "#000",
+                }}>
+                  <iframe
+                    src={`https://www.youtube.com/embed/${post.youtubeVideoId}?rel=0&modestbranding=1`}
+                    title="Related YouTube Video"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={{
+                      position: "absolute",
+                      top: 0, left: 0,
+                      width: "100%", height: "100%",
+                      border: "none",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Tags */}
             {(post.tags?.length ?? 0) > 0 && (
