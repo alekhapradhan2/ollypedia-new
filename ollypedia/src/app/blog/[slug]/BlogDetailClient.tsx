@@ -385,7 +385,7 @@ export default function BlogDetailClient({ slug, initialData, sidebarContent }: 
     // Mark immediately before fetch to prevent double-count on re-render
     sessionStorage.setItem(sessionKey, "1");
 
-    fetch(`${API_BASE}/blog/${post._id}/view`, { method: "POST" }).catch(() => {});
+   fetch(`${API_BASE}/blog/${post.slug}/view`, { method: "POST" }).catch(() => {});
   }, [post]);
 
   // ── Review actions ──────────────────────────────────────────────────────────

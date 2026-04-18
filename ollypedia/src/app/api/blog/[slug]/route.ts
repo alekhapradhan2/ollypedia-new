@@ -8,8 +8,8 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
     const blog = await Blog.findOne({ slug: params.slug, published: true }).lean();
     if (!blog) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    // Increment views
-    await Blog.findByIdAndUpdate((blog as any)._id, { $inc: { views: 1 } });
+    // ⚠️ View increment removed from here — now handled by POST /view
+    // (was counting every refresh, SSR fetch, bot crawl, etc.)
 
     return NextResponse.json(blog);
   } catch (err: any) {
