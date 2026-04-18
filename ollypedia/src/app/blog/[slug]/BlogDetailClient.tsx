@@ -366,6 +366,28 @@ export default function BlogDetailClient({ slug, initialData, sidebarContent }: 
     }
   }, [post, slug]);
 
+  // ── View tracking (prod only, no duplicate on refresh) ─────────────────────
+  useEffect(() => {
+    if (!post) return;
+
+    // Only track in production — skip localhost / 127.0.0.1
+    const hostname = window.location.hostname;
+    if (hostname === "localhost" || hostname === "127.0.0.1") return;
+
+    // One count per browser session per blog post
+    // sessionStorage is per-tab-session, so:
+    //   ✅ direct link visit → counted (no key yet)
+    //   ❌ page refresh      → NOT counted (key already set)
+    //   ✅ new tab / new session → counted again
+    const sessionKey = `viewed_${post._id}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+
+    // Mark immediately before fetch to prevent double-count on re-render
+    sessionStorage.setItem(sessionKey, "1");
+
+    fetch(`${API_BASE}/blog/${post._id}/view`, { method: "POST" }).catch(() => {});
+  }, [post]);
+
   // ── Review actions ──────────────────────────────────────────────────────────
   const submitReview = async () => {
     if (!post || !rvName.trim() || !rvText.trim()) return;
