@@ -308,17 +308,23 @@ ${faqItems.map(({ q, a }) => `<details><summary>${q}</summary><p>${a}</p></detai
 // ─── Sanitize mixed HTML — wraps bare text nodes (plain prose) inside <p> tags ─
 // Fixes old box office blogs where AI prose was injected as raw text inside <article>
 function sanitizeMixedHtml(html: string): string {
-  // Split on block-level tags, wrap any bare text chunks in <p>
-  return html.replace(
-    /(^|(?<=<\/(?:h[1-6]|p|ul|ol|li|table|div|section|article|blockquote|details|summary)>))\s*([^<]{80,}?)\s*(?=<(?:h[1-6]|p|ul|ol|table|div|section|article|blockquote|details|summary|\/article))/gis,
-    (_match, _before, textChunk) => {
-      const trimmed = textChunk.trim();
-      if (!trimmed) return _match;
-      // Split into sentences/paragraphs on double newline or period+space
+  // Split on block-level closing tags, wrap bare text chunks (80+ chars) in <p>
+  const blockClose = /<\/(?:h[1-6]|p|ul|ol|li|table|div|section|article|blockquote|details|summary)>/i;
+  const blockOpen  = /^<(?:h[1-6]|p|ul|ol|table|div|section|article|blockquote|details|summary|\/article)/i;
+  const parts = html.split(/((?:<\/(?:h[1-6]|p|ul|ol|li|table|div|section|article|blockquote|details|summary)>))/gi);
+  return parts.map((part, i) => {
+    // Keep tag fragments as-is
+    if (blockClose.test(part) || blockOpen.test(part)) return part;
+    // Only wrap if it looks like bare prose (80+ non-tag chars) and follows a closing block tag
+    const prevPart = parts[i - 1] || "";
+    if (blockClose.test(prevPart) && part.replace(/<[^>]*>/g, "").trim().length >= 80) {
+      const trimmed = part.trim();
+      if (!trimmed) return part;
       const paras = trimmed.split(/\n{2,}/).map((s: string) => s.trim()).filter(Boolean);
       return paras.map((p: string) => `<p>${p}</p>`).join("\n");
     }
-  );
+    return part;
+  }).join("");
 }
 
 function ColorfulArticle({ content }: { content: string }) {
