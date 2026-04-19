@@ -175,34 +175,173 @@ function HighlightedPara({ text }: { text: string }) {
   );
 }
 
+// ─── Plain-text → rich HTML converter ────────────────────────────────────────
+function plainTextToHtml(raw: string): string {
+  const lines = raw.split(/\r?\n/);
+  const parts: string[] = [];
+  let ulOpen = false;
+  let olOpen = false;
+  let paraLines: string[] = [];
+  const faqItems: { q: string; a: string }[] = [];
+  let pendingFaqQ = "";
+
+  const inlineFmt = (s: string) =>
+    s.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
+     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+     .replace(/\*(.+?)\*/g, "<em>$1</em>");
+
+  const flushPara = () => {
+    if (!paraLines.length) return;
+    const text = paraLines.join(" ").trim();
+    if (text) parts.push(`<p>${inlineFmt(text)}</p>`);
+    paraLines = [];
+  };
+  const closeList = () => {
+    if (ulOpen) { parts.push("</ul>"); ulOpen = false; }
+    if (olOpen) { parts.push("</ol>"); olOpen = false; }
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const t = line.trim();
+
+    if (!t) { flushPara(); closeList(); continue; }
+
+    // markdown heading: ## or ###
+    const mdH = t.match(/^(#{1,4})\s+(.+)/);
+    if (mdH) {
+      flushPara(); closeList();
+      const level = mdH[1].length <= 2 ? 2 : 3;
+      parts.push(`<h${level}>${mdH[2].replace(/\*\*/g, "")}</h${level}>`);
+      continue;
+    }
+
+    // **Bold Title** alone on a line → h3
+    const boldLine = t.match(/^\*\*([^*]{4,60})\*\*\s*:?\s*$/);
+    if (boldLine) {
+      flushPara(); closeList();
+      parts.push(`<h3>${boldLine[1]}</h3>`);
+      continue;
+    }
+
+    // ALL CAPS heading
+    if (/^[A-Z][A-Z\s&\-–:]{4,50}$/.test(t) && !t.includes(".")) {
+      flushPara(); closeList();
+      parts.push(`<h2>${t.charAt(0) + t.slice(1).toLowerCase()}</h2>`);
+      continue;
+    }
+
+    // Title Case standalone heading (blank line before and after)
+    const prevBlank = !lines[i - 1]?.trim();
+    const nextBlank = !lines[i + 1]?.trim();
+    if (t.length < 75 && (prevBlank || i === 0) && nextBlank && /^[A-Z]/.test(t) && !/[.!?]$/.test(t) && !/^[•\-*\d]/.test(t)) {
+      flushPara(); closeList();
+      parts.push(`<h2>${t.replace(/\*\*/g, "")}</h2>`);
+      continue;
+    }
+
+    // Numbered section heading: "1. Title" (short, no comma)
+    const numHead = t.match(/^(\d+)[.)]\s+([A-Z][^.!?,]{3,60})$/);
+    if (numHead) {
+      flushPara(); closeList();
+      parts.push(`<h3>${numHead[2]}</h3>`);
+      continue;
+    }
+
+    // Bullet: •, -, *
+    const bullet = t.match(/^[•\-*]\s+(.+)/);
+    if (bullet) {
+      flushPara();
+      if (olOpen) { parts.push("</ol>"); olOpen = false; }
+      if (!ulOpen) { parts.push("<ul>"); ulOpen = true; }
+      parts.push(`<li>${inlineFmt(bullet[1])}</li>`);
+      continue;
+    }
+
+    // Numbered list item (long enough to be content not a heading)
+    const numItem = t.match(/^(\d+)[.)]\s+(.+)/);
+    if (numItem && t.length > 40) {
+      flushPara();
+      if (ulOpen) { parts.push("</ul>"); ulOpen = false; }
+      if (!olOpen) { parts.push("<ol>"); olOpen = true; }
+      parts.push(`<li>${inlineFmt(numItem[2])}</li>`);
+      continue;
+    }
+
+    // FAQ Q: / A:
+    const faqQ = t.match(/^(?:Q\d*[:.)]|Question\s*\d*[:.)])\s*(.+)/i);
+    if (faqQ) { flushPara(); closeList(); pendingFaqQ = faqQ[1]; continue; }
+    const faqA = t.match(/^(?:A\d*[:.)]|Answer\s*\d*[:.)])\s*(.+)/i);
+    if (faqA && pendingFaqQ) {
+      faqItems.push({ q: pendingFaqQ, a: inlineFmt(faqA[1]) });
+      pendingFaqQ = ""; continue;
+    }
+
+    closeList();
+    paraLines.push(t);
+  }
+
+  flushPara();
+  closeList();
+
+  // Auto-generate FAQ
+  const titleMatch = parts.find(p => /^<h[23]>/.test(p));
+  const topic = titleMatch ? titleMatch.replace(/<\/?h[23]>/g, "").split(/[–—|]/)[0].trim() : "this film";
+  if (faqItems.length === 0) {
+    faqItems.push(
+      { q: `What is ${topic} about?`, a: `${topic} is an Odia (Ollywood) production covered in depth on Ollypedia — including story, cast, music and more.` },
+      { q: `Is ${topic} worth watching?`, a: `Read the full review and audience ratings on this page to decide if ${topic} is worth your time.` },
+      { q: `Who is in the cast of ${topic}?`, a: `The complete cast and crew details of ${topic} are available on the movie page on Ollypedia.` },
+      { q: `Where can I find more articles about ${topic}?`, a: `Ollypedia publishes reviews, box office reports and cast spotlights for all Odia films. Browse the blog for more ${topic} content.` },
+    );
+  }
+
+  return `<article>
+${parts.join("\n")}
+<section class="faq-section">
+<h2>Frequently Asked Questions</h2>
+${faqItems.map(({ q, a }) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("\n")}
+</section>
+</article>`;
+}
+
+// ─── Sanitize mixed HTML — wraps bare text nodes (plain prose) inside <p> tags ─
+// Fixes old box office blogs where AI prose was injected as raw text inside <article>
+function sanitizeMixedHtml(html: string): string {
+  // Split on block-level tags, wrap any bare text chunks in <p>
+  return html.replace(
+    /(^|(?<=<\/(?:h[1-6]|p|ul|ol|li|table|div|section|article|blockquote|details|summary)>))\s*([^<]{80,}?)\s*(?=<(?:h[1-6]|p|ul|ol|table|div|section|article|blockquote|details|summary|\/article))/gis,
+    (_match, _before, textChunk) => {
+      const trimmed = textChunk.trim();
+      if (!trimmed) return _match;
+      // Split into sentences/paragraphs on double newline or period+space
+      const paras = trimmed.split(/\n{2,}/).map((s: string) => s.trim()).filter(Boolean);
+      return paras.map((p: string) => `<p>${p}</p>`).join("\n");
+    }
+  );
+}
+
 function ColorfulArticle({ content }: { content: string }) {
-  // If content contains HTML tags (e.g. box office blogs with <article>, <table>, <h1> etc.)
-  // render it directly as HTML so tags aren't shown as raw text.
   const isHtml = /<[a-z][\s\S]*>/i.test(content || "");
+
   if (isHtml) {
+    // Sanitize mixed HTML — fix bare text blobs inside HTML wrappers (old box office blogs)
+    const cleaned = sanitizeMixedHtml(content);
     return (
       <div
         className="bp-article bp-article-html"
-        dangerouslySetInnerHTML={{ __html: content }}
+        dangerouslySetInnerHTML={{ __html: cleaned }}
       />
     );
   }
-  const paras = (content || "").split(/\n\n+/).filter((p) => p.trim());
+
+  // Pure plain-text blogs — convert to rich HTML
+  const html = plainTextToHtml(content || "");
   return (
-    <div className="bp-article">
-      {paras.map((para, i) => {
-        const isPullQuote = i > 0 && i % 4 === 3 && para.length > 80;
-        const firstSentence = para.split(/[.!?]/)[0];
-        return (
-          <React.Fragment key={i}>
-            {isPullQuote && firstSentence.length > 40 && (
-              <blockquote className="bp-pullquote">&ldquo;{firstSentence}.&rdquo;</blockquote>
-            )}
-            <p><HighlightedPara text={para} /></p>
-          </React.Fragment>
-        );
-      })}
-    </div>
+    <div
+      className="bp-article bp-article-html"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   );
 }
 
@@ -400,9 +539,11 @@ export default function BlogDetailClient({ slug, initialData, sidebarContent }: 
         body: JSON.stringify({ user: rvName.trim(), text: rvText.trim(), rating: rvRating }),
       });
       if (r.ok) {
+        const updatedReviews = await r.json();
+        // Immediately update post.reviews so the new review shows without reload
+        setPost((p) => p ? { ...p, reviews: updatedReviews } : p);
         setSubmitted(true);
-        const updated = await fetch(`${API_BASE}/blog/${slug}`);
-        if (updated.ok) setPost(await updated.json());
+        setRvName(""); setRvText(""); setRvRating(5);
       }
     } catch {}
     setSubmitting(false);
@@ -646,236 +787,6 @@ export default function BlogDetailClient({ slug, initialData, sidebarContent }: 
               </div>
             )}
 
-            {/* ── FAQ Section ───────────────────────────────────────────────── */}
-            <div style={{ marginTop: 32 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                <div style={{ width: 20, height: 2.5, background: "var(--gold)", borderRadius: 2 }} />
-                <span style={{ fontSize: ".82rem", fontWeight: 800, color: "var(--text)", letterSpacing: ".04em" }}>
-                  {post.movieTitle
-                    ? `Frequently Asked Questions — ${post.movieTitle}`
-                    : "Frequently Asked Questions"}
-                </span>
-              </div>
-              <div>
-                {post.movieTitle ? (
-                  <>
-                    <FaqItem
-                      q={`What is ${post.movieTitle} Odia movie about?`}
-                      a={post.excerpt
-                        || (post.content?.slice(0, 220).replace(/\n/g, " ").trim() + "…")
-                        || `${post.movieTitle} is an Odia (Ollywood) film. This article covers the full story, cast, music and more.`}
-                    />
-                    <FaqItem
-                      q={`Is ${post.movieTitle} worth watching?`}
-                      a={`Based on user reviews and ratings on Ollypedia, you can decide if ${post.movieTitle} is worth watching. Read the full review and public ratings on this page.`}
-                    />
-                    <FaqItem
-                      q={`Who is in the cast of ${post.movieTitle}?`}
-                      a={`The full cast and crew of ${post.movieTitle} including lead actors, director, music director and more are listed on the ${post.movieTitle} movie page on Ollypedia.`}
-                    />
-                    <FaqItem
-                      q={`What is ${post.movieTitle} box office collection?`}
-                      a={`The day-wise box office collection of ${post.movieTitle} is tracked on Ollypedia. Visit the ${post.movieTitle} box office page for net and gross figures updated daily.`}
-                    />
-                    <FaqItem
-                      q={`Where can I watch ${post.movieTitle} songs?`}
-                      a={`All songs from ${post.movieTitle} including YouTube videos, lyrics, singers and music director credits are available on Ollypedia's songs section.`}
-                    />
-                    <FaqItem
-                      q={`Where can I find more articles about ${post.movieTitle}?`}
-                      a={`Ollypedia publishes in-depth articles, reviews, cast analysis and box office reports for all Odia movies including ${post.movieTitle}. Browse the blog section for all ${post.movieTitle} related content.`}
-                    />
-                  </>
-                ) : (
-                  <>
-                    <FaqItem
-                      q="What is Ollypedia?"
-                      a="Ollypedia is Odisha's complete Odia cinema encyclopedia — covering Ollywood movies, actors, songs, box office data, trailers and news."
-                    />
-                    <FaqItem
-                      q="What kind of articles does Ollypedia publish?"
-                      a="Ollypedia publishes in-depth movie reviews, top 10 lists, actor spotlights, box office reports, cast analyses and Ollywood entertainment news."
-                    />
-                    <FaqItem
-                      q="How can I find reviews for a specific Odia movie?"
-                      a="Search for the movie name on Ollypedia's blog or visit the movie's dedicated page for user reviews, ratings and detailed articles."
-                    />
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Related Movies carousel */}
-            {relMovies.length > 0 && (
-              <div style={{ marginTop: 40 }}>
-                <div className="bp-related-title">🎬 Related Movies</div>
-                <div className="bp-movies-row">
-                  {relMovies.map((m, i) => (
-                    <div key={m._id} className="bp-movie-card"
-                      style={{ animationDelay: `${i * 60}ms` }}
-                      onClick={() => router.push(`/movie/${m.slug || m._id}`)}>
-                      {(m.posterUrl || m.thumbnailUrl) ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={m.posterUrl || m.thumbnailUrl} alt={m.title}
-                          className="bp-movie-poster" loading="lazy" />
-                      ) : (
-                        <div className="bp-movie-poster-ph">🎬</div>
-                      )}
-                      <div className="bp-movie-name">{m.title}</div>
-                      {m.releaseDate && (
-                        <div className="bp-movie-year">{new Date(m.releaseDate).getFullYear()}</div>
-                      )}
-                      {m.verdict && m.verdict !== "Upcoming" && (
-                        <div className="bp-movie-verdict"
-                          style={{
-                            background: `${VERDICT_COLORS[m.verdict] || "#888"}22`,
-                            color: VERDICT_COLORS[m.verdict] || "#888",
-                            border: `1px solid ${VERDICT_COLORS[m.verdict] || "#888"}44`,
-                          }}>
-                          {m.verdict}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Related Songs */}
-            {relSongs.length > 0 && (
-              <div style={{ marginTop: 36 }}>
-                <div className="bp-related-title">🎵 Songs from this Movie</div>
-                <div className="bp-songs-list">
-                  {relSongs.map((s, i) => {
-                    const thumb = s.ytId
-                      ? `https://img.youtube.com/vi/${s.ytId}/mqdefault.jpg`
-                      : s.thumbnailUrl || null;
-                    return (
-                      <div key={i} className="bp-song-item"
-                        style={{ animationDelay: `${i * 50}ms` }}
-                        onClick={() => router.push(`/songs/${s.movieSlug}/${s.songIndex}`)}>
-                        {thumb ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={thumb} alt={s.title || ""} className="bp-song-thumb" loading="lazy" />
-                        ) : (
-                          <div className="bp-song-thumb-ph">🎵</div>
-                        )}
-                        <div className="bp-song-info">
-                          <div className="bp-song-title">{s.title || "Untitled"}</div>
-                          <div className="bp-song-meta">
-                            {s.singer && `🎤 ${s.singer}`}
-                            {s.singer && s.musicDirector && " · "}
-                            {s.musicDirector && `🎼 ${s.musicDirector}`}
-                          </div>
-                        </div>
-                        <div className="bp-song-play">▶</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div className="bp-divider"><span className="bp-divider-icon">✦</span></div>
-
-            {/* Reviews */}
-            <div className="bp-reviews-wrap">
-              <div className="bp-reviews-hd">
-                ⭐ Reviews & Ratings
-                {rvCount > 0 && (
-                  <span style={{ fontWeight: 400, color: "rgba(255,255,255,.3)", letterSpacing: ".04em" }}>
-                    ({rvCount} reviews)
-                  </span>
-                )}
-              </div>
-
-              {Number(avg) > 0 && (
-                <div className="bp-overall">
-                  <div className="bp-overall-num">{avg}</div>
-                  <div>
-                    <div className="bp-overall-stars">
-                      {"★".repeat(Math.round(Number(avg)))}{"☆".repeat(5 - Math.round(Number(avg)))}
-                    </div>
-                    <div className="bp-overall-label">avg · {rvCount} review{rvCount !== 1 ? "s" : ""}</div>
-                  </div>
-                </div>
-              )}
-
-              {(post.reviews || []).map((rv, idx) => (
-                <div key={idx} className="bp-rv-card">
-                  <div className="bp-rv-head">
-                    <div>
-                      <div className="bp-rv-name">👤 {rv.user || "Anonymous"}</div>
-                      {rv.rating > 0 && (
-                        <div className="bp-rv-stars">
-                          {"★".repeat(rv.rating)}{"☆".repeat(5 - rv.rating)}
-                          <span style={{ fontSize: ".68rem", color: "rgba(255,255,255,.3)", marginLeft: 4 }}>
-                            ({rv.rating}/5)
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="bp-rv-date">{rv.date}</div>
-                  </div>
-                  <div className="bp-rv-text">{rv.text}</div>
-                  <div className="bp-rv-actions">
-                    <button className="bp-rv-act-btn" onClick={() => likeReview(idx)}>
-                      👍 {(rv.likes ?? 0) > 0 ? rv.likes : "Like"}
-                    </button>
-                    <button className="bp-rv-act-btn" onClick={() => toggleReply(idx)}>
-                      💬 Reply
-                    </button>
-                  </div>
-
-                  {(rv.replies?.length ?? 0) > 0 && (
-                    <div className="bp-replies">
-                      {rv.replies!.map((r, ri) => (
-                        <div key={ri} className="bp-reply">
-                          <span className="bp-reply-name">{r.user || "Anonymous"}:</span>
-                          {r.text}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {replies[idx]?.open && (
-                    <div className="bp-reply-form" style={{ marginTop: 10 }}>
-                      <input className="bp-reply-inp" placeholder="Name" style={{ maxWidth: 100 }}
-                        value={replies[idx]?.name || ""}
-                        onChange={(e) => setReplies((p) => ({ ...p, [idx]: { ...p[idx], name: e.target.value } }))} />
-                      <input className="bp-reply-inp" placeholder="Write a reply…"
-                        value={replies[idx]?.text || ""}
-                        onChange={(e) => setReplies((p) => ({ ...p, [idx]: { ...p[idx], text: e.target.value } }))}
-                        onKeyDown={(e) => e.key === "Enter" && submitReply(idx)} />
-                      <button className="bp-reply-sub" onClick={() => submitReply(idx)}>Send</button>
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              <div className="bp-divider"><span className="bp-divider-icon">✦</span></div>
-
-              {/* Write a review form */}
-              <div className="bp-form-wrap">
-                <div className="bp-form-title">✏️ Write a Review</div>
-                {submitted ? (
-                  <div className="bp-success">✅ Thanks for your review! It&apos;s been submitted.</div>
-                ) : (
-                  <>
-                    <StarPicker value={rvRating} onChange={setRvRating} />
-                    <input className="bp-inp" placeholder="Your name"
-                      value={rvName} onChange={(e) => setRvName(e.target.value)} />
-                    <textarea className="bp-inp bp-textarea"
-                      placeholder="Share your thoughts about this article…"
-                      value={rvText} onChange={(e) => setRvText(e.target.value)} />
-                    <button className="bp-sub-btn" onClick={submitReview}
-                      disabled={submitting || !rvName.trim() || !rvText.trim()}>
-                      {submitting ? "Submitting…" : "Submit Review"}
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
           </div>
 
           {/* ── Sidebar ── */}
@@ -926,6 +837,114 @@ export default function BlogDetailClient({ slug, initialData, sidebarContent }: 
                     <span className="bp-info-val">{v}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* ── FAQ ── */}
+            <div className="bp-sidebar-box">
+              <div className="bp-sidebar-hd">
+                {post.movieTitle ? `FAQ — ${post.movieTitle}` : "Frequently Asked Questions"}
+              </div>
+              <div style={{ padding: "10px 14px" }}>
+                {post.movieTitle ? (
+                  <>
+                    <FaqItem q={`What is ${post.movieTitle} Odia movie about?`}
+                      a={post.excerpt || (post.content?.slice(0,220).replace(/\n/g," ").trim()+"…") || `${post.movieTitle} is an Odia film.`} />
+                    <FaqItem q={`Is ${post.movieTitle} worth watching?`}
+                      a={`Based on user reviews on Ollypedia, you can decide if ${post.movieTitle} is worth watching.`} />
+                    <FaqItem q={`Who is in the cast of ${post.movieTitle}?`}
+                      a={`Full cast and crew of ${post.movieTitle} are listed on the movie page on Ollypedia.`} />
+                    <FaqItem q={`What is ${post.movieTitle} box office collection?`}
+                      a={`Day-wise box office collection of ${post.movieTitle} is tracked on Ollypedia's box office page.`} />
+                    <FaqItem q={`Where can I watch ${post.movieTitle} songs?`}
+                      a={`All songs from ${post.movieTitle} including YouTube videos and lyrics are on Ollypedia.`} />
+                    <FaqItem q={`Where can I find more articles about ${post.movieTitle}?`}
+                      a={`Ollypedia publishes reviews, cast spotlights and box office reports for ${post.movieTitle}.`} />
+                  </>
+                ) : (
+                  <>
+                    <FaqItem q="What is Ollypedia?"
+                      a="Ollypedia is Odisha's complete Odia cinema encyclopedia — movies, actors, songs, box office and news." />
+                    <FaqItem q="What kind of articles does Ollypedia publish?"
+                      a="Movie reviews, top 10 lists, actor spotlights, box office reports and Ollywood entertainment news." />
+                    <FaqItem q="How can I find reviews for a specific Odia movie?"
+                      a="Search for the movie on Ollypedia's blog or visit the movie's dedicated page for ratings and articles." />
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* ── Reviews & Ratings ── */}
+            <div className="bp-sidebar-box">
+              <div className="bp-sidebar-hd">
+                ⭐ Reviews & Ratings
+                {rvCount > 0 && <span style={{ fontWeight:400, color:"rgba(255,255,255,.28)", marginLeft:4 }}>({rvCount})</span>}
+              </div>
+              <div style={{ padding: "12px 14px" }}>
+                {Number(avg) > 0 && (
+                  <div className="bp-overall" style={{ marginBottom: 14 }}>
+                    <div className="bp-overall-num">{avg}</div>
+                    <div>
+                      <div className="bp-overall-stars">{"★".repeat(Math.round(Number(avg)))}{"☆".repeat(5-Math.round(Number(avg)))}</div>
+                      <div className="bp-overall-label">avg · {rvCount} review{rvCount!==1?"s":""}</div>
+                    </div>
+                  </div>
+                )}
+                {(post.reviews||[]).map((rv,idx) => (
+                  <div key={idx} className="bp-rv-card" style={{ marginBottom:10 }}>
+                    <div className="bp-rv-head">
+                      <div>
+                        <div className="bp-rv-name">👤 {rv.user||"Anonymous"}</div>
+                        {rv.rating>0 && (
+                          <div className="bp-rv-stars">
+                            {"★".repeat(rv.rating)}{"☆".repeat(5-rv.rating)}
+                            <span style={{ fontSize:".68rem", color:"rgba(255,255,255,.3)", marginLeft:4 }}>({rv.rating}/5)</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="bp-rv-date">{rv.date}</div>
+                    </div>
+                    <div className="bp-rv-text">{rv.text}</div>
+                    <div className="bp-rv-actions">
+                      <button className="bp-rv-act-btn" onClick={()=>likeReview(idx)}>👍 {(rv.likes??0)>0?rv.likes:"Like"}</button>
+                      <button className="bp-rv-act-btn" onClick={()=>toggleReply(idx)}>💬 Reply</button>
+                    </div>
+                    {(rv.replies?.length??0)>0 && (
+                      <div className="bp-replies">
+                        {rv.replies!.map((r,ri)=>(
+                          <div key={ri} className="bp-reply">
+                            <span className="bp-reply-name">{r.user||"Anonymous"}:</span>{r.text}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {replies[idx]?.open && (
+                      <div className="bp-reply-form" style={{ marginTop:10 }}>
+                        <input className="bp-reply-inp" placeholder="Name" style={{ maxWidth:90 }}
+                          value={replies[idx]?.name||""}
+                          onChange={(e)=>setReplies(p=>({...p,[idx]:{...p[idx],name:e.target.value}}))} />
+                        <input className="bp-reply-inp" placeholder="Write a reply…"
+                          value={replies[idx]?.text||""}
+                          onChange={(e)=>setReplies(p=>({...p,[idx]:{...p[idx],text:e.target.value}}))}
+                          onKeyDown={(e)=>e.key==="Enter"&&submitReply(idx)} />
+                        <button className="bp-reply-sub" onClick={()=>submitReply(idx)}>Send</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <div className="bp-form-wrap" style={{ marginTop: rvCount>0?14:0 }}>
+                  <div className="bp-form-title">✏️ Write a Review</div>
+                  {submitted && <div className="bp-success" style={{ marginBottom:12 }}>✅ Review submitted!</div>}
+                  <StarPicker value={rvRating} onChange={setRvRating} />
+                  <input className="bp-inp" placeholder="Your name"
+                    value={rvName} onChange={(e)=>setRvName(e.target.value)} />
+                  <textarea className="bp-inp bp-textarea" placeholder="Share your thoughts…"
+                    value={rvText} onChange={(e)=>setRvText(e.target.value)} />
+                  <button className="bp-sub-btn" onClick={submitReview}
+                    disabled={submitting||!rvName.trim()||!rvText.trim()}>
+                    {submitting?"Submitting…":"Submit Review"}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1092,26 +1111,53 @@ const CSS = `
 .bp-meta-gold{color:var(--gold);font-weight:600;}
 .bp-meta-rating{display:inline-flex;align-items:center;gap:5px;background:rgba(201,151,58,.14);border:1px solid rgba(201,151,58,.3);border-radius:12px;padding:2px 9px;color:var(--gold);font-weight:700;}
 
-.bp-layout{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:40px;padding:36px 20px 80px;}
+.bp-layout{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:40px;padding:36px 20px 80px;align-items:start;}
 @media(min-width:768px){.bp-layout{padding:44px 32px 80px;}}
 @media(min-width:1060px){.bp-layout{grid-template-columns:1fr 320px;gap:52px;padding:48px 40px 80px;}}
+.bp-sidebar{display:flex;flex-direction:column;gap:24px;position:sticky;top:24px;}
 
 .bp-article{font-family:'DM Sans',system-ui,sans-serif;font-size:1.02rem;line-height:1.9;color:rgba(255,255,255,.78);word-break:break-word;}
 .bp-article p{margin:0 0 1.4em;position:relative;}
 .bp-article p:first-of-type::first-letter{font-family:'Playfair Display',serif;font-size:4.2rem;font-weight:900;line-height:.72;float:left;margin-right:.12em;margin-top:.08em;color:var(--gold);}
 
-/* ── HTML blog content (box office articles with inline HTML) ── */
+/* ── HTML article (new AI + converted old plain-text + box office) ── */
+.bp-article-html{font-family:'DM Sans',system-ui,sans-serif;font-size:1.05rem;line-height:1.9;color:rgba(255,255,255,.8);word-break:break-word;}
 .bp-article-html p:first-of-type::first-letter{all:unset;}
-.bp-article-html article{display:block;}
-.bp-article-html h1{font-size:1.5rem;font-weight:800;line-height:1.3;margin:0 0 1em;color:#fff;}
-.bp-article-html h2{font-size:1.15rem;font-weight:700;margin:1.6em 0 .7em;color:var(--gold);}
-.bp-article-html p{margin:0 0 1.2em;}
-.bp-article-html table{width:100%;border-collapse:collapse;font-size:0.92em;}
-.bp-article-html thead tr{background:#141414;}
-.bp-article-html th{padding:11px 14px;text-align:left;font-size:0.7em;color:#888;text-transform:uppercase;letter-spacing:0.07em;border-bottom:2px solid #2a2a2a;}
-.bp-article-html td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);}
-.bp-article-html tfoot tr{background:rgba(201,151,58,0.06);border-top:2px solid #2a2a2a;}
-.bp-article-html em{color:rgba(255,255,255,.5);font-size:0.85em;}
+.bp-article-html article,.bp-article-html section{display:block;}
+.bp-article-html h1{font-family:'Playfair Display',serif;font-size:clamp(1.4rem,3vw,2rem);font-weight:900;line-height:1.25;margin:0 0 .9em;color:#fff;}
+.bp-article-html h2{font-size:1.18rem;font-weight:800;margin:2.2em 0 .75em;color:var(--gold);display:flex;align-items:center;gap:10px;letter-spacing:.01em;}
+.bp-article-html h2::before{content:'';display:inline-block;width:18px;height:3px;background:var(--gold);border-radius:2px;flex-shrink:0;}
+.bp-article-html h3{font-size:1rem;font-weight:700;margin:1.6em 0 .5em;color:rgba(255,255,255,.9);border-left:3px solid rgba(201,151,58,.5);padding-left:10px;}
+.bp-article-html p{margin:0 0 1.35em;line-height:1.9;color:rgba(255,255,255,.78);}
+.bp-article-html strong{color:#fff;font-weight:700;}
+.bp-article-html em{color:rgba(255,255,255,.55);font-style:italic;}
+.bp-article-html ul{margin:0 0 1.6em 0;padding:0;list-style:none;}
+.bp-article-html ul li{position:relative;padding:6px 0 6px 1.6em;color:rgba(255,255,255,.75);font-size:1rem;line-height:1.75;border-bottom:1px solid rgba(255,255,255,.04);}
+.bp-article-html ul li:last-child{border-bottom:none;}
+.bp-article-html ul li::before{content:'▸';position:absolute;left:0;top:8px;color:var(--gold);font-size:.85em;}
+.bp-article-html ol{margin:0 0 1.6em 0;padding:0;counter-reset:ol-counter;list-style:none;}
+.bp-article-html ol li{position:relative;padding:6px 0 6px 2.2em;color:rgba(255,255,255,.75);font-size:1rem;line-height:1.75;counter-increment:ol-counter;border-bottom:1px solid rgba(255,255,255,.04);}
+.bp-article-html ol li:last-child{border-bottom:none;}
+.bp-article-html ol li::before{content:counter(ol-counter);position:absolute;left:0;top:8px;width:1.5em;height:1.5em;background:rgba(201,151,58,.15);border:1px solid rgba(201,151,58,.3);border-radius:50%;color:var(--gold);font-size:.72em;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.bp-article-html table{width:100%;border-collapse:collapse;font-size:.93em;margin:0 0 2em;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.07);}
+.bp-article-html thead tr{background:rgba(201,151,58,.1);}
+.bp-article-html th{padding:12px 16px;text-align:left;font-size:.72em;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid rgba(201,151,58,.2);font-weight:800;}
+.bp-article-html td{padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(255,255,255,.75);}
+.bp-article-html tbody tr:hover td{background:rgba(255,255,255,.02);}
+.bp-article-html tfoot tr{background:rgba(201,151,58,.06);border-top:2px solid rgba(201,151,58,.2);}
+.bp-article-html tfoot td{color:var(--gold);font-weight:700;}
+.bp-article-html blockquote{margin:2em 0;padding:18px 22px;border-left:4px solid var(--gold);background:rgba(201,151,58,.06);border-radius:0 8px 8px 0;font-family:'DM Serif Display',serif;font-style:italic;font-size:1.08rem;color:rgba(255,255,255,.7);line-height:1.75;}
+.bp-article-html .faq-section{margin:3em 0 0;padding-top:1.5em;border-top:1px solid var(--border);}
+.bp-article-html .faq-section h2{margin-top:0;}
+.bp-article-html details{background:var(--bg3);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;transition:border-color .2s;}
+.bp-article-html details[open]{border-color:rgba(201,151,58,.35);background:rgba(201,151,58,.04);}
+.bp-article-html summary{padding:14px 18px;cursor:pointer;font-size:.9rem;font-weight:700;color:var(--text);list-style:none;display:flex;align-items:center;justify-content:space-between;user-select:none;gap:12px;}
+.bp-article-html summary::-webkit-details-marker{display:none;}
+.bp-article-html summary::after{content:'＋';color:var(--gold);font-size:1.1rem;flex-shrink:0;}
+.bp-article-html details[open] summary::after{content:'−';}
+.bp-article-html details p{margin:0;padding:0 18px 16px;font-size:.88rem;color:rgba(255,255,255,.6);line-height:1.8;}
+.bp-article-html .faq-section{display:none!important;}
+.bp-article-html .bo-prose{margin-bottom:2em;}
 
 .bp-pullquote{margin:2em 0;padding:20px 24px;border-left:3px solid var(--gold);background:rgba(201,151,58,.06);border-radius:0 6px 6px 0;font-family:'DM Serif Display',serif;font-style:italic;font-size:1.08rem;color:rgba(255,255,255,.7);line-height:1.7;}
 
@@ -1194,7 +1240,6 @@ const CSS = `
 .bp-sub-btn:disabled{background:var(--bg5);color:var(--muted);cursor:not-allowed;}
 .bp-success{padding:14px 16px;background:rgba(74,207,130,.08);border:1px solid rgba(74,207,130,.25);border-radius:3px;color:#4acf82;font-size:.82rem;}
 
-.bp-sidebar{display:flex;flex-direction:column;gap:24px;}
 .bp-sidebar-box{background:var(--bg3);border:1px solid var(--border);border-radius:5px;overflow:hidden;}
 .bp-sidebar-hd{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.18em;color:var(--muted);padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
 .bp-sidebar-hd::before{content:'';display:block;width:16px;height:2px;background:var(--gold);border-radius:2px;flex-shrink:0;}
