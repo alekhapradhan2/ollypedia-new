@@ -235,18 +235,18 @@ export function SongsClient({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-1 h-5 bg-orange-500 rounded-full" />
-          <h2 className="font-display text-xl font-bold text-white">All Odia Songs</h2>
+          <h2 className="font-display text-lg sm:text-xl font-bold text-white">All Odia Songs</h2>
         </div>
-        <p className="text-sm text-gray-500">
+        <p className="text-xs sm:text-sm text-gray-500">
           {total.toLocaleString()} songs
           {!isSearchActive && total > pageSize && (
-            <span className="text-gray-600"> · {start}–{end}</span>
+            <span className="text-gray-600 hidden sm:inline"> · {start}–{end}</span>
           )}
         </p>
       </div>
 
       {/* ── Search + filters card ── */}
-      <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-4 space-y-4">
+      <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-3 sm:p-4 space-y-3 sm:space-y-4">
 
         {/* Search input */}
         <div className="relative">
@@ -338,7 +338,7 @@ export function SongsClient({
       {/* ── Song grid ── */}
       <div className={clsx("transition-opacity duration-200", isPending && "opacity-50 pointer-events-none")}>
         {songs.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
             {songs.map((song, i) => (
               <SongCard key={`${song.movieSlug}-${song.songIndex ?? i}`} song={song} />
             ))}
@@ -364,31 +364,31 @@ export function SongsClient({
 
       {/* ── Pagination — hidden during search ── */}
       {!isSearchActive && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-2">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 pt-2 flex-wrap">
           <button
             onClick={() => gotoPage(currentPage - 1)}
             disabled={currentPage <= 1}
-            className="flex items-center gap-1 px-3 py-2 rounded-lg border border-[#2a2a2a] text-sm text-gray-400 hover:border-orange-500/40 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-[#2a2a2a] text-xs sm:text-sm text-gray-400 hover:border-orange-500/40 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
           >
-            <ChevronLeft className="w-4 h-4" /> Prev
+            <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Prev</span>
           </button>
 
-          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
             let p: number;
-            if (totalPages <= 7)                    p = i + 1;
-            else if (currentPage <= 4)              p = i + 1;
-            else if (currentPage >= totalPages - 3) p = totalPages - 6 + i;
-            else                                    p = currentPage - 3 + i;
+            if (totalPages <= 5)                    p = i + 1;
+            else if (currentPage <= 3)              p = i + 1;
+            else if (currentPage >= totalPages - 2) p = totalPages - 4 + i;
+            else                                    p = currentPage - 2 + i;
             return (
               <button
                 key={p}
                 onClick={() => gotoPage(p)}
-                className={clsx(
-                  "w-9 h-9 rounded-lg text-sm font-medium transition-all border",
+                className={[
+                  "w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-xs sm:text-sm font-medium transition-all border",
                   p === currentPage
                     ? "bg-orange-500/20 border-orange-500/50 text-orange-400"
-                    : "border-[#2a2a2a] text-gray-400 hover:border-orange-500/30 hover:text-white"
-                )}
+                    : "border-[#2a2a2a] text-gray-400 hover:border-orange-500/30 hover:text-white",
+                ].join(" ")}
               >
                 {p}
               </button>
@@ -398,9 +398,9 @@ export function SongsClient({
           <button
             onClick={() => gotoPage(currentPage + 1)}
             disabled={currentPage >= totalPages}
-            className="flex items-center gap-1 px-3 py-2 rounded-lg border border-[#2a2a2a] text-sm text-gray-400 hover:border-orange-500/40 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-[#2a2a2a] text-xs sm:text-sm text-gray-400 hover:border-orange-500/40 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
           >
-            Next <ChevronRight className="w-4 h-4" />
+            <span className="hidden sm:inline">Next</span> <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
       )}
@@ -413,11 +413,11 @@ export function SongsClient({
       )}
 
       {/* SEO content block */}
-      <div className="mt-2 p-6 bg-[#111] border border-[#1f1f1f] rounded-xl">
-        <h3 className="font-display font-bold text-white text-base mb-3">
+      <div className="mt-2 p-4 sm:p-6 bg-[#111] border border-[#1f1f1f] rounded-xl">
+        <h3 className="font-display font-bold text-white text-sm sm:text-base mb-2 sm:mb-3">
           Odia Film Songs — Complete Ollywood Music Database
         </h3>
-        <p className="text-gray-400 text-sm leading-relaxed">
+        <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
           Ollypedia features the most extensive collection of{" "}
           <strong className="text-gray-300">Odia film songs</strong> available online. From timeless
           classics by legendary singers to the latest{" "}

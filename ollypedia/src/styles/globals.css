@@ -261,7 +261,7 @@ body {
 .hh-btns { display:flex; gap:8px; flex-wrap:wrap; }
 .hh-btn-play {
   display: inline-flex; align-items: center; gap: 7px;
-  background: #c9973a; color: #000; border: none;
+  background: linear-gradient(135deg, #ff8c00, #ff6a00); 
   padding: clamp(9px,2vw,12px) clamp(14px,3vw,24px);
   border-radius: 8px;
   font-size: clamp(.76rem, 2vw, .88rem); font-weight: 800;

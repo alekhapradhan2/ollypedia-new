@@ -75,13 +75,13 @@ export default async function BoxOfficePage() {
       <div className="min-h-screen bg-[#0a0a0a] text-white">
         {/* Header */}
         <div className="border-b border-[#1f1f1f] bg-[#0d0d0d]">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-            <div className="flex items-center gap-2 text-xs text-gray-500 mb-5">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+            <div className="flex items-center gap-2 text-xs text-gray-500 mb-4 sm:mb-5">
               <Link href="/" className="hover:text-orange-400 transition-colors">Home</Link>
               <span>/</span>
               <span className="text-gray-400">Box Office</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-black text-white mb-2">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white mb-2">
               Odia Box Office Collection
             </h1>
             <p className="text-gray-400 text-sm max-w-xl">
@@ -90,28 +90,27 @@ export default async function BoxOfficePage() {
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
           {enriched.length === 0 ? (
-            <div className="text-center py-20 text-gray-500">
+            <div className="text-center py-16 sm:py-20 text-gray-500">
               <p className="text-lg">No box office data available yet.</p>
               <p className="text-sm mt-2">Check back soon for collection reports.</p>
             </div>
           ) : (
             <>
-              <div className="space-y-3">
+              <div className="space-y-2.5 sm:space-y-3">
                 {enriched.map((m: any, idx: number) => {
                   const movieSlug = m.slug || String(m.title || "").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-                  // Use stored verdict only — never auto-calculate
                   const storedVerdict = m.verdict && m.verdict !== "Upcoming" ? m.verdict : null;
 
                   return (
                     <Link
                       key={m._id}
                       href={`/box-office/${movieSlug}`}
-                      className="flex items-center gap-4 bg-[#111] border border-[#1f1f1f] rounded-xl p-4 hover:border-orange-500/30 transition-all group"
+                      className="flex items-center gap-3 bg-[#111] border border-[#1f1f1f] rounded-xl p-3 sm:p-4 hover:border-orange-500/30 transition-all group"
                     >
                       {/* Rank */}
-                      <div className="w-7 text-center text-base font-black text-gray-600 flex-shrink-0">
+                      <div className="w-6 sm:w-7 text-center text-sm sm:text-base font-black text-gray-600 flex-shrink-0">
                         {idx + 1}
                       </div>
 
@@ -120,41 +119,43 @@ export default async function BoxOfficePage() {
                         <img
                           src={m.posterUrl || m.thumbnailUrl}
                           alt={m.title}
-                          className="w-10 h-14 object-cover rounded-lg flex-shrink-0"
+                          className="w-9 h-12 sm:w-10 sm:h-14 object-cover rounded-lg flex-shrink-0"
                           style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.5)" }}
                         />
                       ) : (
-                        <div className="w-10 h-14 bg-[#1a1a1a] rounded-lg flex items-center justify-center flex-shrink-0 text-lg">🎬</div>
+                        <div className="w-9 h-12 sm:w-10 sm:h-14 bg-[#1a1a1a] rounded-lg flex items-center justify-center flex-shrink-0 text-base">🎬</div>
                       )}
 
                       {/* Title + meta */}
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-white group-hover:text-orange-400 transition-colors truncate text-sm">
+                        <div className="font-bold text-white group-hover:text-orange-400 transition-colors truncate text-xs sm:text-sm">
                           {m.title}
                         </div>
-                        <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-2">
+                        <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 flex items-center gap-1 sm:gap-2 flex-wrap">
                           {m.releaseDate && <span>{new Date(m.releaseDate).getFullYear()}</span>}
                           {m.language && <span>· {m.language}</span>}
-                          {m.lastDay > 0 && <span>· {m.lastDay} day{m.lastDay !== 1 ? "s" : ""}</span>}
+                          {m.lastDay > 0 && <span className="hidden sm:inline">· {m.lastDay} day{m.lastDay !== 1 ? "s" : ""}</span>}
                         </div>
+                        {/* Net shown inline on mobile */}
+                        <div className="sm:hidden mt-1 font-bold text-orange-400 text-xs">{fmtINR(m.totalNet)}</div>
                       </div>
 
-                      {/* Net */}
+                      {/* Net — desktop only */}
                       <div className="text-right hidden sm:block flex-shrink-0">
                         <div className="text-xs text-gray-500 mb-0.5">Net</div>
                         <div className="font-bold text-orange-400 text-sm">{fmtINR(m.totalNet)}</div>
                       </div>
 
-                      {/* Gross */}
+                      {/* Gross — md+ only */}
                       <div className="text-right hidden md:block flex-shrink-0">
                         <div className="text-xs text-gray-500 mb-0.5">Gross</div>
                         <div className="font-bold text-sky-300 text-sm">{fmtINR(m.totalGross)}</div>
                       </div>
 
-                      {/* Stored verdict only */}
+                      {/* Verdict */}
                       {storedVerdict && (
-                        <div className="flex-shrink-0">
-                          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-white/6 border border-white/10 text-gray-300">
+                        <div className="flex-shrink-0 hidden xs:block">
+                          <span className="text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-white/6 border border-white/10 text-gray-300">
                             {storedVerdict}
                           </span>
                         </div>
@@ -167,13 +168,13 @@ export default async function BoxOfficePage() {
               </div>
 
               {/* SEO content block */}
-              <div className="mt-12 p-6 bg-[#111] border border-[#1f1f1f] rounded-xl">
-                <h2 className="text-base font-bold text-white mb-3">Odia Box Office Collection 2026</h2>
-                <p className="text-sm text-gray-400 leading-relaxed">
-                  Ollypedia tracks day-wise box office collection for all Odia (Ollywood) movies. 
-                  Our box office section covers net collection, gross collection, and day-wise performance 
-                  of films from the Odia film industry. Data is sourced from industry estimates and 
-                  updated regularly to give fans and trade followers the most accurate figures available 
+              <div className="mt-8 sm:mt-12 p-4 sm:p-6 bg-[#111] border border-[#1f1f1f] rounded-xl">
+                <h2 className="text-sm sm:text-base font-bold text-white mb-2 sm:mb-3">Odia Box Office Collection 2026</h2>
+                <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
+                  Ollypedia tracks day-wise box office collection for all Odia (Ollywood) movies.
+                  Our box office section covers net collection, gross collection, and day-wise performance
+                  of films from the Odia film industry. Data is sourced from industry estimates and
+                  updated regularly to give fans and trade followers the most accurate figures available
                   for Odia cinema collections.
                 </p>
               </div>

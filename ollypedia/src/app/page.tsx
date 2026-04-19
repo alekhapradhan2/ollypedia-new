@@ -209,18 +209,18 @@ export default async function HomePage() {
       {/* ══ STATS BAR ══ */}
       <section className="bg-[#111] border-y border-[#1f1f1f]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-[#1f1f1f]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-[#1f1f1f]">
             {[
               { icon: Film,      label: "Odia Movies",   value: "500+"  },
               { icon: Users,     label: "Cast Profiles",  value: "1000+" },
               { icon: Music,     label: "Odia Songs",    value: "5000+" },
               { icon: BookOpen,  label: "Blog Articles", value: "100+"  },
             ].map(({ icon: Icon, label, value }) => (
-              <div key={label} className="flex items-center gap-3 px-6 py-4">
-                <Icon className="w-5 h-5 text-orange-500 flex-shrink-0" />
+              <div key={label} className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-3 sm:py-4">
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 flex-shrink-0" />
                 <div>
-                  <p className="text-lg font-bold text-white font-display">{value}</p>
-                  <p className="text-xs text-gray-500">{label}</p>
+                  <p className="text-base sm:text-lg font-bold text-white font-display">{value}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500">{label}</p>
                 </div>
               </div>
             ))}
@@ -228,7 +228,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 sm:space-y-20">
 
         {/* ══ LATEST RELEASES ══ */}
         {latestMovies.length > 0 && (
@@ -238,7 +238,7 @@ export default async function HomePage() {
               subtitle="Newest Odia films from Ollywood"
               href="/movies"
             />
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
               {latestMovies.slice(0, 10).map((m: any) => (
                 <MovieCard key={String(m._id)} movie={m} />
               ))}
@@ -261,7 +261,7 @@ export default async function HomePage() {
               href="/box-office"
             />
 
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-5">
 
               {/* ── Featured (first) movie — big card ── */}
               {(() => {
@@ -283,7 +283,7 @@ export default async function HomePage() {
                     className="lg:col-span-3 group relative rounded-2xl overflow-hidden bg-[#111] border border-[#1f1f1f] hover:border-orange-500/40 transition-all block">
 
                     {/* Poster banner */}
-                    <div className="relative h-52 w-full overflow-hidden">
+                    <div className="relative h-40 sm:h-52 w-full overflow-hidden">
                       {(m.thumbnailUrl || m.posterUrl) ? (
                         <Image
                           src={m.thumbnailUrl || m.posterUrl}
@@ -315,7 +315,7 @@ export default async function HomePage() {
                           {m.releaseDate ? new Date(m.releaseDate).toLocaleDateString("en-IN", { day:"numeric", month:"short", year:"numeric" }) : ""}
                           {(m.genre || []).length > 0 && ` · ${(m.genre as string[]).slice(0,2).join(", ")}`}
                         </p>
-                        <h2 className="font-display text-xl lg:text-2xl font-bold text-white leading-snug group-hover:text-orange-300 transition-colors">
+                        <h2 className="font-display text-lg sm:text-xl lg:text-2xl font-bold text-white leading-snug group-hover:text-orange-300 transition-colors">
                           {m.title}
                         </h2>
                       </div>
@@ -328,9 +328,9 @@ export default async function HomePage() {
                         { label: "Days Tracked", val: `${days.length} days` },
                         { label: "Total Net", val: fmtINR(totalNet) },
                       ].map(({ label, val }) => (
-                        <div key={label} className="px-4 py-3 text-center">
-                          <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">{label}</p>
-                          <p className="text-sm font-bold text-white">{val}</p>
+                        <div key={label} className="px-2 sm:px-4 py-2.5 sm:py-3 text-center">
+                          <p className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">{label}</p>
+                          <p className="text-xs sm:text-sm font-bold text-white">{val}</p>
                         </div>
                       ))}
                     </div>
@@ -454,15 +454,15 @@ export default async function HomePage() {
             subtitle="Find articles that interest you"
             href="/blog"
           />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             {BLOG_CATEGORIES.map((cat) => (
               <Link key={cat.label} href={cat.href}
-                className="group flex items-center gap-3 bg-[#111] border border-[#1f1f1f] hover:border-orange-500/40 hover:bg-orange-500/5 rounded-xl px-4 py-3 transition-all">
-                <span className="text-xl">{cat.emoji}</span>
-                <span className="text-sm font-semibold text-gray-300 group-hover:text-orange-300 transition-colors">
+                className="group flex items-center gap-2 sm:gap-3 bg-[#111] border border-[#1f1f1f] hover:border-orange-500/40 hover:bg-orange-500/5 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 transition-all">
+                <span className="text-lg sm:text-xl">{cat.emoji}</span>
+                <span className="text-xs sm:text-sm font-semibold text-gray-300 group-hover:text-orange-300 transition-colors leading-tight">
                   {cat.label}
                 </span>
-                <ChevronRight className="w-3.5 h-3.5 text-gray-600 group-hover:text-orange-400 ml-auto transition-colors" />
+                <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-600 group-hover:text-orange-400 ml-auto transition-colors flex-shrink-0" />
               </Link>
             ))}
           </div>
@@ -476,7 +476,7 @@ export default async function HomePage() {
               subtitle="Odia films releasing soon — mark your calendar"
               href="/movies?verdict=Upcoming"
             />
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
               {upcomingMovies.map((m: any) => (
                 <MovieCard key={String(m._id)} movie={m} />
               ))}
@@ -492,7 +492,7 @@ export default async function HomePage() {
               subtitle="In-depth reviews, cast spotlights and Ollywood stories"
               href="/blog"
             />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {latestBlogs.map((b: any) => (
                 <BlogCard key={String(b._id)} blog={b} />
               ))}
@@ -514,7 +514,7 @@ export default async function HomePage() {
               subtitle="Top-performing Odia films of recent years"
               href="/movies"
             />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
               {topMovies.map((m: any, i: number) => (
                 <Link key={String(m._id)} href={`/movie/${m.slug || m._id}`}
                   className="group relative bg-[#111] border border-[#1f1f1f] hover:border-orange-500/40 rounded-xl overflow-hidden transition-all">
@@ -523,12 +523,12 @@ export default async function HomePage() {
                     {i + 1}
                   </div>
                   {(m.posterUrl || m.thumbnailUrl) ? (
-                    <div className="relative h-52 w-full">
+                    <div className="relative h-40 sm:h-52 w-full">
                       <Image src={m.posterUrl || m.thumbnailUrl} alt={m.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                     </div>
                   ) : (
-                    <div className="h-52 bg-orange-500/5 flex items-center justify-center">
+                    <div className="h-40 sm:h-52 bg-orange-500/5 flex items-center justify-center">
                       <Clapperboard className="w-10 h-10 text-orange-500/20" />
                     </div>
                   )}
@@ -548,14 +548,14 @@ export default async function HomePage() {
         {/* ══ SEO RICH CONTENT — About Ollywood ══ */}
         <section
           aria-label="About Odia cinema Ollywood"
-          className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-8 md:p-12"
+          className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-5 sm:p-8 md:p-12"
         >
           <div className="max-w-4xl">
             <div className="flex items-center gap-2 mb-4">
               <Award className="w-5 h-5 text-orange-500" />
               <span className="text-orange-500 text-sm font-semibold uppercase tracking-widest">About Ollywood</span>
             </div>
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">
+            <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 sm:mb-6 leading-tight">
               Celebrating the Rich Heritage of Odia Cinema
             </h2>
             <div className="prose-odia space-y-4">
@@ -578,7 +578,7 @@ export default async function HomePage() {
                 reviews, cast details, box office collections, songs, trailers and in-depth blog articles.
               </p>
             </div>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-6 sm:mt-8 flex flex-wrap gap-2 sm:gap-3">
               <Link href="/movies" className="btn-primary">Browse Movies</Link>
               <Link href="/blog" className="btn-outline">Read Our Blog</Link>
               <Link href="/cast" className="btn-outline">Cast Profiles</Link>
@@ -588,15 +588,15 @@ export default async function HomePage() {
 
         {/* ══ WHY OLLYPEDIA — Features Grid ══ */}
         <section aria-label="What you can find on Ollypedia">
-          <div className="text-center mb-10">
-            <h2 className="font-display text-2xl md:text-3xl font-bold text-white">
+          <div className="text-center mb-6 sm:mb-10">
+            <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-white">
               Everything About <span className="text-orange-500">Odia Cinema</span> in One Place
             </h2>
             <p className="text-gray-400 text-sm mt-2 max-w-xl mx-auto">
               Ollypedia is the most complete Odia film database covering movies, music, cast and box office.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
             {[
               {
                 icon: TrendingUp, color: "orange",
@@ -636,7 +636,7 @@ export default async function HomePage() {
               },
             ].map(({ icon: Icon, title, desc, href }) => (
               <Link key={title} href={href}
-                className="group bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl p-6 transition-all hover:-translate-y-0.5">
+                className="group bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl p-4 sm:p-6 transition-all hover:-translate-y-0.5">
                 <div className="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-orange-500/20 transition-colors">
                   <Icon className="w-5 h-5 text-orange-500" />
                 </div>
@@ -651,14 +651,14 @@ export default async function HomePage() {
         </section>
 
         {/* ══ FAQ — AdSense / SEO section ══ */}
-        <section aria-label="Frequently asked questions about Odia cinema" className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-8 md:p-10">
-          <div className="flex items-center gap-2 mb-8">
+        <section aria-label="Frequently asked questions about Odia cinema" className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-5 sm:p-8 md:p-10">
+          <div className="flex items-center gap-2 mb-5 sm:mb-8">
             <div className="w-1 h-6 bg-orange-500 rounded-full" />
-            <h2 className="font-display text-2xl font-bold text-white">
+            <h2 className="font-display text-lg sm:text-2xl font-bold text-white">
               Frequently Asked Questions — Odia Cinema
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {[
               {
                 q: "What is Ollywood?",
@@ -697,18 +697,18 @@ export default async function HomePage() {
         </section>
 
         {/* ══ EXPLORE CTA BANNER ══ */}
-        <section className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-orange-900/40 via-[#111] to-[#111] border border-orange-500/20 p-10 md:p-14 text-center">
+        <section className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-orange-900/40 via-[#111] to-[#111] border border-orange-500/20 p-6 sm:p-10 md:p-14 text-center">
           <div className="absolute inset-0 opacity-5"
             style={{ backgroundImage: "radial-gradient(circle at 50% 50%, #f97316 0%, transparent 70%)" }} />
           <div className="relative z-10">
-            <h2 className="font-display text-3xl md:text-4xl font-black text-white mb-3">
+            <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-black text-white mb-2 sm:mb-3">
               Your Gateway to <span className="text-orange-400">Ollywood</span>
             </h2>
-            <p className="text-gray-300 text-base max-w-xl mx-auto mb-8">
+            <p className="text-gray-300 text-sm sm:text-base max-w-xl mx-auto mb-5 sm:mb-8">
               Explore the complete world of Odia cinema — from classic films to today's blockbusters,
               from song lyrics to box office collections.
             </p>
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
               <Link href="/movies" className="btn-primary inline-flex items-center gap-2">
                 <Film className="w-4 h-4" /> Browse Movies
               </Link>
