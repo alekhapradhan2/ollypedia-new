@@ -13,7 +13,7 @@ const NAV_LINKS = [
   { label: "Songs",      href: "/songs"       },
   { label: "Cast",       href: "/cast"        },
   { label: "Box Office", href: "/box-office"  }, // ← NEW
-  { label: "News",       href: "/news"        },
+  // { label: "News",       href: "/news"        },
   { label: "Blog",       href: "/blog"        },
 ];
 
