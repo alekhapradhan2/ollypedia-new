@@ -11,7 +11,7 @@ import Movie from "@/models/Movie";
 import News from "@/models/News";
 import { buildMeta } from "@/lib/seo";
 import {
-  Film, Star, TrendingUp, Calendar, MapPin, User,
+  Film, Calendar, MapPin, User,
   ChevronRight, Award, Music, Play, Newspaper,
   Instagram, Globe, Clock, Users, Clapperboard, Info,
   BarChart2, MessageSquare,
@@ -80,7 +80,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const title = `${person.name} – Odia ${roles} | Biography, Movies & Career | Ollypedia`;
   const description =
     person.bio?.slice(0, 155) ||
-    `${person.name} is a celebrated Odia ${roles.toLowerCase()} in Ollywood with ${movies.length} films${hits.length ? ` and ${hits.length} box office hits` : ""}${debutYear ? `, debuting in ${debutYear}` : ""}. Discover their full biography, filmography and career on Ollypedia.`;
+    `${person.name} is a celebrated Odia ${roles.toLowerCase()} in Ollywood with ${movies.length} films${debutYear ? `, active since ${debutYear}` : ""}. Discover their full biography, filmography, songs and career on Ollypedia.`;
   const canonical = `https://ollypedia.in/cast/${String(person._id)}`;
 
   return {
@@ -113,9 +113,7 @@ function fmtDate(d?: string | Date) {
 function generateRichBio(person: any, movies: any[]): string {
   if (person.bio && person.bio.trim().length > 80) return person.bio;
   const roles    = person.roles?.length ? person.roles.join(" and ") : person.type || "artist";
-  const hits     = movies.filter(m => ["Hit", "Super Hit", "Blockbuster"].includes(m.verdict));
   const released = movies.filter(m => m.verdict && m.verdict !== "Upcoming");
-  const hitRate  = released.length ? Math.round((hits.length / released.length) * 100) : null;
   const debutMovie = movies.length ? movies[movies.length - 1] : null;
   const debutYear  = debutMovie?.releaseDate ? new Date(debutMovie.releaseDate).getFullYear() : null;
   const latestMovie = movies[0];
@@ -137,8 +135,6 @@ function generateRichBio(person: any, movies: any[]): string {
   if (movies.length > 0) {
     paras.push(
       `Over the course of their career, ${person.name} has been associated with ${movies.length} Odia film${movies.length !== 1 ? "s" : ""}.` +
-      (hits.length > 0 ? ` Among these, ${hits.length} film${hits.length !== 1 ? "s" : ""} earned a blockbuster or super-hit verdict at the Odia box office.` : "") +
-      (hitRate !== null ? ` Their overall box-office hit rate stands at ${hitRate}%, reflecting consistent audience appeal.` : "") +
       (genreStr ? ` ${person.name} has worked across genres including ${genreStr}, demonstrating remarkable versatility.` : "")
     );
   }
@@ -203,11 +199,9 @@ export default async function CastDetailPage({ params }: { params: { id: string 
   const rolesStr = roles.join(", ");
   const icon     = ROLE_ICON[person.type] || "🎭";
 
-  const hits     = movies.filter((m: any) => ["Hit", "Super Hit", "Blockbuster"].includes(m.verdict));
   const flops    = movies.filter((m: any) => ["Flop", "Disaster"].includes(m.verdict));
   const upcoming = movies.filter((m: any) => !m.verdict || m.verdict === "Upcoming");
   const released = movies.filter((m: any) => m.verdict && m.verdict !== "Upcoming");
-  const hitRate  = released.length ? Math.round((hits.length / released.length) * 100) : null;
 
   const coMap: Record<string, any> = {};
   movies.forEach((m: any) => {
@@ -283,15 +277,14 @@ export default async function CastDetailPage({ params }: { params: { id: string 
         "@type": "Question",
         name: `How many Odia films has ${person.name} acted in?`,
         acceptedAnswer: { "@type": "Answer", text: movies.length > 0
-          ? `${person.name} has been part of ${movies.length} Odia film${movies.length !== 1 ? "s" : ""} in Ollywood, including ${hits.length} box office hit${hits.length !== 1 ? "s" : ""}.`
+          ? `${person.name} has been part of ${movies.length} Odia film${movies.length !== 1 ? "s" : ""} in Ollywood, spanning genres such as ${genres || "drama, action and romance"}.`
           : `${person.name} is associated with Ollywood, the Odia film industry.` },
       },
       {
         "@type": "Question",
         name: `What is ${person.name}'s most popular Odia film?`,
-        acceptedAnswer: { "@type": "Answer", text: hits.length > 0
-          ? `${person.name}'s most celebrated Odia films include ${hits.slice(0, 3).map((m: any) => `"${m.title}"`).join(", ")}.`
-          : movies.length > 0 ? `${person.name}'s recent work includes "${movies[0].title}".`
+        acceptedAnswer: { "@type": "Answer", text: movies.length > 0
+          ? `${person.name}'s notable Odia films include ${movies.slice(0, 3).map((m: any) => `"${m.title}"`).join(", ")}. Visit each movie page on Ollypedia for detailed cast, songs and review information.`
           : `Check Ollypedia for the latest updates on ${person.name}'s filmography.` },
       },
       {
@@ -308,125 +301,272 @@ export default async function CastDetailPage({ params }: { params: { id: string 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
 
-      {/* ══ HERO BANNER ══ */}
-      <div className="relative overflow-hidden h-64 md:h-80">
+      {/* ══ CINEMATIC HERO ══ */}
+      {/*
+        MOBILE  (<640px): text top-left, photo floats top-right, stats below full-width
+        TABLET  (640-1024px): side-by-side, photo left
+        DESKTOP (>1024px): side-by-side, more breathing room
+      */}
+      <div className="relative overflow-hidden" style={{ minHeight: "clamp(300px, 55vw, 480px)" }}>
+
+        {/* ── Backgrounds ── */}
         {backdrop ? (
           <Image src={backdrop} alt="" fill
-            className="object-cover object-top scale-110 blur-sm brightness-[0.2]" />
+            className="object-cover object-center" style={{ filter: "blur(3px) brightness(0.15)", transform: "scale(1.08)" }} />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#1a1200] to-[#0f0f0f]" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #1c0d00 0%, #0f0800 50%, #0a0a0a 100%)" }} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/70 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/50 via-transparent to-transparent" />
+        {/* Dot grid */}
+        <div className="absolute inset-0 opacity-[0.045]"
+          style={{ backgroundImage: "radial-gradient(circle, #f97316 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+        {/* Orange bloom — left on desktop, right on mobile */}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ background: "radial-gradient(ellipse 55% 60% at 15% 50%, rgba(249,115,22,0.18) 0%, transparent 70%)" }} />
+        <div className="absolute inset-0 pointer-events-none sm:hidden"
+          style={{ background: "radial-gradient(ellipse 50% 70% at 85% 30%, rgba(249,115,22,0.14) 0%, transparent 70%)" }} />
+        {/* Bottom fade */}
+        <div className="absolute inset-x-0 bottom-0 h-40 pointer-events-none"
+          style={{ background: "linear-gradient(to top, #0a0a0a 0%, transparent 100%)" }} />
+        {/* Right fade (desktop) */}
+        <div className="absolute inset-y-0 right-0 w-1/3 pointer-events-none hidden sm:block"
+          style={{ background: "linear-gradient(to left, #0a0a0a 0%, transparent 100%)" }} />
 
-        {/* Role badge */}
-        <div className="absolute top-5 left-5">
-          <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-400">
-            {icon} {person.type || "Artist"}
-          </span>
-        </div>
-
-        {/* Hit rate badge */}
-        {hitRate !== null && (
-          <div className="absolute top-5 right-5">
-            <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-green-500/15 border border-green-500/30 text-green-400">
-              {hitRate}% Hit Rate
-            </span>
-          </div>
-        )}
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-xs text-gray-500 py-4" aria-label="Breadcrumb">
-          <Link href="/" className="hover:text-orange-400 transition-colors">Home</Link>
-          <ChevronRight className="w-3 h-3" />
-          <Link href="/cast" className="hover:text-orange-400 transition-colors">Cast</Link>
-          <ChevronRight className="w-3 h-3" />
-          <span className="text-gray-300">{person.name}</span>
-        </nav>
-
-        {/* ══ HERO INFO ROW ══ */}
-        <div className="flex flex-col sm:flex-row gap-6 mb-10 -mt-2">
-
-          {/* Photo */}
-          <div className="relative w-32 sm:w-40 md:w-48 flex-shrink-0 self-start">
-            <div className="relative rounded-2xl overflow-hidden border-2 border-orange-500/40 shadow-2xl shadow-black/70"
-              style={{ aspectRatio: "3/4" }}>
+        {/* ── MOBILE layout: photo floats top-right, text fills left ── */}
+        <div className="relative z-10 sm:hidden px-4 pt-6 pb-16 min-h-[300px]">
+          {/* Photo — absolute top-right */}
+          <div className="absolute top-5 right-4" style={{ width: "120px" }}>
+            <div className="relative overflow-hidden"
+              style={{
+                aspectRatio: "3/4",
+                borderRadius: "14px",
+                border: "2px solid rgba(249,115,22,0.5)",
+                boxShadow: "0 0 30px rgba(249,115,22,0.18), 0 16px 40px rgba(0,0,0,0.85)",
+                marginBottom: "-44px",
+              }}>
               {person.photo ? (
                 <Image src={person.photo} alt={`${person.name} – Odia ${rolesStr}`}
                   fill className="object-cover object-top" priority />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-5xl bg-[#1a1a1a]">
-                  {icon}
-                </div>
+                <div className="absolute inset-0 flex items-center justify-center text-4xl" style={{ background: "#1a1a1a" }}>{icon}</div>
               )}
+              <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.35) 0%, transparent 55%)" }} />
             </div>
           </div>
 
-          {/* Name + stats */}
-          <div className="flex-1 min-w-0 pt-1">
-            {/* Role pill */}
-            <div className="flex flex-wrap gap-2 mb-3">
-              <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400">
-                {icon} {rolesStr}
-              </span>
+          {/* Text — left side, padded away from photo */}
+          <div style={{ paddingRight: "136px" }}>
+            {/* Role chip */}
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full mb-3"
+              style={{ background: "rgba(249,115,22,0.15)", border: "1px solid rgba(249,115,22,0.35)", color: "#fb923c" }}>
+              {icon} {rolesStr}
+            </span>
+
+            {/* Name */}
+            <h1 className="font-display font-black text-white leading-[1.05] mb-2"
+              style={{ fontSize: "clamp(1.7rem, 7.5vw, 2.4rem)", textShadow: "0 2px 16px rgba(0,0,0,0.9)" }}>
+              {person.name}
+            </h1>
+
+            {/* Location + year */}
+            <div className="flex flex-wrap gap-1.5 mb-3">
               {person.location && (
-                <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] text-gray-400 flex items-center gap-1">
-                  <MapPin className="w-3 h-3" /> {person.location}
+                <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#9ca3af" }}>
+                  <MapPin className="w-3 h-3" />{person.location}
+                </span>
+              )}
+              {debutMovie?.releaseDate && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full"
+                  style={{ background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.25)", color: "#60a5fa" }}>
+                  Since {new Date(debutMovie.releaseDate).getFullYear()}
                 </span>
               )}
             </div>
 
-            <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight mb-4">
-              {person.name}
-            </h1>
+            {/* Bio */}
+            {person.bio && (
+              <p className="text-xs leading-relaxed"
+                style={{ color: "rgba(209,213,219,0.7)", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                {person.bio}
+              </p>
+            )}
+          </div>
 
-            {/* Quick stat chips */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-              <div className="flex flex-col items-center justify-center rounded-xl px-4 py-3 bg-[#111] border border-[#1f1f1f] text-center">
-                <p className="text-xl font-black text-white font-display">{movies.length}</p>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Films</p>
+          {/* Stat pills — full width below, clear of photo */}
+          {movies.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-5">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                <Film className="w-3 h-3" style={{ color: "#f97316" }} />
+                <span className="text-white font-bold text-xs">{movies.length}</span>
+                <span className="text-[11px]" style={{ color: "#6b7280" }}>Films</span>
               </div>
-              <div className="flex flex-col items-center justify-center rounded-xl px-4 py-3 bg-[#111] border border-[#1f1f1f] text-center">
-                <p className="text-xl font-black text-green-400 font-display">{hits.length}</p>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Hits</p>
-              </div>
-              {hitRate !== null && (
-                <div className="flex flex-col items-center justify-center rounded-xl px-4 py-3 bg-orange-500/10 border border-orange-500/30 text-center">
-                  <p className="text-xl font-black text-orange-400 font-display">{hitRate}%</p>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Hit Rate</p>
+              {genres.length > 0 && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                  style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <Award className="w-3 h-3" style={{ color: "#a855f7" }} />
+                  <span className="text-white font-bold text-xs">{genres.length}</span>
+                  <span className="text-[11px]" style={{ color: "#6b7280" }}>Genres</span>
                 </div>
               )}
-              {debutMovie?.releaseDate && (
-                <div className="flex flex-col items-center justify-center rounded-xl px-4 py-3 bg-[#111] border border-[#1f1f1f] text-center">
-                  <p className="text-xl font-black text-white font-display">
-                    {new Date(debutMovie.releaseDate).getFullYear()}
-                  </p>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Debut</p>
+              {costars.length > 0 && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                  style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <Users className="w-3 h-3" style={{ color: "#ec4899" }} />
+                  <span className="text-white font-bold text-xs">{costars.length}</span>
+                  <span className="text-[11px]" style={{ color: "#6b7280" }}>Co-stars</span>
+                </div>
+              )}
+              {latestMovie && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                  style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <Clock className="w-3 h-3" style={{ color: "#34d399" }} />
+                  <span className="text-[11px]" style={{ color: "#6b7280" }}>Latest:</span>
+                  <span className="text-white font-semibold text-[11px]"
+                    style={{ maxWidth: "110px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {latestMovie.title}
+                  </span>
                 </div>
               )}
             </div>
+          )}
 
-            {/* Bio preview */}
+          {/* Social */}
+          {(person.instagram || person.website) && (
+            <div className="flex gap-2 mt-3">
+              {person.instagram && (
+                <a href={`https://instagram.com/${person.instagram.replace("@", "")}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold"
+                  style={{ background: "rgba(236,72,153,0.12)", border: "1px solid rgba(236,72,153,0.3)", color: "#f472b6" }}>
+                  <Instagram className="w-3 h-3" /> Instagram
+                </a>
+              )}
+              {person.website && (
+                <a href={person.website} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", color: "#9ca3af" }}>
+                  <Globe className="w-3 h-3" /> Website
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ── TABLET + DESKTOP layout: photo left, text right ── */}
+        <div className="relative z-10 hidden sm:flex items-end max-w-7xl mx-auto px-6 lg:px-8 pt-10 pb-0 gap-8">
+
+          {/* Portrait — bleeds below hero */}
+          <div className="flex-shrink-0 self-end" style={{ marginBottom: "-60px" }}>
+            <div className="relative overflow-hidden"
+              style={{
+                width: "clamp(150px, 16vw, 220px)",
+                aspectRatio: "3/4",
+                borderRadius: "16px",
+                border: "2px solid rgba(249,115,22,0.5)",
+                boxShadow: "0 0 50px rgba(249,115,22,0.18), 0 28px 64px rgba(0,0,0,0.85)",
+              }}>
+              {person.photo ? (
+                <Image src={person.photo} alt={`${person.name} – Odia ${rolesStr}`}
+                  fill className="object-cover object-top" priority />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-6xl" style={{ background: "#1a1a1a" }}>{icon}</div>
+              )}
+              <div className="absolute inset-0"
+                style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 55%)" }} />
+            </div>
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0 pb-8">
+            {/* Chips */}
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <span className="text-xs font-bold px-3 py-1 rounded-full"
+                style={{ background: "rgba(249,115,22,0.15)", border: "1px solid rgba(249,115,22,0.35)", color: "#fb923c" }}>
+                {icon} {rolesStr}
+              </span>
+              {person.location && (
+                <span className="text-xs font-medium px-3 py-1 rounded-full flex items-center gap-1"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#9ca3af" }}>
+                  <MapPin className="w-3 h-3" />{person.location}
+                </span>
+              )}
+              {debutMovie?.releaseDate && (
+                <span className="text-xs font-bold px-3 py-1 rounded-full"
+                  style={{ background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.25)", color: "#60a5fa" }}>
+                  Since {new Date(debutMovie.releaseDate).getFullYear()}
+                </span>
+              )}
+            </div>
+
+            {/* Name */}
+            <h1 className="font-display font-black text-white leading-none mb-3"
+              style={{ fontSize: "clamp(2rem, 4.5vw, 3.8rem)", textShadow: "0 2px 24px rgba(0,0,0,0.8)" }}>
+              {person.name}
+            </h1>
+
+            {/* Bio */}
             {person.bio && (
-              <p className="text-gray-400 text-sm leading-relaxed line-clamp-3 max-w-2xl">{person.bio}</p>
+              <p className="text-sm leading-relaxed mb-5 max-w-xl"
+                style={{ color: "rgba(209,213,219,0.72)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                {person.bio}
+              </p>
             )}
 
-            {/* Social links */}
+            {/* Stat pills */}
+            {movies.length > 0 && (
+              <div className="flex flex-wrap gap-2.5 mb-5">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <Film className="w-3.5 h-3.5" style={{ color: "#f97316" }} />
+                  <span className="text-white font-bold text-sm">{movies.length}</span>
+                  <span className="text-xs" style={{ color: "#6b7280" }}>Films</span>
+                </div>
+                {genres.length > 0 && (
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-full"
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                    <Award className="w-3.5 h-3.5" style={{ color: "#a855f7" }} />
+                    <span className="text-white font-bold text-sm">{genres.length}</span>
+                    <span className="text-xs" style={{ color: "#6b7280" }}>Genres</span>
+                  </div>
+                )}
+                {costars.length > 0 && (
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-full"
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                    <Users className="w-3.5 h-3.5" style={{ color: "#ec4899" }} />
+                    <span className="text-white font-bold text-sm">{costars.length}</span>
+                    <span className="text-xs" style={{ color: "#6b7280" }}>Co-stars</span>
+                  </div>
+                )}
+                {latestMovie && (
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-full"
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                    <Clock className="w-3.5 h-3.5" style={{ color: "#34d399" }} />
+                    <span className="text-xs" style={{ color: "#6b7280" }}>Latest:</span>
+                    <span className="text-white font-semibold text-xs"
+                      style={{ maxWidth: "150px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {latestMovie.title}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Social */}
             {(person.instagram || person.website) && (
-              <div className="flex gap-2 mt-3">
+              <div className="flex gap-2">
                 {person.instagram && (
                   <a href={`https://instagram.com/${person.instagram.replace("@", "")}`}
                     target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/30 text-pink-400 text-xs font-bold hover:bg-pink-500/20 transition-colors">
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all hover:scale-105"
+                    style={{ background: "rgba(236,72,153,0.12)", border: "1px solid rgba(236,72,153,0.3)", color: "#f472b6" }}>
                     <Instagram className="w-3 h-3" /> Instagram
                   </a>
                 )}
                 {person.website && (
                   <a href={person.website} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] text-gray-400 text-xs font-bold hover:border-orange-500/30 hover:text-orange-400 transition-colors">
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all hover:scale-105"
+                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", color: "#9ca3af" }}>
                     <Globe className="w-3 h-3" /> Website
                   </a>
                 )}
@@ -434,6 +574,19 @@ export default async function CastDetailPage({ params }: { params: { id: string 
             )}
           </div>
         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-xs text-gray-500 pb-6"
+          style={{ paddingTop: "clamp(12px, 3vw, 80px)" }} aria-label="Breadcrumb">
+          <Link href="/" className="hover:text-orange-400 transition-colors">Home</Link>
+          <ChevronRight className="w-3 h-3" />
+          <Link href="/cast" className="hover:text-orange-400 transition-colors">Cast</Link>
+          <ChevronRight className="w-3 h-3" />
+          <span className="text-gray-300">{person.name}</span>
+        </nav>
 
         {/* ══ MAIN CONTENT GRID ══ */}
         <div className="grid lg:grid-cols-3 gap-8 items-start">
@@ -452,10 +605,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
               <InfoRow icon={MapPin}      label="Location"     value={person.location} />
               <InfoRow icon={User}        label="Gender"       value={person.gender} />
               <InfoRow icon={Film}        label="Total Films"  value={movies.length ? `${movies.length} Odia films` : undefined} />
-              <InfoRow icon={Star}        label="Box Office Hits" value={hits.length ? `${hits.length} hits` : undefined} />
-              {hitRate !== null && (
-                <InfoRow icon={TrendingUp} label="Hit Rate" value={`${hitRate}%`} />
-              )}
+              <InfoRow icon={Award}       label="Genres" value={genres.length ? genres.map(([g]) => g).join(", ") : undefined} />
             </div>
 
             {/* Box office summary */}
@@ -467,10 +617,11 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                 <div className="space-y-0">
                   {[
                     { label: "Total Films",    value: String(movies.length), color: "text-white" },
-                    { label: "Hits",           value: String(hits.length),   color: "text-green-400" },
                     { label: "Average",        value: String(movies.filter((m:any) => m.verdict === "Average").length), color: "text-yellow-400" },
                     { label: "Flops",          value: String(flops.length),  color: "text-red-400" },
                     { label: "Upcoming",       value: String(upcoming.length), color: "text-blue-400" },
+                    ...(debutMovie?.releaseDate ? [{ label: "Active Since", value: String(new Date(debutMovie.releaseDate).getFullYear()), color: "text-purple-400" }] : []),
+                    ...(genres.length > 0 ? [{ label: "Genres", value: String(genres.length), color: "text-orange-400" }] : []),
                   ].filter(r => r.value !== "0").map(({ label, value, color }) => (
                     <div key={label} className="flex justify-between items-center py-2.5 border-b border-[#1f1f1f] last:border-0">
                       <span className="text-xs text-gray-500">{label}</span>
@@ -788,20 +939,19 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                     <strong className="text-white">Ollywood</strong>), headquartered in Bhubaneswar, Odisha.
                   </p>
 
-                  {hits.length > 0 && (
+                  {costars.length > 0 && (
                     <p>
-                      Among their notable works, <strong className="text-white">{hits.length} films</strong> earned
-                      a <strong className="text-white">Hit, Super Hit, or Blockbuster verdict</strong> at the Odia
-                      box office, including{" "}
-                      {hits.slice(0, 3).map((m: any, i: number) => (
-                        <span key={String(m._id)}>
-                          <Link href={`/movie/${m.slug || String(m._id)}`}
-                            className="text-orange-400 hover:text-orange-300 transition-colors">
-                            {m.title}
-                          </Link>
-                          {i < Math.min(hits.length, 3) - 1 ? ", " : ""}
+                      Throughout their career, <strong className="text-white">{person.name}</strong> has
+                      collaborated with some of Ollywood's finest artists, including{" "}
+                      {costars.slice(0, 3).map((c: any, i: number) => (
+                        <span key={String(c.castId || i)}>
+                          {c.castId
+                            ? <Link href={`/cast/${String(c.castId)}`} className="text-orange-400 hover:text-orange-300 transition-colors">{c.name}</Link>
+                            : <strong className="text-white">{c.name}</strong>}
+                          {i < Math.min(costars.length, 3) - 1 ? ", " : ""}
                         </span>
                       ))}.
+                      These on-screen partnerships have resonated strongly with Odia audiences.
                     </p>
                   )}
 
@@ -867,16 +1017,14 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                     {
                       q: `How many Odia films has ${person.name} acted in?`,
                       a: movies.length > 0
-                        ? `${person.name} has been part of ${movies.length} Odia film${movies.length !== 1 ? "s" : ""} in Ollywood. Their filmography includes ${hits.length} box office hit${hits.length !== 1 ? "s" : ""} and spans genres such as ${[...new Set(movies.flatMap((m: any) => m.genre || []))].slice(0, 3).join(", ") || "drama and action"}.`
+                        ? `${person.name} has been part of ${movies.length} Odia film${movies.length !== 1 ? "s" : ""} in Ollywood, spanning genres such as ${[...new Set(movies.flatMap((m: any) => m.genre || []))].slice(0, 3).join(", ") || "drama and action"}.`
                         : `${person.name} is associated with Ollywood. Stay tuned to Ollypedia for their latest updates.`,
                     },
                     {
                       q: `What is ${person.name}'s most popular Odia film?`,
-                      a: hits.length > 0
-                        ? `${person.name}'s most celebrated Odia films include ${hits.slice(0, 3).map((m: any) => `"${m.title}"`).join(", ")}, all of which received a hit or blockbuster verdict at the Odia box office.`
-                        : movies.length > 0
-                          ? `${person.name}'s recent Odia work includes "${movies[0].title}". Visit each movie page on Ollypedia for detailed box office and review information.`
-                          : `Check Ollypedia for the latest updates on ${person.name}'s filmography.`,
+                      a: movies.length > 0
+                        ? `${person.name}'s notable Odia films include ${movies.slice(0, 3).map((m: any) => `"${m.title}"`).join(", ")}. Visit each movie page on Ollypedia for detailed cast, songs and review information.`
+                        : `Check Ollypedia for the latest updates on ${person.name}'s filmography.`,
                     },
                     {
                       q: `What is ${person.name}'s role in Odia cinema?`,

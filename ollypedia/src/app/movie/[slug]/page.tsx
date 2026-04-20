@@ -262,10 +262,10 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
 
 function StatChip({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className={`flex flex-col items-center justify-center rounded-xl px-4 py-3 border text-center ${
+    <div className={`flex flex-col items-center justify-center rounded-xl px-2 sm:px-4 py-2.5 border text-center ${
       accent ? "bg-orange-500/10 border-orange-500/30" : "bg-[#111] border-[#1f1f1f]"
     }`}>
-      <p className={`text-lg font-black font-display ${accent ? "text-orange-400" : "text-white"}`}>{value}</p>
+      <p className={`text-sm sm:text-base font-black font-display w-full truncate ${accent ? "text-orange-400" : "text-white"}`}>{value}</p>
       <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">{label}</p>
     </div>
   );
@@ -327,129 +327,140 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
           dangerouslySetInnerHTML={{ __html: JSON.stringify(sd) }} />
       ))}
 
-      {/* ══ HERO BANNER ══ */}
-      {(movie.bannerUrl || movie.thumbnailUrl || movie.posterUrl) && (
-        <div className="relative h-72 md:h-96 overflow-hidden">
-          <Image
-            src={movie.bannerUrl || movie.thumbnailUrl || movie.posterUrl}
-            alt={`${movie.title}${year ? ` ${year}` : ""} – Odia film`}
-            fill className="object-cover object-top" priority
-          />
-          {/* Multi-stop gradient for cinematic look */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/70 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/60 via-transparent to-transparent" />
+      {/* ══ HERO — banner + info all in one block, mobile-first ══ */}
+      <div className="relative w-full bg-[#0a0a0a]">
 
-          {/* Verdict badge floating on banner */}
-          {movie.verdict && (
-            <div className="absolute top-5 left-5">
-              <span className={`text-xs font-black px-3 py-1.5 rounded-full border ${vs.bg} ${vs.text} ${vs.border}`}>
-                {movie.verdict}
-              </span>
-            </div>
+        {/* Banner image — 16:9 on mobile, fixed height on desktop */}
+        <div className="relative w-full h-48 sm:h-64 md:h-80 lg:h-96 overflow-hidden">
+          {(movie.bannerUrl || movie.thumbnailUrl || movie.posterUrl) && (
+            <Image
+              src={movie.bannerUrl || movie.thumbnailUrl || movie.posterUrl}
+              alt={`${movie.title}${year ? ` ${year}` : ""} – Odia film banner`}
+              fill className="object-cover object-top" priority
+            />
           )}
+          {/* Bottom fade — merges banner into the info section below */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/60 via-transparent to-[#0a0a0a]/20" />
         </div>
-      )}
+
+        {/* Info section — sits directly below banner, dark bg continues */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          {/* Breadcrumb */}
+          <div className="pt-3 pb-3 border-b border-[#1a1a1a]">
+            <Breadcrumb crumbs={[{ label: "Movies", href: "/movies" }, { label: movie.title }]} />
+          </div>
+
+          {/* ── Poster + Title row ── */}
+          <div className="flex gap-4 sm:gap-6 pt-5 pb-6 sm:pb-8">
+
+            {/* Poster — fixed sizes per breakpoint, never overflows */}
+            <div className="flex-shrink-0 self-start">
+              <div className="relative w-24 sm:w-36 md:w-44 lg:w-52 rounded-xl overflow-hidden border-2 border-[#2a2a2a] shadow-2xl shadow-black/80"
+                style={{ aspectRatio: "2/3" }}>
+                <Image
+                  src={movie.posterUrl || movie.thumbnailUrl || "/placeholder-movie.svg"}
+                  alt={`${movie.title}${year ? ` (${year})` : ""} Odia movie poster`}
+                  fill className="object-cover" priority
+                />
+              </div>
+              {movie.streamingOn && (
+                <p className="mt-2 text-center text-[10px] text-gray-400 bg-[#1a1a1a] border border-[#2a2a2a] rounded-full px-2 py-0.5 truncate">
+                  🎬 {movie.streamingOn}
+                </p>
+              )}
+            </div>
+
+            {/* Title + meta — takes remaining width */}
+            <div className="flex-1 min-w-0">
+
+              {/* Genre + language badges */}
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {(movie.genre || []).map((g: string) => (
+                  <Link key={g} href={`/movies?genre=${g}`}>
+                    <span className="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-0.5 sm:py-1 bg-orange-950 border border-orange-900 text-orange-400 rounded-full hover:bg-orange-900 transition-colors">
+                      {g}
+                    </span>
+                  </Link>
+                ))}
+                {movie.language && (
+                  <span className="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-950 border border-blue-900 text-blue-400 rounded-full">
+                    {movie.language}
+                  </span>
+                )}
+                {movie.contentRating && (
+                  <span className="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-0.5 sm:py-1 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded-full">
+                    {movie.contentRating}
+                  </span>
+                )}
+              </div>
+
+              {/* Title — scales smoothly across all screens */}
+              <h1 className="font-display font-black text-white leading-tight mb-1
+                text-xl sm:text-3xl md:text-4xl lg:text-5xl">
+                {movie.title}
+              </h1>
+              {year && (
+                <p className="text-zinc-500 text-xs sm:text-sm md:text-base mb-3">
+                  ({year}) · Odia Film
+                </p>
+              )}
+
+              {/* Rating */}
+              {avgRating !== null && (
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <div className="flex items-center gap-1.5 bg-[#111] border border-[#1f1f1f] rounded-lg px-2 py-1 sm:px-3 sm:py-1.5">
+                    <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
+                    <span className="font-bold text-white text-sm sm:text-base">{(avgRating as number).toFixed(1)}</span>
+                    <span className="text-zinc-500 text-[10px] sm:text-xs">/10</span>
+                  </div>
+                  <span className="hidden sm:block"><StarRating rating={avgRating as number} /></span>
+                  <span className="text-[10px] sm:text-xs text-zinc-500">{movie.reviews?.length} reviews</span>
+                </div>
+              )}
+
+              {/* Stat chips — 2 per row on mobile, inline on sm+ */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 sm:gap-2">
+                {movie.releaseDate && (
+                  <StatChip
+                    label="Release"
+                    value={new Date(movie.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                  />
+                )}
+                {movie.runtime && <StatChip label="Runtime" value={movie.runtime} />}
+                {movie.director && (
+                  <div className="hidden md:flex flex-col items-center justify-center rounded-xl px-3 py-2.5 border border-[#1f1f1f] bg-[#111] text-center">
+                    <p className="text-sm font-black text-white truncate w-full">{movie.director}</p>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mt-0.5">Director</p>
+                  </div>
+                )}
+                {movie.verdict && (
+                  <div className={`flex flex-col items-center justify-center rounded-xl px-3 py-2.5 border text-center ${vs.bg} ${vs.border}`}>
+                    <p className={`text-sm sm:text-base font-black font-display ${vs.text}`}>{movie.verdict}</p>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mt-0.5">Verdict</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Synopsis — only on md+ to avoid cramping mobile layout */}
+              {movie.synopsis && (
+                <p className="hidden md:block text-zinc-400 text-sm leading-relaxed line-clamp-2 max-w-2xl mt-3">
+                  {movie.synopsis}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
 
-        {/* Breadcrumb */}
-        <div className="py-4">
-          <Breadcrumb crumbs={[{ label: "Movies", href: "/movies" }, { label: movie.title }]} />
-        </div>
-
-        {/* ══ HERO INFO ROW — poster + title + quick stats ══ */}
-        <div className="flex flex-col sm:flex-row gap-6 mb-10 -mt-2">
-
-          {/* Poster */}
-          <div className="relative w-36 sm:w-44 md:w-52 flex-shrink-0 self-start">
-            <div className="relative aspect-[2/3] rounded-2xl overflow-hidden border-2 border-[#2a2a2a] shadow-2xl shadow-black/60">
-              <Image
-                src={movie.posterUrl || movie.thumbnailUrl || "/placeholder-movie.svg"}
-                alt={`${movie.title}${year ? ` (${year})` : ""} Odia movie poster`}
-                fill className="object-cover" priority
-              />
-            </div>
-            {/* OTT / streaming badge if available */}
-            {movie.streamingOn && (
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] bg-[#1a1a1a] border border-[#2a2a2a] text-gray-300 px-2.5 py-1 rounded-full">
-                🎬 {movie.streamingOn}
-              </div>
-            )}
-          </div>
-
-          {/* Title + meta */}
-          <div className="flex-1 min-w-0 pt-1">
-            {/* Genre badges */}
-            <div className="flex flex-wrap gap-2 mb-3">
-              {(movie.genre || []).map((g: string) => (
-                <Link key={g} href={`/movies?genre=${g}`}>
-                  <span className="text-xs font-semibold px-3 py-1 bg-orange-500/10 border border-orange-500/30 text-orange-400 rounded-full hover:bg-orange-500/20 transition-colors">
-                    {g}
-                  </span>
-                </Link>
-              ))}
-              {movie.language && (
-                <span className="text-xs font-semibold px-3 py-1 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-full">
-                  {movie.language}
-                </span>
-              )}
-              {movie.contentRating && (
-                <span className="text-xs font-semibold px-3 py-1 bg-[#1a1a1a] border border-[#2a2a2a] text-gray-400 rounded-full">
-                  {movie.contentRating}
-                </span>
-              )}
-            </div>
-
-            {/* Title */}
-            <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight mb-1">
-              {movie.title}
-            </h1>
-            {year && (
-              <p className="text-gray-500 text-lg mb-4">({year}) · Odia Film</p>
-            )}
-
-            {/* Rating row */}
-            {avgRating !== null && (
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex items-center gap-2 bg-[#111] border border-[#1f1f1f] rounded-xl px-3 py-2">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-bold text-white text-lg">{(avgRating as number).toFixed(1)}</span>
-                  <span className="text-gray-500 text-xs">/ 10</span>
-                </div>
-                <StarRating rating={avgRating as number} />
-                <span className="text-xs text-gray-500">{movie.reviews?.length} user reviews</span>
-              </div>
-            )}
-
-            {/* Quick stat chips */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-              {movie.releaseDate && (
-                <StatChip label="Release" value={new Date(movie.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} />
-              )}
-              {movie.runtime && <StatChip label="Runtime" value={movie.runtime} />}
-              {movie.director && <StatChip label="Director" value={movie.director} />}
-              {movie.verdict && (
-                <div className={`flex flex-col items-center justify-center rounded-xl px-4 py-3 border text-center ${vs.bg} ${vs.border}`}>
-                  <p className={`text-lg font-black font-display ${vs.text}`}>{movie.verdict}</p>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Verdict</p>
-                </div>
-              )}
-            </div>
-
-            {/* Synopsis preview */}
-            {movie.synopsis && (
-              <p className="text-gray-300 text-sm md:text-base leading-relaxed line-clamp-3 max-w-2xl">
-                {movie.synopsis}
-              </p>
-            )}
-          </div>
-        </div>
-
         {/* ══ MAIN CONTENT GRID ══ */}
-        <div className="grid lg:grid-cols-3 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
 
           {/* ── SIDEBAR ── */}
-          <aside className="lg:col-span-1 space-y-5 order-2 lg:order-1 self-start lg:sticky lg:top-6">
+          <aside className="lg:col-span-1 space-y-4 order-2 lg:order-1 self-start lg:sticky lg:top-4">
 
             {/* Movie Info card */}
             <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-5">
@@ -594,7 +605,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
             {movie.cast?.length > 0 && (
               <section aria-label={`${movie.title} cast and crew`}>
                 <SectionHeading icon={Users} title="Cast & Crew" count={movie.cast.length} />
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {movie.cast.map((member: any, i: number) => (
                     <Link key={i} href={`/cast/${member.castId}`}
                       className="group bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl p-3 flex items-center gap-3 transition-all hover:-translate-y-0.5">
@@ -855,7 +866,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
 
         {/* ══ RELATED MOVIES ══ */}
         {(related as any[]).length > 0 && (
-          <section className="mt-14 pt-10 border-t border-[#1f1f1f]" aria-label="Similar Odia movies">
+          <section className="mt-8 sm:mt-14 pt-8 sm:pt-10 border-t border-[#1f1f1f]" aria-label="Similar Odia movies">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <div className="w-1 h-6 bg-orange-500 rounded-full" />
@@ -868,7 +879,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 View all <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
               {(related as any[]).map((m) => (
                 <MovieCard key={String(m._id)} movie={m} />
               ))}
