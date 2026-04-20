@@ -98,7 +98,7 @@ export async function generateStaticParams() {
   const movies = await (Movie as any)
     .find({ "boxOfficeDays.0": { $exists: true } }, "slug title")
     .sort({ updatedAt: -1 })
-    .limit(100)
+    .limit(30)
     .lean();
   return movies.map((m: any) => ({
     slug: m.slug || String(m.title || "").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),

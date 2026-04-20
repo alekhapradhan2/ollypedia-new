@@ -36,7 +36,7 @@ export async function generateStaticParams() {
   await connectDB();
   const blogs = await Blog.find({ published: true }, "slug")
     .sort({ createdAt: -1 })
-    .limit(200)
+    .limit(50)
     .lean();
   return blogs.map((b: any) => ({ slug: b.slug }));
 }

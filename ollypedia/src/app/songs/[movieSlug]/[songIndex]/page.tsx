@@ -16,14 +16,14 @@ export async function generateStaticParams() {
   const movies = await (Movie as any)
     .find({ "media.songs.0": { $exists: true } }, "slug media.songs._id")
     .sort({ releaseDate: -1 })
-    .limit(40)
+    .limit(20)
     .lean();
   for (const m of movies) {
     const count = m.media?.songs?.length || 0;
-    for (let i = 0; i < count && rows.length < 200; i++) {
+    for (let i = 0; i < count && rows.length < 100; i++) {
       rows.push({ movieSlug: m.slug || String(m._id), songIndex: String(i) });
     }
-    if (rows.length >= 200) break;
+    if (rows.length >= 100) break;
   }
   return rows;
 }
