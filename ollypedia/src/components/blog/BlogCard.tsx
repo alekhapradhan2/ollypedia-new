@@ -44,6 +44,21 @@ export function BlogCard({ blog, variant = "standard" }: BlogCardProps) {
   const cat      = blog.category   || "General";
   const author   = blog.author     || "Ollypedia Team";
   const readTime = blog.readTime   || 5;
+
+  // Strip HTML tags + decode entities so raw markup never leaks into card previews
+  const cleanExcerpt = blog.excerpt
+    ? blog.excerpt
+        .replace(/<[^>]*>/g, " ")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\s{2,}/g, " ")
+        .trim()
+    : undefined;
+
   const date     = blog.createdAt
     ? new Date(blog.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
     : "";
@@ -83,9 +98,9 @@ export function BlogCard({ blog, variant = "standard" }: BlogCardProps) {
               {blog.title}
             </h2>
 
-            {blog.excerpt && (
+            {cleanExcerpt && (
               <p itemProp="description" className="text-zinc-400 text-sm leading-relaxed line-clamp-2 mb-4">
-                {blog.excerpt}
+                {cleanExcerpt}
               </p>
             )}
 
@@ -184,12 +199,12 @@ export function BlogCard({ blog, variant = "standard" }: BlogCardProps) {
             {blog.title}
           </h2>
 
-          {blog.excerpt && (
+          {cleanExcerpt && (
             <p
               itemProp="description"
               className="text-zinc-500 text-xs leading-relaxed line-clamp-2 mb-3"
             >
-              {blog.excerpt}
+              {cleanExcerpt}
             </p>
           )}
 
