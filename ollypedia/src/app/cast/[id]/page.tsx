@@ -9,6 +9,7 @@ import { connectDB } from "@/lib/db";
 import Cast from "@/models/Cast";
 import Movie from "@/models/Movie";
 import News from "@/models/News";
+import Blog from "@/models/Blog";
 import { buildMeta } from "@/lib/seo";
 import {
   Film, Calendar, MapPin, User,
@@ -54,14 +55,32 @@ async function getCastMember(id: string) {
   await connectDB();
   const member: any = await Cast.findById(id).lean();
   if (!member) return null;
-  const [movies, news] = await Promise.all([
+  const [movies, news, blogs] = await Promise.all([
     Movie.find(
       { "cast.castId": member._id },
       "title slug posterUrl thumbnailUrl releaseDate genre verdict imdbRating cast media"
     ).sort({ releaseDate: -1 }).lean(),
     News.find({ castId: member._id }).sort({ createdAt: -1 }).limit(12).lean(),
+    Blog.find(
+      {
+        $and: [
+          // Accept either approved:true OR status:"published" (handles both schema styles)
+          { $or: [{ approved: true }, { status: "published" }] },
+          // Match by castIds array OR name in tags OR name in title (broad net)
+          {
+            $or: [
+              { castIds: member._id },
+              { "castIds": String(member._id) },
+              { tags: { $regex: member.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } },
+              { title: { $regex: member.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } },
+            ],
+          },
+        ],
+      },
+      "title slug excerpt coverImage category tags createdAt readTime views"
+    ).sort({ createdAt: -1 }).limit(9).lean(),
   ]);
-  return JSON.parse(JSON.stringify({ ...member, moviesList: movies, newsList: news }));
+  return JSON.parse(JSON.stringify({ ...member, moviesList: movies, newsList: news, blogsList: blogs }));
 }
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -195,6 +214,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
 
   const movies   = (person.moviesList || []) as any[];
   const newsList = (person.newsList   || []) as any[];
+  const blogsList = (person.blogsList || []) as any[];
   const roles    = person.roles?.length ? person.roles : [person.type || "Artist"];
   const rolesStr = roles.join(", ");
   const icon     = ROLE_ICON[person.type] || "🎭";
@@ -920,6 +940,114 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                       </div>
                     </Link>
                   ))}
+                </div>
+              </section>
+            )}
+
+            {/* ── Blogs & Articles ── */}
+            {blogsList.length > 0 && (
+              <section aria-label={`Blog articles about ${person.name}`}>
+                <SectionHeading icon={Newspaper} title={`Blogs & Articles — ${person.name}`} count={blogsList.length} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {blogsList.map((b: any) => {
+                    const CAT_COLORS: Record<string, string> = {
+                      "Movie Review": "#c9973a", "Actor Spotlight": "#a78be8",
+                      "Top 10": "#e8c87a", News: "#4acf82", Upcoming: "#5aaae8", General: "#e5799a",
+                    };
+                    const catColor = CAT_COLORS[b.category] || "#c9973a";
+                    const cleanExcerpt = (b.excerpt || "")
+                      .replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim();
+                    const displayExcerpt = cleanExcerpt.length > 110
+                      ? cleanExcerpt.slice(0, 110).trimEnd() + "…"
+                      : cleanExcerpt;
+                    return (
+                      <Link
+                        key={String(b._id)}
+                        href={`/blog/${b.slug}`}
+                        className="group flex flex-col bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-2xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:shadow-orange-900/10"
+                        title={`${b.title} — Ollypedia`}
+                      >
+                        {/* Cover image */}
+                        <div className="relative w-full aspect-[16/9] bg-[#1a1a1a] flex-shrink-0 overflow-hidden">
+                          {b.coverImage ? (
+                            <Image
+                              src={b.coverImage}
+                              alt={b.title}
+                              fill
+                              sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 33vw"
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center text-3xl bg-gradient-to-br from-[#1a1200] to-[#0a0a0a]">
+                              ✍️
+                            </div>
+                          )}
+                          {b.category && (
+                            <span
+                              className="absolute top-2 left-2 text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider"
+                              style={{ background: catColor + "22", border: `1px solid ${catColor}55`, color: catColor }}
+                            >
+                              {b.category}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Card body */}
+                        <div className="flex flex-col flex-1 p-3.5 gap-2">
+                          <h3 className="text-sm font-bold text-white group-hover:text-orange-400 transition-colors line-clamp-2 leading-snug">
+                            {b.title}
+                          </h3>
+                          {displayExcerpt && (
+                            <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">
+                              {displayExcerpt}
+                            </p>
+                          )}
+
+                          {/* Tags */}
+                          {(b.tags?.length ?? 0) > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-auto pt-1">
+                              {(b.tags as string[]).slice(0, 3).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="text-[9px] px-1.5 py-0.5 rounded"
+                                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)" }}
+                                >
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Footer meta */}
+                          <div className="flex items-center justify-between pt-2 border-t border-[#1f1f1f] mt-auto">
+                            <div className="flex items-center gap-2 text-[10px] text-gray-600">
+                              {b.createdAt && (
+                                <span>{new Date(b.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+                              )}
+                              {b.readTime && (
+                                <span className="flex items-center gap-0.5">
+                                  <Clock className="w-2.5 h-2.5" />{b.readTime} min
+                                </span>
+                              )}
+                            </div>
+                            {(b.views ?? 0) > 0 && (
+                              <span className="text-[10px] text-gray-600">👁 {Number(b.views).toLocaleString()}</span>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* SEO internal link */}
+                <div className="mt-4 p-4 bg-[#0f0f0f] border border-[#1a1a1a] rounded-xl text-[11px] text-gray-500 leading-relaxed">
+                  <strong className="text-gray-300">{person.name}</strong> features in multiple articles published
+                  on Ollypedia — Odisha&apos;s complete Odia cinema encyclopedia. Browse movie reviews, actor
+                  spotlights, box office reports and the latest Ollywood entertainment news.{" "}
+                  <Link href="/blog" className="text-orange-400/80 hover:text-orange-400 underline transition-colors">
+                    Explore all blogs →
+                  </Link>
                 </div>
               </section>
             )}
