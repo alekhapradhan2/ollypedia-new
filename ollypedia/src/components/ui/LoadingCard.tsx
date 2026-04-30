@@ -36,14 +36,13 @@ export function LoadingCard({
     return () => window.removeEventListener("popstate", reset);
   }, []);
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (loading) return; // prevent double-nav
-    setLoading(true);
-    router.push(href);
-    // Safety reset after 6 s for slow connections
-    setTimeout(() => setLoading(false), 6000);
-  };
+const handleClick = (e: React.MouseEvent) => {
+  e.preventDefault();
+  if (loading || !href) return; // ✅ ensure href exists
+  setLoading(true);
+  router.push(href);
+  setTimeout(() => setLoading(false), 6000);
+};
 
   return (
     <div
