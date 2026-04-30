@@ -56,8 +56,16 @@ async function getMovies({ genre, verdict, sort, page }: {
   const LIMIT  = 20;
   const skip   = ((page || 1) - 1) * LIMIT;
   const filter: any = {};
-  if (genre)   filter.genre   = { $in: [genre] };
-  if (verdict) filter.verdict = verdict;
+  if (genre) filter.genre = { $in: [genre] };
+
+  // When filtering by "Upcoming", also include movies with no verdict (TBA)
+  if (verdict) {
+    if (verdict === "Upcoming") {
+      filter.$or = [{ verdict: "Upcoming" }, { verdict: { $exists: false } }, { verdict: null }];
+    } else {
+      filter.verdict = verdict;
+    }
+  }
 
   const sortMap: Record<string, any> = {
     latest: { releaseDate: -1 },
@@ -66,7 +74,41 @@ async function getMovies({ genre, verdict, sort, page }: {
     za:     { title:       -1 },
     rating: { imdbRating:  -1 },
   };
-  const sortBy = sortMap[sort || "latest"] || sortMap.latest;
+  let sortBy = sortMap[sort || "latest"] || sortMap.latest;
+
+  // For upcoming: use aggregate to put dated movies first, TBA last
+  if (verdict === "Upcoming" && (!sort || sort === "latest")) {
+    const [movies, total] = await Promise.all([
+      Movie.aggregate([
+        { $match: filter },
+        { $project: { reviews: 0 } },
+        {
+          $addFields: {
+            _hasDated: {
+              $cond: [
+                { $and: [{ $ifNull: ["$releaseDate", false] }, { $ne: ["$releaseDate", ""] }] },
+                1, 0,
+              ],
+            },
+            _releaseDateObj: {
+              $toDate: {
+                $cond: [
+                  { $and: [{ $ifNull: ["$releaseDate", false] }, { $ne: ["$releaseDate", ""] }] },
+                  "$releaseDate",
+                  "9999-12-31",
+                ],
+              },
+            },
+          },
+        },
+        { $sort: { _hasDated: -1, _releaseDateObj: 1 } },
+        { $skip: skip },
+        { $limit: LIMIT },
+      ]),
+      Movie.countDocuments(filter),
+    ]);
+    return { movies, total, pages: Math.ceil(total / LIMIT) };
+  }
 
   const [movies, total] = await Promise.all([
     Movie.find(filter, "-reviews").sort(sortBy).skip(skip).limit(LIMIT).lean(),

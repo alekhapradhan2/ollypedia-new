@@ -15,8 +15,8 @@ import clsx from "clsx";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const NAV_LINKS = [
-  { label: "Movies",     href: "/movie"      },
-  { label: "Songs",      href: "/song"       },
+  { label: "Movies",     href: "/movies"      },
+  { label: "Songs",      href: "/songs"       },
   { label: "Cast",       href: "/cast"       },
   { label: "Box Office", href: "/box-office" },
   { label: "Blog",       href: "/blog"       },

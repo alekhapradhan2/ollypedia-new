@@ -66,11 +66,46 @@ function fmtINR(n: number): string {
 
 async function getHomeData() {
   await connectDB();
-  const [allMovies, latestBlogs] = await Promise.all([
+  const [allMovies, upcomingMovies, latestBlogs] = await Promise.all([
     Movie.find({}, "-reviews -media.songs")
       .sort({ releaseDate: -1 })
       .limit(80)
       .lean(),
+    // ── Dedicated upcoming query so TBA movies (no releaseDate) are never
+    //    crowded out by the 80-doc limit on the main descending-date query.
+    Movie.aggregate([
+      {
+        $match: {
+          $or: [{ verdict: "Upcoming" }, { verdict: { $exists: false } }, { verdict: null }],
+        },
+      },
+      { $project: { reviews: 0, "media.songs": 0 } },
+      {
+        $addFields: {
+          // 1 if releaseDate is a non-empty string, 0 if null/missing/empty → TBA
+          _hasDated: {
+            $cond: [
+              { $and: [{ $ifNull: ["$releaseDate", false] }, { $ne: ["$releaseDate", ""] }] },
+              1,
+              0,
+            ],
+          },
+          // Safe date conversion: replace null or "" with a far-future sentinel
+          _releaseDateObj: {
+            $toDate: {
+              $cond: [
+                { $and: [{ $ifNull: ["$releaseDate", false] }, { $ne: ["$releaseDate", ""] }] },
+                "$releaseDate",
+                "9999-12-31",
+              ],
+            },
+          },
+        },
+      },
+      // _hasDated desc (dated first), then by date asc (soonest first), TBA last
+      { $sort: { _hasDated: -1, _releaseDateObj: 1 } },
+      { $limit: 6 },
+    ]),
     // Latest blogs for the main grid
     Blog.find({ published: true }, "-content -reviews")
       .sort({ createdAt: -1 })
@@ -128,19 +163,6 @@ async function getHomeData() {
     .sort((a: any, b: any) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
     .slice(0, 10);
 
-  // ── Upcoming movies ───────────────────────────────────────────
-  const upcomingMovies = (allMovies as any[])
-    .filter((m) => !m.verdict || m.verdict === "Upcoming")
-    .sort((a: any, b: any) => {
-      const aDate = a.releaseDate ? new Date(a.releaseDate).getTime() : null;
-      const bDate = b.releaseDate ? new Date(b.releaseDate).getTime() : null;
-      if (!aDate && !bDate) return 0;
-      if (!aDate) return 1;
-      if (!bDate) return -1;
-      return aDate - bDate;
-    })
-    .slice(0, 6);
-
   // ── Top-rated / blockbuster movies ───────────────────────────
   const topMovies = (allMovies as any[])
     .filter((m) => ["Blockbuster","Super Hit","Hit"].includes(m.verdict || ""))
@@ -164,7 +186,17 @@ async function getHomeData() {
     .sort((a: any, b: any) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
     .slice(0, 6);
 
-  return { heroMovies, latestMovies, upcomingMovies, latestBlogs, topMovies, boxOfficeMovies };
+  // ── JS-side re-sort as guarantee: dated (soonest first) → TBA last ──
+  const sortedUpcoming = (upcomingMovies as any[]).sort((a, b) => {
+    const aDate = a.releaseDate ? new Date(a.releaseDate).getTime() : null;
+    const bDate = b.releaseDate ? new Date(b.releaseDate).getTime() : null;
+    if (aDate && bDate) return aDate - bDate;  // both dated: soonest first
+    if (aDate && !bDate) return -1;            // a has date, b is TBA: a first
+    if (!aDate && bDate) return 1;             // a is TBA, b has date: b first
+    return 0;                                  // both TBA: keep order
+  });
+
+  return { heroMovies, latestMovies, upcomingMovies: sortedUpcoming, latestBlogs, topMovies, boxOfficeMovies };
 }
 
 // ── Category pills for blog ───────────────────────────────────────
