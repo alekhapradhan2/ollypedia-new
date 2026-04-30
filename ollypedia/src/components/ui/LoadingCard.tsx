@@ -12,11 +12,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 interface LoadingCardProps {
-  href: string;
+  href?: string;
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
-  borderRadius?: number; // default 10, match your card's border-radius
+  borderRadius?: number;
 }
 
 export function LoadingCard({
@@ -46,9 +46,8 @@ export function LoadingCard({
   };
 
   return (
-    <a
-      href={href}
-      onClick={handleClick}
+    <div
+      onClick={href ? handleClick : undefined}
       className={className}
       style={{
         ...style,
@@ -120,6 +119,6 @@ export function LoadingCard({
           100% { background-position: -200% 0; }
         }
       `}</style>
-    </a>
+    </div>
   );
 }

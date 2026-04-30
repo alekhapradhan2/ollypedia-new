@@ -214,7 +214,7 @@ function SeoInterlinks({
         <h2 className="text-white font-bold text-sm mb-2">
           About This Article
         </h2>
-        <p className="text-gray-400 text-sm leading-relaxed">
+        <div className="text-gray-400 text-sm leading-relaxed">
           {blog.excerpt ||
             blog.content?.replace(/<[^>]+>/g, "").slice(0, 200) ||
             `${blog.title} — Read the full story on Ollypedia, your home for Odia cinema news, reviews, and entertainment.`}
@@ -235,7 +235,7 @@ function SeoInterlinks({
               .
             </>
           )}
-        </p>
+        </div>
 
         {/* Tag pills */}
         {(blog.tags?.length || blog.category) && (
@@ -689,7 +689,7 @@ export default async function BlogPage({
       <div className="bp-sidebar-box" style={{ marginTop: 0 }}>
         <div className="bp-sidebar-hd">📖 About Ollypedia</div>
         <div className="bp-sidebar-body" style={{ paddingTop: 10 }}>
-          <p style={{ fontSize: ".72rem", color: "rgba(255,255,255,.38)", lineHeight: 1.8, margin: "0 0 10px" }}>
+          <div style={{ fontSize: ".72rem", color: "rgba(255,255,255,.38)", lineHeight: 1.8, margin: "0 0 10px" }}>
             Ollypedia is Odisha&apos;s complete Odia cinema database — covering{" "}
             <Link href="/movies" style={{ color: "rgba(201,151,58,.8)", textDecoration: "none" }}>Ollywood movies</Link>,
             {" "}actors, songs, box office and news.
@@ -697,7 +697,7 @@ export default async function BlogPage({
               <>{" "}Explore all <Link href={`/blog?movie=${encodeURIComponent(blog.movieTitle)}`}
                 style={{ color: "rgba(201,151,58,.8)", textDecoration: "none" }}>{blog.movieTitle} articles</Link> on Ollypedia.</>
             )}
-          </p>
+          </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "5px 8px" }}>
             {[
               { label: "🎬 Movies", href: "/movies" },

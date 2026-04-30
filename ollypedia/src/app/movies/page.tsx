@@ -49,6 +49,11 @@ const ODIA_FILM_FACTS = [
   { icon: Calendar, stat: "85+",   label: "Years of Cinema",   note: "Odia cinema has a rich heritage of over 85 years" },
 ];
 
+// Helper: check if a releaseDate field is a real date
+function hasRealDate(releaseDate: any) {
+  return { $and: [{ $ifNull: [releaseDate, false] }, { $ne: [releaseDate, ""] }] };
+}
+
 async function getMovies({ genre, verdict, sort, page }: {
   genre?: string; verdict?: string; sort?: string; page?: number;
 }) {
@@ -68,15 +73,13 @@ async function getMovies({ genre, verdict, sort, page }: {
   }
 
   const sortMap: Record<string, any> = {
-    latest: { releaseDate: -1 },
     oldest: { releaseDate:  1 },
     az:     { title:        1 },
     za:     { title:       -1 },
     rating: { imdbRating:  -1 },
   };
-  let sortBy = sortMap[sort || "latest"] || sortMap.latest;
 
-  // For upcoming: use aggregate to put dated movies first, TBA last
+  // ── For "Upcoming" verdict with default/latest sort: dated first (soonest), TBA last ──
   if (verdict === "Upcoming" && (!sort || sort === "latest")) {
     const [movies, total] = await Promise.all([
       Movie.aggregate([
@@ -85,18 +88,11 @@ async function getMovies({ genre, verdict, sort, page }: {
         {
           $addFields: {
             _hasDated: {
-              $cond: [
-                { $and: [{ $ifNull: ["$releaseDate", false] }, { $ne: ["$releaseDate", ""] }] },
-                1, 0,
-              ],
+              $cond: [hasRealDate("$releaseDate"), 1, 0],
             },
             _releaseDateObj: {
               $toDate: {
-                $cond: [
-                  { $and: [{ $ifNull: ["$releaseDate", false] }, { $ne: ["$releaseDate", ""] }] },
-                  "$releaseDate",
-                  "9999-12-31",
-                ],
+                $cond: [hasRealDate("$releaseDate"), "$releaseDate", "9999-12-31"],
               },
             },
           },
@@ -110,6 +106,33 @@ async function getMovies({ genre, verdict, sort, page }: {
     return { movies, total, pages: Math.ceil(total / LIMIT) };
   }
 
+  // ── For default "latest" sort: use aggregate so TBA movies (null/empty releaseDate)
+  //    are included and sorted to the end instead of being randomly omitted ──
+  if (!sort || sort === "latest") {
+    const [movies, total] = await Promise.all([
+      Movie.aggregate([
+        { $match: filter },
+        { $project: { reviews: 0 } },
+        {
+          $addFields: {
+            _releaseDateObj: {
+              $toDate: {
+                $cond: [hasRealDate("$releaseDate"), "$releaseDate", "1900-01-01"],
+              },
+            },
+          },
+        },
+        { $sort: { _releaseDateObj: -1, _id: -1 } },
+        { $skip: skip },
+        { $limit: LIMIT },
+      ]),
+      Movie.countDocuments(filter),
+    ]);
+    return { movies, total, pages: Math.ceil(total / LIMIT) };
+  }
+
+  // ── All other sorts (oldest, az, za, rating) ──
+  const sortBy = sortMap[sort] || sortMap.az;
   const [movies, total] = await Promise.all([
     Movie.find(filter, "-reviews").sort(sortBy).skip(skip).limit(LIMIT).lean(),
     Movie.countDocuments(filter),
@@ -245,7 +268,9 @@ export default async function MoviesPage({
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {movies.map((m: any) => (
-                <LoadingCard key={String(m._id)} href={`/movie/${m.slug}`} borderRadius={12}>
+                // FIX: Removed href from LoadingCard — MovieCard already renders its own <Link>.
+                // Having href on LoadingCard caused <a> nested inside <a> → hydration crash.
+                <LoadingCard key={String(m._id)} borderRadius={12}>
                   <MovieCard movie={m} />
                 </LoadingCard>
               ))}

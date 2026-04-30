@@ -32,7 +32,12 @@ function verdictColor(verdict: string) {
 export function MovieCard({ movie, variant = "portrait" }: MovieCardProps) {
   const href  = `/movie/${movie.slug || movie._id}`;
   const image = movie.posterUrl || movie.thumbnailUrl || "/placeholder-movie.jpg";
-  const year  = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
+  const displayDate = (() => {
+    if (!movie.releaseDate || movie.releaseDate.trim() === "") return "TBA";
+    const d = new Date(movie.releaseDate);
+    if (isNaN(d.getTime())) return "TBA";
+    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  })();
   const rating = movie.reviews?.length
     ? (movie.reviews.reduce((s, r) => s + (r.rating || 0), 0) / movie.reviews.length).toFixed(1)
     : movie.imdbRating || null;
@@ -53,11 +58,12 @@ export function MovieCard({ movie, variant = "portrait" }: MovieCardProps) {
             ))}
           </div>
           <div className="flex items-center gap-3 mt-2">
-            {year && (
-              <span className="flex items-center gap-1 text-xs text-gray-500">
-                <Calendar className="w-3 h-3" /> {year}
+            <span className="flex items-center gap-1 text-xs text-gray-500">
+                <Calendar className="w-3 h-3" />
+                <span className={displayDate === "TBA" ? "text-orange-400 font-semibold" : ""}>
+                  {displayDate}
+                </span>
               </span>
-            )}
             {rating && (
               <span className="flex items-center gap-1 text-xs text-yellow-400 font-medium">
                 <Star className="w-3 h-3 fill-yellow-400" /> {rating}
@@ -112,11 +118,12 @@ export function MovieCard({ movie, variant = "portrait" }: MovieCardProps) {
           <h3 className="font-semibold text-white text-sm leading-tight line-clamp-2 group-hover:text-orange-400 transition-colors font-display">
             {movie.title}
           </h3>
-          {year && (
-            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-              <Calendar className="w-3 h-3" /> {year}
+          <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              <span className={displayDate === "TBA" ? "text-orange-400 font-semibold" : ""}>
+                {displayDate}
+              </span>
             </p>
-          )}
         </div>
       </div>
     </Link>
