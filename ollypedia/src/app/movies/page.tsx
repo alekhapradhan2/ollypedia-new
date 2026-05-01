@@ -1,4 +1,4 @@
-// app/movies/page.tsx
+import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connectDB } from "@/lib/db";
@@ -26,20 +26,6 @@ export const metadata: Metadata = buildMeta({
     "upcoming Odia movies", "Odia blockbuster movies", "latest Ollywood films",
   ],
   url: "/movies",
-  // Structured Data (JSON-LD) for Google
-  jsonLd: {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    "name": "Odia Movies Database – Ollypedia",
-    "description": "The most complete Ollywood (Odia language film industry) database with cast, songs, box office and reviews.",
-    "url": "https://ollypedia.com/movies",
-    "inLanguage": "en",
-    "publisher": {
-      "@type": "Organization",
-      "name": "Ollypedia",
-      "url": "https://ollypedia.com",
-    },
-  },
 });
 
 /* ─── CONSTANTS ──────────────────────────────────────────── */
@@ -405,21 +391,20 @@ export default async function MoviesPage({
           {movies.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {movies.map((m: any, idx: number) => (
-                <>
-                  <LoadingCard key={String(m._id)} borderRadius={12}>
+                <React.Fragment key={String(m._id)}>
+                  <LoadingCard borderRadius={12}>
                     <MovieCard movie={m} />
                   </LoadingCard>
 
                   {/* ── In-grid AdSense unit after every 10th card ── */}
                   {(idx + 1) % 10 === 0 && (
                     <div
-                      key={`ad-${idx}`}
                       className="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-5 my-2"
                     >
                       <AdBanner slot="0987654321" format="auto" />
                     </div>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </div>
           ) : (
