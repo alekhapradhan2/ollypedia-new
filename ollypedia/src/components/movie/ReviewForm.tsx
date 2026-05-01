@@ -442,27 +442,47 @@ function ShareModal({
       let   ry  = POSTER_Y + 4;
 
       // "MY RATING" micro-label — sits on its own line ABOVE the title
-      ctx.fillStyle = "rgba(245,158,11,0.55)";
-      ctx.font = "bold 9px 'Georgia', serif";
-      ctx.letterSpacing = "2px";
-      ctx.fillText("MY RATING", RX, ry + 10);
-      ctx.letterSpacing = "0px";
-      ry += 20; // gap below label before title
+ // "MY RATING"
+ctx.fillStyle = "rgba(245,158,11,0.55)";
+ctx.font = "bold 9px Georgia";
+ctx.fillText("MY RATING", RX, ry);
 
-      // Movie title (wrapping, max 2 lines to keep tight)
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 20px 'Georgia', serif";
-      const tWords = (movieTitle || "Movie Review").split(" ");
-      let tLine = ""; const tLines: string[] = [];
-      for (const w of tWords) {
-        const test = tLine ? `${tLine} ${w}` : w;
-        if (ctx.measureText(test).width > RW) { tLines.push(tLine); tLine = w; if (tLines.length >= 2) break; }
-        else tLine = test;
-      }
-      if (tLine) tLines.push(tLine);
-      if (tLines.length === 2 && tLine !== tLines[1]) tLines[1] = tLines[1] + "…";
-      tLines.forEach((ln, i) => { ctx.fillText(ln, RX, ry + i * 26); });
-      ry += tLines.length * 26 + 16;
+// 👉 Push title down more
+ry += 30; // 🔥 adjust this (28–35 if you want fine control)
+
+// Title
+ctx.fillStyle = "#ffffff";
+ctx.font = "bold 20px Georgia";
+
+const lineHeight = 24;
+const maxWidth = RW;
+
+const words = (movieTitle || "Movie Review").split(" ");
+let line = "";
+const lines: string[] = [];
+
+for (let i = 0; i < words.length; i++) {
+  const testLine = line ? line + " " + words[i] : words[i];
+  const testWidth = ctx.measureText(testLine).width;
+
+  if (testWidth > maxWidth && line) {
+    lines.push(line);
+    line = words[i];
+    if (lines.length === 2) break;
+  } else {
+    line = testLine;
+  }
+}
+
+if (line && lines.length < 2) lines.push(line);
+
+// Draw title
+lines.forEach((l, i) => {
+  ctx.fillText(l, RX, ry + i * lineHeight);
+});
+
+// Move ry after title
+ry += lines.length * lineHeight + 12;
 
       // Stars
       const SS = 22; const SG = 4;
