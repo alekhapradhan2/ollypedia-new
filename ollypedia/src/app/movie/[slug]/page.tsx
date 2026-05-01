@@ -663,44 +663,14 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
             {/* ── User Reviews ── */}
             <section aria-label={`User reviews for ${movie.title}`}>
               <SectionHeading icon={MessageSquare} title="User Reviews" count={movie.reviews?.length} />
-
-              {movie.reviews?.length > 0 ? (
-                <div className="space-y-4 mb-6">
-                  {movie.reviews.slice(0, 5).map((r: any, i: number) => (
-                    <div key={i} className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-5">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 bg-orange-500/15 rounded-full flex items-center justify-center">
-                            <User className="w-4 h-4 text-orange-400" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-white">{r.user || "Anonymous"}</p>
-                            {r.date && (
-                              <p className="text-[10px] text-gray-600">{new Date(r.date).toLocaleDateString("en-IN")}</p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-2.5 py-1">
-                          <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm font-bold text-white">{r.rating}</span>
-                          <span className="text-gray-500 text-xs">/10</span>
-                        </div>
-                      </div>
-                      <p className="text-gray-300 text-sm leading-relaxed">{r.text}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-6 mb-6 text-center">
-                  <MessageSquare className="w-8 h-8 text-gray-700 mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">No reviews yet. Be the first to review <strong className="text-gray-400">{movie.title}</strong>!</p>
-                </div>
-              )}
-
-              <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-6">
-                <h3 className="font-display font-bold text-lg text-white mb-4">Write a Review</h3>
-                <ReviewForm movieId={String(movie._id)} />
-              </div>
+              {/* ReviewForm now owns the list + form together.
+                  initialReviews seeds the list; new submissions appear instantly. */}
+              <ReviewForm
+                movieId={String(movie._id)}
+                movieTitle={movie.title}
+                moviePoster={movie.posterUrl}
+                initialReviews={movie.reviews ?? []}
+              />
             </section>
 
             {/* ══ SEO CONTENT BLOCK ══ */}

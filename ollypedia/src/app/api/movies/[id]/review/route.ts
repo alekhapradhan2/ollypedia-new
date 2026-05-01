@@ -1,14 +1,24 @@
+// app/api/movies/[id]/review/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache"; // FIX: import for on-demand ISR
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     await connectDB();
     const { user, rating, text } = await req.json();
-    if (!text?.trim()) return NextResponse.json({ error: "Text required" }, { status: 400 });
+
+    if (!text?.trim())
+      return NextResponse.json({ error: "Text required" }, { status: 400 });
     if (!rating || rating < 1 || rating > 10)
-      return NextResponse.json({ error: "Rating must be 1–10" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Rating must be 1–10" },
+        { status: 400 }
+      );
 
     const review = {
       user: user || "Anonymous",
@@ -18,15 +28,27 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       likes: 0,
     };
 
-    const movie = await Movie.findByIdAndUpdate(
+    const movie = (await Movie.findByIdAndUpdate(
       params.id,
       { $push: { reviews: review } },
       { new: true }
-    ).select("reviews").lean() as any;
+    )
+      .select("reviews slug")   // FIX: also fetch slug so we can revalidate
+      .lean()) as any;
 
-    if (!movie) return NextResponse.json({ error: "Movie not found" }, { status: 404 });
+    if (!movie)
+      return NextResponse.json({ error: "Movie not found" }, { status: 404 });
 
     const newReview = movie.reviews[movie.reviews.length - 1];
+
+    // ── FIX: on-demand ISR revalidation ──────────────────────────────────────
+    // Tells Next.js to immediately regenerate the movie page in production
+    // instead of waiting for the 1-hour revalidate window.
+    // Uses slug if available, falls back to _id.
+    const pageSlug = movie.slug || String(movie._id);
+    revalidatePath(`/movie/${pageSlug}`);
+    // ─────────────────────────────────────────────────────────────────────────
+
     return NextResponse.json({ review: newReview }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
