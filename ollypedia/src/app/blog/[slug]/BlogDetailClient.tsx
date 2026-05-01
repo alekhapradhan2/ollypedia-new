@@ -525,13 +525,20 @@ export default function BlogDetailClient({ slug, initialData, sidebarContent }: 
     //   ✅ direct link visit → counted (no key yet)
     //   ❌ page refresh      → NOT counted (key already set)
     //   ✅ new tab / new session → counted again
-    const sessionKey = `viewed_${post._id}`;
+    //
+    // Use slug (always present & unique) as the session key.
+    // post._id can be undefined for new blogs when initialData is passed from
+    // SSR (MongoDB ObjectId serialisation), causing all new blogs to share
+    // the same key "viewed_undefined" and only the first visit ever being counted.
+    const key = post.slug || post._id;
+    if (!key) return; // safety guard — no identifier at all, skip silently
+    const sessionKey = `viewed_${key}`;
     if (sessionStorage.getItem(sessionKey)) return;
 
     // Mark immediately before fetch to prevent double-count on re-render
     sessionStorage.setItem(sessionKey, "1");
 
-   fetch(`${API_BASE}/blog/${post.slug}/view`, { method: "POST" }).catch(() => {});
+    fetch(`${API_BASE}/blog/${post.slug}/view`, { method: "POST" }).catch(() => {});
   }, [post]);
 
   // ── Review actions ──────────────────────────────────────────────────────────
