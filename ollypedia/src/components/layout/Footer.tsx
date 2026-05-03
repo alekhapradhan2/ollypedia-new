@@ -49,7 +49,6 @@ async function getRecentData(): Promise<{ movies: RecentMovie[]; blogs: RecentBl
     const today = new Date();
 
     const [rawMovies, blogs] = await Promise.all([
-      // Only truly released movies: releaseDate in the past AND verdict is not "Upcoming"
       (Movie as any)
         .find({
           releaseDate: { $exists: true, $ne: null, $lte: today },
@@ -68,7 +67,6 @@ async function getRecentData(): Promise<{ movies: RecentMovie[]; blogs: RecentBl
         : [],
     ]);
 
-    // Compute avgRating and reviewCount from embedded reviews array
     const movies = (rawMovies as any[]).map((m: any) => {
       const reviews: { rating?: number }[] = m.reviews ?? [];
       const rated  = reviews.filter((r) => typeof r.rating === "number" && r.rating > 0);
@@ -172,14 +170,14 @@ const VERDICT_BG: Record<string, string> = {
 };
 
 const CATEGORY_ICON: Record<string, string> = {
-  "Movie Review":    "🎬",
-  "Actor Spotlight": "🌟",
-  "Top 10":          "🏆",
-  "Music":           "🎵",
-  "Behind the Scenes":"🎥",
-  "Industry News":   "📰",
-  "Opinion":         "💬",
-  "General":         "✍️",
+  "Movie Review":      "🎬",
+  "Actor Spotlight":   "🌟",
+  "Top 10":            "🏆",
+  "Music":             "🎵",
+  "Behind the Scenes": "🎥",
+  "Industry News":     "📰",
+  "Opinion":           "💬",
+  "General":           "✍️",
 };
 
 // ── Static link sets ──────────────────────────────────────────────────────────
@@ -192,39 +190,34 @@ const NAV_LINKS = {
     { label: "Blog",        href: "/blog"    },
   ],
   Company: [
-    { label: "About Us",   href: "/about"      },
-    { label: "Contact",    href: "/contact"    },
-    { label: "Privacy",    href: "/privacy"    },
-    { label: "Disclaimer", href: "/disclaimer" },
+    { label: "About Us",          href: "/about"            },
+    { label: "Contact",           href: "/contact"          },
+    { label: "Privacy Policy",    href: "/privacy"          },
+    { label: "Disclaimer",        href: "/disclaimer"       },
+    { label: "Terms & Conditions", href: "/terms-and-conditions" },
   ],
 };
 
 const SEO_LINKS = {
-  // ── Songs category section ────────────────────────────────────────────────
-  // ✅ All 5 routes exist at app/songs/category/[category]/page.tsx
   "Explore Movies & Songs": [
-    // TODO: Replace /movies hrefs with real filter pages once built.
-    // Current hrefs point to /movies (safe — no 404).
-    // Build app/movies/[filter]/page.tsx then update these:
-    { label: "Odia Movies 2026",        href: "/movies"                   },  // TODO: /movies/2026
-    { label: "Odia Movies 2025",        href: "/movies"                   },  // TODO: /movies/2025
-    { label: "Odia Movies 2024",        href: "/movies"                   },  // TODO: /movies/2024
-    { label: "Upcoming Odia Movies",    href: "/movies"                   },  // TODO: /movies/upcoming
-    { label: "Latest Odia Movies",      href: "/movies"                   },  // TODO: /movies/latest
-    { label: "Blockbuster Odia Movies", href: "/movies"                   },  // TODO: /movies/blockbuster
-    { label: "Odia Songs 2026",         href: "/songs/category/2026"      },  // ✅ exists
-    { label: "Latest Odia Songs",       href: "/songs/category/latest"    },  // ✅ exists
-    { label: "Trending Songs",          href: "/songs/category/trending"  },  // ✅ exists
-    { label: "Old Hit Songs",           href: "/songs/category/classics"  },  // ✅ exists
-    { label: "Top Singers",             href: "/songs/category/singers"   },  // ✅ exists
+    { label: "Odia Movies 2026",        href: "/movies"                   },
+    { label: "Odia Movies 2025",        href: "/movies"                   },
+    { label: "Odia Movies 2024",        href: "/movies"                   },
+    { label: "Upcoming Odia Movies",    href: "/movies"                   },
+    { label: "Latest Odia Movies",      href: "/movies"                   },
+    { label: "Blockbuster Odia Movies", href: "/movies"                   },
+    { label: "Odia Songs 2026",         href: "/songs/category/2026"      },
+    { label: "Latest Odia Songs",       href: "/songs/category/latest"    },
+    { label: "Trending Songs",          href: "/songs/category/trending"  },
+    { label: "Old Hit Songs",           href: "/songs/category/classics"  },
+    { label: "Top Singers",             href: "/songs/category/singers"   },
   ],
-  // ── Blog guide section ────────────────────────────────────────────────────
   "Learn / Discover": [
-    { label: "Know About Odia Movies",  href: "/blog/odia-guides/odia-movies" },
-    { label: "History of Ollywood",     href: "/blog/odia-guides/history-of-ollywood" },
-    { label: "Top 10 Odia Movies",      href: "/blog/odia-guides/top-10-odia-movies" },
-    { label: "Best Odia Songs List",    href: "/blog/odia-guides/best-odia-songs" },
-    { label: "Famous Odia Actors",      href: "/blog/odia-guides/odia-actors" },
+    { label: "Know About Odia Movies",  href: "/blog/odia-guides/odia-movies"          },
+    { label: "History of Ollywood",     href: "/blog/odia-guides/history-of-ollywood"  },
+    { label: "Top 10 Odia Movies",      href: "/blog/odia-guides/top-10-odia-movies"   },
+    { label: "Best Odia Songs List",    href: "/blog/odia-guides/best-odia-songs"      },
+    { label: "Famous Odia Actors",      href: "/blog/odia-guides/odia-actors"          },
   ],
 };
 
@@ -233,50 +226,57 @@ export async function Footer() {
   const { movies, blogs } = await getRecentData();
 
   return (
-    <footer className="bg-[#0a0a0a] border-t border-[#1c1c1c] mt-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+    <footer
+      className="bg-[#0a0a0a] border-t border-[#1c1c1c] mt-16"
+      aria-label="Site footer"
+      itemScope
+      itemType="https://schema.org/WPFooter"
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
 
         {/* ══════════════════════════════════════════════════════
             SEO PILL LINKS
         ══════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-10 border-b border-[#1c1c1c]">
-          {Object.entries(SEO_LINKS).map(([section, links]) => (
-            <div key={section}>
-              <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-500 mb-4 flex items-center gap-2">
-                <span className="w-5 h-px bg-orange-500/60" />
-                {section}
-              </h3>
-              <ul className="flex flex-wrap gap-2">
-                {links.map((link) => (
-                  <li key={`${link.href}-${link.label}`}>
-                    <Link
-                      href={link.href}
-                      className="inline-flex items-center gap-1 text-[11px] text-gray-500 hover:text-orange-400 bg-[#141414] hover:bg-orange-500/8 border border-[#1e1e1e] hover:border-orange-500/25 px-2.5 py-1 rounded-full transition-all duration-200"
-                    >
-                      <ChevronRight className="w-2.5 h-2.5 opacity-40" />
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+        <nav aria-label="SEO quick links">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 pb-8 sm:pb-10 border-b border-[#1c1c1c]">
+            {Object.entries(SEO_LINKS).map(([section, links]) => (
+              <div key={section}>
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-500 mb-3 sm:mb-4 flex items-center gap-2">
+                  <span className="w-5 h-px bg-orange-500/60" aria-hidden="true" />
+                  {section}
+                </h3>
+                <ul className="flex flex-wrap gap-1.5 sm:gap-2">
+                  {links.map((link) => (
+                    <li key={`${link.href}-${link.label}`}>
+                      <Link
+                        href={link.href}
+                        className="inline-flex items-center gap-1 text-[11px] text-gray-500 hover:text-orange-400 bg-[#141414] hover:bg-orange-500/8 border border-[#1e1e1e] hover:border-orange-500/25 px-2.5 py-1 rounded-full transition-all duration-200"
+                      >
+                        <ChevronRight className="w-2.5 h-2.5 opacity-40" aria-hidden="true" />
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </nav>
 
         {/* ══════════════════════════════════════════════════════
             RECENTLY RELEASED MOVIES  +  LATEST ARTICLES
         ══════════════════════════════════════════════════════ */}
         {(movies.length > 0 || blogs.length > 0) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-10 border-b border-[#1c1c1c]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 py-8 sm:py-10 border-b border-[#1c1c1c]">
 
             {/* Recent Movies */}
             {movies.length > 0 && (
-              <div>
+              <section aria-label="Recently released Odia movies">
                 <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-600 mb-4 flex items-center gap-2">
-                  <span className="w-5 h-px bg-gray-700" />
+                  <span className="w-5 h-px bg-gray-700" aria-hidden="true" />
                   Recently Released
                 </h3>
-                <ul className="space-y-3">
+                <ul className="space-y-2.5 sm:space-y-3">
                   {movies.map((movie) => {
                     const verdictColor = VERDICT_COLOR[movie.verdict ?? ""] ?? "text-gray-500";
                     const verdictBg    = VERDICT_BG[movie.verdict ?? ""]    ?? "bg-gray-500/10 border-gray-500/20";
@@ -285,20 +285,23 @@ export async function Footer() {
                         <Link
                           href={`/movie/${movie.slug}`}
                           className="group flex gap-3 items-start hover:bg-[#111] rounded-xl p-2 -mx-2 transition-colors"
+                          title={`${movie.title} — Odia Movie`}
                         >
                           {/* Poster */}
-                          <div className="w-10 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-[#1a1a1a] relative">
+                          <div className="w-9 h-12 sm:w-10 sm:h-14 flex-shrink-0 rounded-lg overflow-hidden bg-[#1a1a1a] relative">
                             {movie.posterUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
                                 src={movie.posterUrl}
-                                alt={movie.title}
+                                alt={`${movie.title} poster`}
                                 className="w-full h-full object-cover"
                                 loading="lazy"
+                                width={40}
+                                height={56}
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <Star className="w-4 h-4 text-gray-700" />
+                                <Star className="w-4 h-4 text-gray-700" aria-hidden="true" />
                               </div>
                             )}
                           </div>
@@ -330,21 +333,22 @@ export async function Footer() {
 
                 <Link
                   href="/movies"
-                  className="inline-flex items-center gap-1 mt-5 text-xs text-orange-400/50 hover:text-orange-400 transition-colors"
+                  className="inline-flex items-center gap-1 mt-4 sm:mt-5 text-xs text-orange-400/50 hover:text-orange-400 transition-colors"
+                  aria-label="View all Odia movies"
                 >
-                  View all movies <ChevronRight className="w-3 h-3" />
+                  View all movies <ChevronRight className="w-3 h-3" aria-hidden="true" />
                 </Link>
-              </div>
+              </section>
             )}
 
             {/* Latest Blogs */}
             {blogs.length > 0 && (
-              <div>
+              <section aria-label="Latest Ollywood articles">
                 <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-600 mb-4 flex items-center gap-2">
-                  <span className="w-5 h-px bg-gray-700" />
+                  <span className="w-5 h-px bg-gray-700" aria-hidden="true" />
                   Latest Articles
                 </h3>
-                <ul className="space-y-3">
+                <ul className="space-y-2.5 sm:space-y-3">
                   {blogs.map((blog) => {
                     const icon = blog.category ? CATEGORY_ICON[blog.category] : null;
                     return (
@@ -352,9 +356,10 @@ export async function Footer() {
                         <Link
                           href={`/blog/${blog.slug}`}
                           className="group flex gap-3 items-start hover:bg-[#111] rounded-xl p-2 -mx-2 transition-colors"
+                          title={blog.title}
                         >
                           {/* Cover or icon */}
-                          <div className="w-10 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-[#1a1a1a] relative">
+                          <div className="w-9 h-12 sm:w-10 sm:h-14 flex-shrink-0 rounded-lg overflow-hidden bg-[#1a1a1a] relative">
                             {blog.coverImage ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
@@ -362,6 +367,8 @@ export async function Footer() {
                                 alt={blog.title}
                                 className="w-full h-full object-cover"
                                 loading="lazy"
+                                width={40}
+                                height={56}
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-lg">
@@ -383,8 +390,8 @@ export async function Footer() {
                               )}
                               {blog.createdAt && (
                                 <span className="text-[11px] text-gray-600 flex items-center gap-0.5">
-                                  <Clock className="w-2.5 h-2.5" />
-                                  {timeAgo(blog.createdAt)}
+                                  <Clock className="w-2.5 h-2.5" aria-hidden="true" />
+                                  <time dateTime={blog.createdAt}>{timeAgo(blog.createdAt)}</time>
                                 </span>
                               )}
                               {blog.readTime && (
@@ -402,11 +409,12 @@ export async function Footer() {
 
                 <Link
                   href="/blog"
-                  className="inline-flex items-center gap-1 mt-5 text-xs text-orange-400/50 hover:text-orange-400 transition-colors"
+                  className="inline-flex items-center gap-1 mt-4 sm:mt-5 text-xs text-orange-400/50 hover:text-orange-400 transition-colors"
+                  aria-label="View all Ollywood articles"
                 >
-                  View all articles <ChevronRight className="w-3 h-3" />
+                  View all articles <ChevronRight className="w-3 h-3" aria-hidden="true" />
                 </Link>
-              </div>
+              </section>
             )}
           </div>
         )}
@@ -414,15 +422,22 @@ export async function Footer() {
         {/* ══════════════════════════════════════════════════════
             SEO RICH TEXT BLOCK
         ══════════════════════════════════════════════════════ */}
-        <div className="py-10 border-b border-[#1c1c1c]">
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-500 mb-5 flex items-center gap-2">
-            <span className="w-5 h-px bg-orange-500/60" />
+        <div className="py-8 sm:py-10 border-b border-[#1c1c1c]">
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-500 mb-4 sm:mb-5 flex items-center gap-2">
+            <span className="w-5 h-px bg-orange-500/60" aria-hidden="true" />
             About Ollypedia — Odia Cinema Encyclopedia
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-[12px] text-gray-600 leading-relaxed">
+          <div
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 text-[12px] text-gray-600 leading-relaxed"
+            itemScope
+            itemType="https://schema.org/Organization"
+          >
+            <meta itemProp="name" content="Ollypedia" />
+            <meta itemProp="description" content="Odisha's most complete online encyclopedia for Odia movies and the Ollywood film industry." />
             <p>
-              <strong className="text-gray-500">Ollypedia</strong> is Odisha&apos;s most complete online
-              encyclopedia for <strong className="text-gray-500">Odia movies</strong> and the{" "}
+              <strong className="text-gray-500" itemProp="name">Ollypedia</strong> is Odisha&apos;s most
+              complete online encyclopedia for{" "}
+              <strong className="text-gray-500">Odia movies</strong> and the{" "}
               <strong className="text-gray-500">Ollywood film industry</strong>. From classic films of the
               1950s to the latest blockbusters of 2026, we catalogue every Odia film with full cast, crew,
               songs, box office data, and reviews — all in one place.
@@ -462,11 +477,12 @@ export async function Footer() {
         {/* ══════════════════════════════════════════════════════
             MAIN NAV GRID
         ══════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pt-10">
-          {/* Brand */}
-          <div className="md:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 pt-8 sm:pt-10">
+
+          {/* Brand — full width on mobile, spans 2 cols on md+ */}
+          <div className="col-span-2 md:col-span-2">
+            <Link href="/" className="flex items-center gap-2 mb-3 sm:mb-4" aria-label="Ollypedia home">
+              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center" aria-hidden="true">
                 <Film className="w-5 h-5 text-white" />
               </div>
               <span className="font-display text-xl font-bold text-white">
@@ -481,7 +497,8 @@ export async function Footer() {
               Odisha&apos;s vibrant film industry since its founding.
             </p>
 
-            <div className="flex flex-wrap gap-1.5 mt-4">
+            {/* SEO keyword pills */}
+            <div className="flex flex-wrap gap-1.5 mt-3 sm:mt-4">
               {["Odia Movies", "Ollywood", "Odia Songs", "Odia Actors", "Box Office"].map((kw) => (
                 <span
                   key={kw}
@@ -492,50 +509,94 @@ export async function Footer() {
               ))}
             </div>
 
-            <div className="flex items-center gap-2 mt-5">
-              <a href="#" className="p-2 text-gray-600 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg transition-colors" aria-label="Ollypedia on YouTube">
-                <Youtube className="w-4 h-4" />
+            {/* Social links */}
+            <div className="flex items-center gap-2 mt-4 sm:mt-5">
+              <a
+                href="#"
+                className="p-2 text-gray-600 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg transition-colors"
+                aria-label="Ollypedia on YouTube"
+                rel="noopener noreferrer"
+              >
+                <Youtube className="w-4 h-4" aria-hidden="true" />
               </a>
-              <a href="#" className="p-2 text-gray-600 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg transition-colors" aria-label="Ollypedia on Instagram">
-                <Instagram className="w-4 h-4" />
+              <a
+                href="#"
+                className="p-2 text-gray-600 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg transition-colors"
+                aria-label="Ollypedia on Instagram"
+                rel="noopener noreferrer"
+              >
+                <Instagram className="w-4 h-4" aria-hidden="true" />
               </a>
-              <a href="#" className="p-2 text-gray-600 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg transition-colors" aria-label="Ollypedia on Twitter / X">
-                <Twitter className="w-4 h-4" />
+              <a
+                href="#"
+                className="p-2 text-gray-600 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg transition-colors"
+                aria-label="Ollypedia on Twitter / X"
+                rel="noopener noreferrer"
+              >
+                <Twitter className="w-4 h-4" aria-hidden="true" />
               </a>
             </div>
           </div>
 
-          {/* Nav columns */}
+          {/* Nav columns — each takes 1 col on mobile (2-col grid), 1 col on md */}
           {Object.entries(NAV_LINKS).map(([section, links]) => (
-            <div key={section}>
-              <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-600 mb-4">
+            <nav key={section} aria-label={`${section} links`}>
+              <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-600 mb-3 sm:mb-4">
                 {section}
               </h3>
-              <ul className="space-y-2.5">
+              <ul className="space-y-2 sm:space-y-2.5">
                 {links.map((link) => (
                   <li key={link.href}>
-                    <Link href={link.href} className="text-[13px] text-gray-500 hover:text-orange-400 transition-colors">
+                    <Link
+                      href={link.href}
+                      className="text-[13px] text-gray-500 hover:text-orange-400 transition-colors"
+                    >
                       {link.label}
                     </Link>
                   </li>
                 ))}
               </ul>
-            </div>
+            </nav>
           ))}
         </div>
 
         {/* ══════════════════════════════════════════════════════
             BOTTOM BAR
         ══════════════════════════════════════════════════════ */}
-        <div className="border-t border-[#1c1c1c] mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-gray-700 text-xs">
+        <div className="border-t border-[#1c1c1c] mt-8 sm:mt-10 pt-5 sm:pt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-gray-700 text-xs text-center sm:text-left">
             © {new Date().getFullYear()} Ollypedia. All rights reserved.
           </p>
-          <div className="flex items-center gap-4">
-            <Link href="/privacy"    className="text-gray-700 text-xs hover:text-gray-500 transition-colors">Privacy</Link>
-            <Link href="/disclaimer" className="text-gray-700 text-xs hover:text-gray-500 transition-colors">Disclaimer</Link>
-            <p className="text-gray-700 text-xs">Celebrating the richness of Odia cinema 🎬</p>
+
+          {/* Legal links */}
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-4 gap-y-1.5">
+            <Link
+              href="/privacy"
+              className="text-gray-700 text-xs hover:text-gray-400 transition-colors"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              href="/disclaimer"
+              className="text-gray-700 text-xs hover:text-gray-400 transition-colors"
+            >
+              Disclaimer
+            </Link>
+            <Link
+              href="/terms-and-conditions"
+              className="text-gray-700 text-xs hover:text-gray-400 transition-colors"
+            >
+              Terms &amp; Conditions
+            </Link>
+            <span className="text-gray-700 text-xs hidden sm:inline">
+              Celebrating the richness of Odia cinema 🎬
+            </span>
           </div>
+
+          {/* Show tagline below links on very small screens */}
+          <p className="text-gray-700 text-xs text-center sm:hidden">
+            Celebrating the richness of Odia cinema 🎬
+          </p>
         </div>
 
       </div>
