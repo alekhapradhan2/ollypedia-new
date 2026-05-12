@@ -1,278 +1,30 @@
 // app/movies/year/[year]/page.tsx
-// ─────────────────────────────────────────────────────────────────────────────
-// WHY PAGES WEREN'T INDEXING — fixes applied here:
-//   1. No sitemap.xml entry  → add app/sitemap.ts (separate file below)
-//   2. No robots.txt         → add app/robots.ts  (separate file below)
-//   3. revalidate too short  → bumped to 86400 (daily); Googlebot caches aggressively
-//   4. `dynamicParams = true` but NO sitemap → Google never discovers the URLs
-//   5. Missing WebSite + WebPage + Organization schema → Google can't establish entity
-//   6. FAQ JSON-LD hidden in <details> → Google ignores collapsed content; moved inline
-//   7. Thin/duplicate intro text → rewritten, unique per year
-//   8. Missing `<link rel="prev"/"next">` → added via alternates
-//   9. No explicit `lastModified` in metadata → added
-//  10. Open Graph image path was /og/movies-{year}.jpg (404 for most years) → switched to
-//      a real OG image that exists, falling back to site default
-// ─────────────────────────────────────────────────────────────────────────────
-
+import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
+import { buildMeta } from "@/lib/seo";
+import {
+  Film, Calendar, ChevronRight, Clapperboard,
+  TrendingUp, Star, Flame, Clock, Zap, User, ExternalLink,
+  BookOpen, HelpCircle, Globe, Award, Sparkles,
+} from "lucide-react";
 
-export const revalidate    = 86400;   // re-generate at most once per day
-export const dynamicParams = true;
+export const revalidate = 600;
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-const SITE_URL   = "https://ollypedia.in";
-const SITE_NAME  = "Ollypedia";
-const OG_DEFAULT = `${SITE_URL}/og-default.jpg`;   // one image that actually exists
-const YEAR_START = 2000;
-const YEAR_END   = new Date().getFullYear();
-const ALL_YEARS  = Array.from({ length: YEAR_END - YEAR_START + 1 }, (_, i) => YEAR_END - i);
+// ─── Valid years ───────────────────────────────────────────────────────────────
+const _OLDEST_YEAR = 2010;
+const _NOW_YEAR = new Date().getFullYear();
+const VALID_YEARS: number[] = Array.from(
+  { length: _NOW_YEAR - _OLDEST_YEAR + 1 },
+  (_, i) => _NOW_YEAR - i,
+);
 
-// ─── Static params (tells Next.js every valid URL at build time) ───────────────
+// ─── Generate static params ────────────────────────────────────────────────────
 export async function generateStaticParams() {
-  return ALL_YEARS.map((year) => ({ year: String(year) }));
-}
-
-// ─── Data fetcher ─────────────────────────────────────────────────────────────
-// Sort order: TBA first → Upcoming (no date but not TBA) → Released new→old
-//
-// Director resolution:
-//   1. movie.director field (if non-empty string)
-//   2. cast[] entry where role === "Director" (your DB stores director in cast)
-//
-// TBA matching — three cases:
-//   A. releaseTBA: true  (explicit flag, any year — show on current year page)
-//   B. releaseDate: "" | null | missing  AND  verdict: "Upcoming"
-//   C. releaseDate starts with the year string e.g. "2025-..." (normal released)
-//   D. releaseDate is a BSON Date object for that year
-async function getMoviesByYear(year: number) {
-  await connectDB();
-
-  const startStr = `${year}-01-01`;
-  const endStr   = `${year + 1}-01-01`;
-
-  const movies = await Movie.aggregate([
-    {
-      $match: {
-        $or: [
-          // ── A: explicit TBA flag ─────────────────────────────────────────
-          // releaseTBA:true means the movie is announced for this year but
-          // has no confirmed date. We show ALL releaseTBA movies on the
-          // current-year page regardless of createdAt, because the flag itself
-          // signals the movie belongs to the upcoming slate.
-          { releaseTBA: true },
-
-          // ── B: verdict=Upcoming with blank/missing releaseDate ───────────
-          // Some upcoming movies don't set releaseTBA but have verdict=Upcoming
-          // and an empty releaseDate. Show them on the current year page.
-          {
-            $and: [
-              { verdict: "Upcoming" },
-              {
-                $or: [
-                  { releaseDate: "" },
-                  { releaseDate: null },
-                  { releaseDate: { $exists: false } },
-                ],
-              },
-            ],
-          },
-
-          // ── C: releaseDate stored as ISO string for this year ────────────
-          {
-            $and: [
-              { releaseTBA: { $ne: true } },
-              { releaseDate: { $type: "string", $gte: startStr, $lt: endStr } },
-            ],
-          },
-
-          // ── D: releaseDate stored as BSON Date object for this year ──────
-          {
-            $and: [
-              { releaseTBA: { $ne: true } },
-              {
-                $expr: {
-                  $and: [
-                    { $eq: [{ $type: "$releaseDate" }, "date"] },
-                    { $eq: [{ $year: "$releaseDate" }, year] },
-                  ],
-                },
-              },
-            ],
-          },
-        ],
-      },
-    },
-
-    // ── Derive director name from cast array if director field is blank ───
-    {
-      $addFields: {
-        // Find the first cast member whose role is "Director" (case-insensitive)
-        _directorFromCast: {
-          $let: {
-            vars: {
-              directorEntry: {
-                $first: {
-                  $filter: {
-                    input: { $ifNull: ["$cast", []] },
-                    as:    "member",
-                    cond: {
-                      $regexMatch: {
-                        input: { $toString: { $ifNull: ["$$member.role", ""] } },
-                        regex: "director",
-                        options: "i",
-                      },
-                    },
-                  },
-                },
-              },
-            },
-            in: { $ifNull: ["$$directorEntry.name", ""] },
-          },
-        },
-      },
-    },
-    {
-      // Use movie.director if non-empty, else fall back to cast-derived name
-      $addFields: {
-        resolvedDirector: {
-          $cond: {
-            if: { $and: [
-              { $ne: ["$director", null] },
-              { $ne: ["$director", ""] },
-            ]},
-            then: "$director",
-            else: "$_directorFromCast",
-          },
-        },
-      },
-    },
-
-    // ── Sort: TBA → Upcoming → Released new-to-old ───────────────────────
-    {
-      $addFields: {
-        _sortGroup: {
-          $switch: {
-            branches: [
-              // Group 0 — TBA (releaseTBA flag)
-              {
-                case: { $eq: ["$releaseTBA", true] },
-                then: 0,
-              },
-              // Group 1 — Upcoming verdict with no date
-              {
-                case: {
-                  $and: [
-                    { $eq: ["$verdict", "Upcoming"] },
-                    {
-                      $or: [
-                        { $eq: ["$releaseDate", ""] },
-                        { $eq: ["$releaseDate", null] },
-                      ],
-                    },
-                  ],
-                },
-                then: 1,
-              },
-            ],
-            // Group 2 — all released/dated movies
-            default: 2,
-          },
-        },
-      },
-    },
-    {
-      // Within group 2 (released), sort new-to-old (descending releaseDate)
-      // Within group 0/1 (TBA/Upcoming), secondary sort by title
-      $sort: { _sortGroup: 1, releaseDate: -1, title: 1 },
-    },
-
-    {
-      $project: {
-        title:            1,
-        slug:             1,
-        releaseDate:      1,
-        releaseTBA:       1,
-        director:         "$resolvedDirector",
-        genre:            1,
-        verdict:          1,
-        posterUrl:        1,
-        _sortGroup:       1,
-      },
-    },
-  ]);
-
-  return JSON.parse(JSON.stringify(movies));
-}
-
-// Returns true if the movie has no confirmed release date
-function isTBA(movie: any): boolean {
-  return (
-    movie.releaseTBA === true ||
-    (!movie.releaseDate || movie.releaseDate === "") && movie.verdict === "Upcoming"
-  );
-}
-
-// ─── SEO text helpers ─────────────────────────────────────────────────────────
-
-function buildTitle(year: number, count: number): string {
-  if (count === 0)
-    return `Odia Movies ${year} | Ollywood Film List – ${SITE_NAME}`;
-  return `Odia Movies ${year} – All ${count} Ollywood Films with Director & Release Date | ${SITE_NAME}`;
-}
-
-function buildDescription(year: number, movies: any[]): string {
-  const count   = movies.length;
-  const topDirs = uniqueDirs(movies).slice(0, 3);
-  const dirStr  = topDirs.length ? ` Directed by ${topDirs.join(", ")} and more.` : "";
-  if (count === 0)
-    return `Discover Odia (Ollywood) movies released in ${year}. Ollypedia is updating its database for ${year}. Browse complete Odia film lists by year.`.slice(0, 160);
-  return `Complete list of all ${count} Odia (Ollywood) movies released in ${year} — with director name, release date and verdict.${dirStr} Updated on Ollypedia.`.slice(0, 160);
-}
-
-function buildKeywords(year: number, movies: any[]): string {
-  const dirs   = uniqueDirs(movies).slice(0, 5);
-  const titles = movies.slice(0, 8).map((m: any) => m.title as string);
-  return [...new Set([
-    `odia movies ${year}`,
-    `ollywood movies ${year}`,
-    `odia films ${year}`,
-    `odia movies ${year} list`,
-    `odia movies ${year} with director`,
-    `odia movies ${year} release date`,
-    `best odia movies ${year}`,
-    `new odia movies ${year}`,
-    `ollywood ${year} film list`,
-    `odia cinema ${year}`,
-    `odia movie names ${year}`,
-    `all odia movies ${year}`,
-    `top odia movies ${year}`,
-    ...dirs.map((d) => `${d} odia movie`),
-    ...titles.map((t) => `${t} odia movie`),
-    "odia movies", "ollywood movies", "odia film list",
-  ])].join(", ");
-}
-
-function uniqueDirs(movies: any[]): string[] {
-  return [...new Set(
-    movies
-      .flatMap((m: any) => Array.isArray(m.director) ? m.director : [m.director])
-      .filter(Boolean)
-  )] as string[];
-}
-
-function fmtDate(iso?: string): string {
-  if (!iso || iso === "TBA" || iso === "") return "TBA";
-  try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return "TBA";
-    return d.toLocaleDateString("en-IN", {
-      day: "numeric", month: "short", year: "numeric",
-    });
-  } catch { return "TBA"; }
+  return VALID_YEARS.map((year) => ({ year: String(year) }));
 }
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -282,538 +34,470 @@ export async function generateMetadata({
   params: { year: string };
 }): Promise<Metadata> {
   const year = Number(params.year);
-  if (isNaN(year) || year < YEAR_START || year > YEAR_END)
-    return { robots: { index: false, follow: false } };
-
-  const movies      = await getMoviesByYear(year);
-  const title       = buildTitle(year, movies.length);
-  const description = buildDescription(year, movies);
-  const keywords    = buildKeywords(year, movies);
-  const canonical   = `${SITE_URL}/movies/year/${year}`;
-  const prevYear    = year - 1 >= YEAR_START ? year - 1 : null;
-  const nextYear    = year + 1 <= YEAR_END   ? year + 1 : null;
-
-  return {
-    title,
-    description,
-    keywords,
-
-    // ── Canonical + prev/next pagination signals ────────────────────────
-    alternates: {
-      canonical,
-      ...(prevYear || nextYear ? {
-        // These tell Google these pages are NOT duplicates of each other
-        ...(prevYear ? { prev: `${SITE_URL}/movies/year/${prevYear}` } : {}),
-        ...(nextYear ? { next: `${SITE_URL}/movies/year/${nextYear}` } : {}),
-      } : {}),
-      languages: {
-        "en-IN": canonical,
-        "or":    canonical,   // Odia language code
-        "x-default": canonical,
-      },
-    },
-
-    // ── Open Graph ──────────────────────────────────────────────────────
-    openGraph: {
-      type:        "website",
-      siteName:    SITE_NAME,
-      url:         canonical,
-      title,
-      description,
-      locale:      "en_IN",
-      images: [
-        {
-          url:    OG_DEFAULT,   // a real image — 404 OG images hurt indexing
-          width:  1200,
-          height: 630,
-          alt:    `Odia Movies ${year} – Complete Ollywood Film List on Ollypedia`,
-        },
-      ],
-    },
-
-    // ── Twitter Card ────────────────────────────────────────────────────
-    twitter: {
-      card:        "summary_large_image",
-      site:        "@ollypedia",
-      creator:     "@ollypedia",
-      title,
-      description,
-      images:      [OG_DEFAULT],
-    },
-
-    // ── Robots — EXPLICIT is better than relying on defaults ────────────
-    robots: {
-      index:     movies.length > 0,   // don't index empty-year pages
-      follow:    true,
-      googleBot: {
-        index:               movies.length > 0,
-        follow:              true,
-        "max-video-preview": -1,
-        "max-image-preview": "large",
-        "max-snippet":       -1,
-      },
-    },
-
-    // ── Other signals ───────────────────────────────────────────────────
-    authors:   [{ name: SITE_NAME, url: SITE_URL }],
-    creator:   SITE_NAME,
-    publisher: SITE_NAME,
-    category:  "Entertainment",
-
-    // lastModified tells Google this content is fresh
-    other: {
-      "article:modified_time": new Date().toISOString(),
-    },
-  };
+  return buildMeta({
+    title: `Odia Movies ${year} A to Z – Complete Ollywood Films List | Ollypedia`,
+    description: `${year} Odia Movies A to Z full list – Browse all Ollywood films released in ${year} with movie names, directors, release dates, box office collection, cast, songs, and reviews. Complete ${year} Odia movie list.`,
+    keywords: [
+      // A-to-Z / list variants
+      `Odia movies ${year} A to Z`,
+      `A to Z Odia movies`,
+      `${year} Odia movies list`,
+      `${year} Odia films list`,
+      `Odia movies list ${year}`,
+      `Ollywood movies ${year} list`,
+      `all Odia movies ${year}`,
+      `complete list of Odia movies ${year}`,
+      `Odia movies ${year} full list`,
+      // Core year keywords
+      `Odia movies ${year}`,
+      `Ollywood ${year}`,
+      `Odia films ${year}`,
+      `Odia cinema ${year}`,
+      `new Odia movies ${year}`,
+      // Box office
+      `Ollywood box office ${year}`,
+      `Odia movie box office collection ${year}`,
+      `${year} Ollywood blockbuster`,
+      `${year} Odia hit movies`,
+      // Cast & crew
+      `Ollywood director ${year}`,
+      `Odia movie release date ${year}`,
+      `${year} Odia movie cast`,
+      // Upcoming
+      `upcoming Odia movies ${year}`,
+      `new Ollywood movies ${year}`,
+      `${year} Odia movies TBA`,
+      // Generic Ollywood
+      `Ollywood films`,
+      `Odia film industry`,
+      `Odia cinema`,
+    ],
+    url: `/movies/year/${year}`,
+  });
 }
 
-// ─── JSON-LD builders ─────────────────────────────────────────────────────────
+// ─── JSON-LD structured data ────────────────────────────────────────────────────
+function MovieListJsonLd({ movies, year }: { movies: any[]; year: number }) {
+  const itemList = movies.slice(0, 50).map((m, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    item: {
+      "@type": "Movie",
+      name: m.title,
+      url: `https://ollypedia.com/movie/${m.slug}`,
+      datePublished: m.releaseDate,
+      director: m.director
+        ? { "@type": "Person", name: m.director }
+        : undefined,
+    },
+  }));
 
-/** WebSite + Sitelinks Searchbox — establishes entity, only needed once but fine per page */
-function websiteJsonLd() {
-  return {
+  const schema = {
     "@context": "https://schema.org",
-    "@type":    "WebSite",
-    "@id":      `${SITE_URL}/#website`,
-    name:       SITE_NAME,
-    url:        SITE_URL,
-    description: "Ollypedia — The complete Odia (Ollywood) cinema database.",
-    inLanguage:  ["en-IN", "or"],
-    potentialAction: {
-      "@type":       "SearchAction",
-      target: {
-        "@type":       "EntryPoint",
-        urlTemplate:   `${SITE_URL}/search?q={search_term_string}`,
-      },
-      "query-input": "required name=search_term_string",
-    },
-    publisher: {
-      "@type": "Organization",
-      "@id":   `${SITE_URL}/#organization`,
-      name:    SITE_NAME,
-      url:     SITE_URL,
-      logo: {
-        "@type":       "ImageObject",
-        url:           `${SITE_URL}/logo.png`,
-        width:         512,
-        height:        512,
-      },
-      sameAs: [
-        "https://www.facebook.com/ollypedia",
-        "https://twitter.com/ollypedia",
-        "https://www.instagram.com/ollypedia",
-      ],
-    },
+    "@type": "ItemList",
+    name: `Odia Movies ${year}`,
+    description: `Complete list of Ollywood (Odia) films released in ${year}`,
+    url: `https://ollypedia.com/movies/year/${year}`,
+    numberOfItems: movies.length,
+    itemListElement: itemList,
   };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
 }
 
-/** CollectionPage — the actual page entity */
-function collectionPageJsonLd(year: number, count: number, desc: string) {
-  const url = `${SITE_URL}/movies/year/${year}`;
-  return {
-    "@context":    "https://schema.org",
-    "@type":       "CollectionPage",
-    "@id":         `${url}#webpage`,
-    name:          `Odia Movies ${year} – Complete Ollywood Film List`,
-    description:   desc,
-    url,
-    inLanguage:    ["en-IN", "or"],
-    numberOfItems: count,
-    dateModified:  new Date().toISOString(),
-    isPartOf: {
-      "@id": `${SITE_URL}/#website`,
-    },
-    breadcrumb: {
-      "@id": `${url}#breadcrumb`,
-    },
-    about: {
-      "@type":  "Thing",
-      name:     `Odia Cinema ${year}`,
-      sameAs:   "https://en.wikipedia.org/wiki/Odia_cinema",
-    },
-    publisher: {
-      "@id": `${SITE_URL}/#organization`,
-    },
-  };
-}
-
-/** ItemList — each movie as a Movie entity — the richest signal for Google */
-function itemListJsonLd(year: number, movies: any[]) {
-  return {
-    "@context":      "https://schema.org",
-    "@type":         "ItemList",
-    "@id":           `${SITE_URL}/movies/year/${year}#list`,
-    name:            `All Odia Movies Released in ${year}`,
-    url:             `${SITE_URL}/movies/year/${year}`,
-    numberOfItems:   movies.length,
-    itemListOrder:   "https://schema.org/ItemListOrderAscending",
-    itemListElement: movies.map((m: any, i: number) => ({
-      "@type":   "ListItem",
-      position:  i + 1,
-      item: {
-        "@type":         "Movie",
-        "@id":           `${SITE_URL}/movie/${m.slug || m._id}`,
-        name:            m.title,
-        url:             `${SITE_URL}/movie/${m.slug || m._id}`,
-        datePublished:   m.releaseDate ? String(m.releaseDate).split("T")[0] : undefined,
-        ...(m.posterUrl ? { image: m.posterUrl } : {}),
-        director: m.director
-          ? {
-              "@type": "Person",
-              name:    Array.isArray(m.director) ? m.director[0] : m.director,
-            }
-          : undefined,
-        genre:           m.genre ?? undefined,
-        countryOfOrigin: { "@type": "Country", name: "India" },
-        inLanguage:      "or",
-        productionCompany: {
-          "@type": "Organization",
-          name:    "Ollywood",
-        },
-      },
-    })),
-  };
-}
-
-/** BreadcrumbList */
-function breadcrumbJsonLd(year: number) {
-  return {
-    "@context":      "https://schema.org",
-    "@type":         "BreadcrumbList",
-    "@id":           `${SITE_URL}/movies/year/${year}#breadcrumb`,
+// ─── BreadcrumbList JSON-LD ────────────────────────────────────────────────────
+function BreadcrumbJsonLd({ year }: { year: number }) {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home",   item: SITE_URL },
-      { "@type": "ListItem", position: 2, name: "Movies", item: `${SITE_URL}/movies` },
-      { "@type": "ListItem", position: 3, name: `Odia Movies ${year}`, item: `${SITE_URL}/movies/year/${year}` },
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://ollypedia.com" },
+      { "@type": "ListItem", position: 2, name: "Movies", item: "https://ollypedia.com/movies" },
+      { "@type": "ListItem", position: 3, name: `Odia Movies ${year}`, item: `https://ollypedia.com/movies/year/${year}` },
     ],
   };
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
 }
 
-/** FAQPage — answers must be VISIBLE in HTML (not inside <details>) */
-function faqJsonLd(year: number, movies: any[], topDirs: string[]) {
-  const topTitles = movies.slice(0, 4).map((m: any) => m.title as string).join(", ");
-  return {
-    "@context": "https://schema.org",
-    "@type":    "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name:    `How many Odia movies were released in ${year}?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: movies.length > 0
-            ? `A total of ${movies.length} Odia (Ollywood) movies were released in ${year} according to Ollypedia's database.`
-            : `Ollypedia's database for ${year} is still being updated.`,
-        },
-      },
-      {
-        "@type": "Question",
-        name:    `Which are the best Odia movies of ${year}?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: movies.length > 0
-            ? `Notable Odia movies of ${year} include ${topTitles}. Visit each movie page on Ollypedia for cast, songs, trailers and box office details.`
-            : `Ollypedia is compiling the complete ${year} Odia film list. Check back soon.`,
-        },
-      },
-      ...(topDirs.length > 0
-        ? [{
-            "@type": "Question",
-            name:    `Who directed Odia movies in ${year}?`,
-            acceptedAnswer: {
-              "@type": "Answer",
-              text: `Directors who made Odia films in ${year} include ${topDirs.join(", ")} among others.`,
+// ─── Data fetch ────────────────────────────────────────────────────────────────
+async function getMoviesByYear(year: number) {
+  await connectDB();
+
+  const startDate = new Date(`${year}-01-01`);
+  const endDate   = new Date(`${year}-12-31T23:59:59`);
+  const currentYear = new Date().getFullYear();
+
+  // For the current year we also include TBA movies (releaseTBA:true or
+  // releaseDate:"") that are marked Upcoming — they have no date yet but
+  // clearly belong to this year's slate.
+  const matchStage =
+    year === currentYear
+      ? {
+          $or: [
+            {
+              releaseDate: {
+                $gte: startDate.toISOString().split("T")[0],
+                $lte: endDate.toISOString().split("T")[0],
+              },
             },
-          }]
-        : []),
-      {
-        "@type": "Question",
-        name:    `Where can I watch Odia movies from ${year} online?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: `Many Odia films from ${year} are available on OTT platforms such as Amazon Prime Video, Disney+ Hotstar, Zee5 and SunNXT. Each movie page on Ollypedia includes available streaming and trailer links.`,
+            { releaseTBA: true },
+            {
+              $and: [
+                { $or: [{ releaseDate: "" }, { releaseDate: null }, { releaseDate: { $exists: false } }] },
+                { $or: [{ verdict: "Upcoming" }, { status: "Upcoming" }] },
+              ],
+            },
+          ],
+        }
+      : {
+          releaseDate: {
+            $gte: startDate.toISOString().split("T")[0],
+            $lte: endDate.toISOString().split("T")[0],
+          },
+        };
+
+  const movies = await Movie.aggregate([
+    { $match: matchStage },
+    { $project: { reviews: 0 } },
+    {
+      $addFields: {
+        // Guard against empty/null releaseDate (TBA movies) — sort them to the bottom
+        _releaseDateObj: {
+          $cond: {
+            if: { $and: [{ $ifNull: ["$releaseDate", false] }, { $ne: ["$releaseDate", ""] }] },
+            then: { $toDate: "$releaseDate" },
+            else: new Date("9999-12-31"),
+          },
+        },
+        // Resolve director: use top-level field first, then fall back to
+        // the first cast/crew entry whose role contains "director" (case-insensitive)
+        director: {
+          $cond: {
+            if: { $and: [{ $ifNull: ["$director", false] }, { $ne: ["$director", ""] }] },
+            then: "$director",
+            else: {
+              $let: {
+                vars: {
+                  directorEntry: {
+                    $first: {
+                      $filter: {
+                        input: { $ifNull: ["$cast", []] },
+                        as: "member",
+                        cond: {
+                          $regexMatch: {
+                            input: { $ifNull: ["$$member.role", ""] },
+                            regex: "director",
+                            options: "i",
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                in: { $ifNull: ["$$directorEntry.name", null] },
+              },
+            },
+          },
         },
       },
-      {
-        "@type": "Question",
-        name:    `Where can I find the full list of Odia movies released in ${year}?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: `Ollypedia.in provides the complete list of all Odia movies released in ${year} with release dates, director names, cast, songs and box office verdict. This is the most complete Odia cinema database online.`,
-        },
-      },
-    ],
-  };
+    },
+    { $sort: { _releaseDateObj: -1, _id: -1 } },
+  ]);
+
+  return movies;
 }
 
-// ─── Page component ───────────────────────────────────────────────────────────
-export default async function OdiaMoviesYearPage({
+// ─── Verdict badge config ──────────────────────────────────────────────────────
+const VERDICT_CONFIG: Record<string, { color: string; icon: React.ElementType }> = {
+  Blockbuster: { color: "text-orange-400 bg-orange-500/15 border-orange-500/30", icon: Flame },
+  Superhit:    { color: "text-yellow-400 bg-yellow-500/15 border-yellow-500/30", icon: Star  },
+  Hit:         { color: "text-green-400  bg-green-500/15  border-green-500/30",  icon: TrendingUp },
+  Average:     { color: "text-blue-400   bg-blue-500/15   border-blue-500/30",   icon: Zap   },
+  Flop:        { color: "text-red-400    bg-red-500/15    border-red-500/30",    icon: Clock },
+  Upcoming:    { color: "text-sky-400    bg-sky-500/15    border-sky-500/30",    icon: Calendar },
+};
+
+// ─── Format release date ────────────────────────────────────────────────────────
+function formatReleaseDate(dateStr: string, isTBA?: boolean): string {
+  if (isTBA || !dateStr || dateStr.trim() === "") return "TBA";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "TBA";
+    return d.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return "TBA";
+  }
+}
+
+// ─── Page ──────────────────────────────────────────────────────────────────────
+export default async function MoviesByYearPage({
   params,
 }: {
   params: { year: string };
 }) {
   const year = Number(params.year);
-  if (isNaN(year) || year < YEAR_START || year > YEAR_END) notFound();
 
-  const movies: any[] = await getMoviesByYear(year);
-  const description   = buildDescription(year, movies);
-  const topDirectors  = uniqueDirs(movies).slice(0, 5);
-  const genreSet      = [...new Set(movies.flatMap((m: any) => m.genre || []))].slice(0, 6) as string[];
-  const prevYear      = year - 1 >= YEAR_START ? year - 1 : null;
-  const nextYear      = year + 1 <= YEAR_END   ? year + 1 : null;
-
-  // Verdict counts
-  const verdictMap: Record<string, number> = {};
-  for (const m of movies) {
-    const v = (m.verdict as string) || "Unknown";
-    verdictMap[v] = (verdictMap[v] || 0) + 1;
+  if (isNaN(year) || !VALID_YEARS.includes(year)) {
+    notFound();
   }
 
-  // FAQ data — must be rendered in HTML to match JSON-LD
-  const faqs = [
-    {
-      q: `How many Odia movies were released in ${year}?`,
-      a: movies.length > 0
-        ? `A total of ${movies.length} Odia (Ollywood) movies were released in ${year} according to Ollypedia's database.`
-        : `Ollypedia's database for ${year} is still being updated. Check back soon.`,
-    },
-    {
-      q: `Which are the best Odia movies of ${year}?`,
-      a: movies.length > 0
-        ? `Notable Odia movies of ${year} include ${movies.slice(0, 4).map((m: any) => m.title).join(", ")}. Visit each movie page for cast, songs, trailers and box office details.`
-        : `Ollypedia is compiling the complete ${year} Odia film list.`,
-    },
-    ...(topDirectors.length > 0 ? [{
-      q: `Who directed Odia movies in ${year}?`,
-      a: `Directors who made Odia films in ${year} include ${topDirectors.join(", ")} among others.`,
-    }] : []),
-    {
-      q: `Where can I watch Odia movies from ${year} online?`,
-      a: `Many Odia films from ${year} are available on OTT platforms such as Amazon Prime Video, Disney+ Hotstar, Zee5 and SunNXT. Each movie page on Ollypedia includes streaming and trailer links.`,
-    },
-    {
-      q: `Where can I find the full list of Odia movies released in ${year}?`,
-      a: `Ollypedia.in has the complete list of all Odia movies released in ${year} with release dates, director names, cast, songs and box office verdict.`,
-    },
-  ];
+  const movies = await getMoviesByYear(year);
+  const total  = movies.length;
+
+  const verdictCounts: Record<string, number> = {};
+  for (const m of movies) {
+    const v = m.verdict || "Upcoming";
+    verdictCounts[v] = (verdictCounts[v] || 0) + 1;
+  }
+
+  const currentYear = new Date().getFullYear();
+  const prevYear    = VALID_YEARS[VALID_YEARS.indexOf(year) + 1];
+  const nextYear    = VALID_YEARS[VALID_YEARS.indexOf(year) - 1];
 
   return (
     <>
-      {/* ── All JSON-LD blocks — Google reads every <script type="application/ld+json"> ── */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd()) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPageJsonLd(year, movies.length, description)) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd(year, movies)) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(year)) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(year, movies, topDirectors)) }} />
+      {/* ── JSON-LD Structured Data ── */}
+      <BreadcrumbJsonLd year={year} />
+      {total > 0 && <MovieListJsonLd movies={movies} year={year} />}
 
-      <div className="min-h-screen bg-[#0a0a0a] text-gray-100">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-10">
+      <div className="min-h-screen bg-[#0a0a0a]">
 
-          {/* ── Breadcrumb — visible + matches JSON-LD ────────────────────── */}
-          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-gray-500">
-            <Link href="/" className="hover:text-orange-400 transition-colors">Home</Link>
-            <span aria-hidden="true">/</span>
-            <Link href="/movies" className="hover:text-orange-400 transition-colors">Movies</Link>
-            <span aria-hidden="true">/</span>
-            <span className="text-gray-300" aria-current="page">Odia Movies {year}</span>
-          </nav>
+        {/* ══════════════════════════════════════════════════════════
+            HERO BANNER
+        ══════════════════════════════════════════════════════════ */}
+        <section
+          className="relative overflow-hidden bg-gradient-to-b from-[#0d0d0d] to-[#0a0a0a] border-b border-[#1f1f1f]"
+          aria-label={`Odia movies from ${year}`}
+        >
+          {/* Decorative glows */}
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-500/6 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-orange-600/4 rounded-full blur-2xl" />
+            <div className="absolute inset-0"
+              style={{ backgroundImage: "radial-gradient(circle at 70% 50%, #f9731608 0%, transparent 60%)" }} />
+          </div>
 
-          {/* ── H1 — exactly one per page, keyword-rich ───────────────────── */}
-          <header>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-1 h-9 bg-orange-500 rounded-full" aria-hidden="true" />
-              <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-                Odia Movies <span className="text-orange-400">{year}</span>
-              </h1>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 relative z-10">
+
+            {/* Breadcrumb */}
+            <nav className="flex items-center gap-1.5 text-xs text-gray-500 mb-5 flex-wrap" aria-label="Breadcrumb">
+              <Link href="/" className="hover:text-orange-400 transition-colors">Home</Link>
+              <ChevronRight className="w-3 h-3" />
+              <Link href="/movies" className="hover:text-orange-400 transition-colors">Movies</Link>
+              <ChevronRight className="w-3 h-3" />
+              <span className="text-orange-400 font-medium">Movies of {year}</span>
+            </nav>
+
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-orange-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Calendar className="w-5 h-5 text-orange-500" />
+                  </div>
+                  {/* H1 — primary SEO heading */}
+                  <h1 className="font-display text-3xl md:text-4xl font-black text-white leading-tight">
+                    Odia Movies {year} – A to Z Ollywood Films List
+                  </h1>
+                </div>
+                <p className="text-gray-400 text-sm md:text-base max-w-2xl leading-relaxed">
+                  {year === currentYear
+                    ? `Complete A to Z list of all Odia (Ollywood) movies released in ${year}. Every ${year} Odia film listed with movie name, director, and release date — updated regularly as new films hit theatres.`
+                    : `Complete A to Z list of all Odia (Ollywood) movies released in ${year}. Find every Ollywood film from ${year} with director names, release dates, box office verdict, cast details, and reviews.`}
+                </p>
+              </div>
+
+              {/* Movie count pill */}
+              <div className="flex items-center gap-2 bg-[#111] border border-[#1f1f1f] rounded-xl px-5 py-3 self-start md:self-auto flex-shrink-0">
+                <Film className="w-4 h-4 text-orange-500" />
+                <span className="text-2xl font-black text-white font-display">{total}</span>
+                <span className="text-xs text-gray-500 leading-tight">Odia<br />films</span>
+              </div>
             </div>
 
-            {/* Keyword-rich paragraph — fully visible, NOT hidden or collapsed */}
-            <p className="text-sm text-gray-400 leading-relaxed max-w-2xl mt-3">
-              Complete list of{" "}
-              <strong className="text-gray-200">Odia (Ollywood) movies released in {year}</strong>.
-              {movies.length > 0 && (
-                <>
-                  {" "}This page covers all{" "}
-                  <strong className="text-gray-200">{movies.length} Odia films of {year}</strong>{" "}
-                  with director names and release dates.
-                </>
-              )}
-              {topDirectors.length > 0 && (
-                <>
-                  {" "}Notable directors:{" "}
-                  <strong className="text-gray-200">{topDirectors.slice(0, 3).join(", ")}</strong>.
-                </>
-              )}
-            </p>
+            {/* Year navigator */}
+            <div className="flex items-center gap-2 mt-6 flex-wrap">
+              <span className="text-[10px] text-gray-600 font-bold uppercase tracking-widest mr-1">Browse year:</span>
+              {VALID_YEARS.map((yr) => (
+                <Link
+                  key={yr}
+                  href={`/movies/year/${yr}`}
+                  aria-label={`Odia movies of ${yr}`}
+                  aria-current={yr === year ? "page" : undefined}
+                  className={[
+                    "px-3 py-1 rounded-lg text-xs font-semibold transition-all",
+                    yr === year
+                      ? "bg-orange-500 text-white shadow-md shadow-orange-500/25"
+                      : "bg-[#141414] border border-[#222] text-gray-400 hover:border-orange-500/40 hover:text-orange-400",
+                  ].join(" ")}
+                >
+                  {yr}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
 
-            {/* Stat + genre chips — crawlable internal links */}
-            {movies.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                <span className="text-xs bg-orange-500/10 border border-orange-500/20 text-orange-400 px-3 py-1 rounded-full">
-                  🎬 {movies.length} Films
-                </span>
-                {genreSet.map((g) => (
-                  <Link
-                    key={g}
-                    href={`/movies?genre=${encodeURIComponent(g)}`}
-                    className="text-xs bg-[#111] border border-[#1f1f1f] text-gray-400 hover:text-orange-400 hover:border-orange-500/30 px-3 py-1 rounded-full transition-colors"
-                  >
-                    {g}
-                  </Link>
-                ))}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+
+          {/* ══════════════════════════════════════════════════════════
+              VERDICT BREAKDOWN STATS
+          ══════════════════════════════════════════════════ */}
+          {total > 0 && Object.keys(verdictCounts).length > 0 && (
+            <section aria-label="Box office verdict breakdown">
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(verdictCounts)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([verdict, count]) => {
+                    const cfg = VERDICT_CONFIG[verdict];
+                    if (!cfg) return null;
+                    const Icon = cfg.icon;
+                    return (
+                      <div
+                        key={verdict}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold ${cfg.color}`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        {verdict} <span className="opacity-60 ml-0.5">({count})</span>
+                      </div>
+                    );
+                  })}
               </div>
-            )}
-          </header>
+            </section>
+          )}
 
-          {/* ── Year navigation — anchor-text links help crawl other year pages ── */}
-          <nav aria-label="Browse Odia movies by year" className="flex flex-wrap gap-2">
-            {ALL_YEARS.slice(0, 12).map((y) => (
-              <Link
-                key={y}
-                href={`/movies/year/${y}`}
-                aria-label={`Odia Movies ${y}`}
-                aria-current={y === year ? "page" : undefined}
-                className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all ${
-                  y === year
-                    ? "bg-orange-500 border-orange-500 text-white"
-                    : "bg-[#111] border-[#1f1f1f] text-gray-400 hover:border-orange-500/40 hover:text-orange-400"
-                }`}
-              >
-                {y}
-              </Link>
-            ))}
-            {/* Remaining years as plain links — NOT inside <details> which Google can miss */}
-            {ALL_YEARS.slice(12).map((y) => (
-              <Link
-                key={y}
-                href={`/movies/year/${y}`}
-                aria-label={`Odia Movies ${y}`}
-                className="text-xs px-2.5 py-1 rounded-full border border-[#2a2a2a] text-gray-500 hover:text-orange-400 hover:border-orange-500/40 transition-all"
-              >
-                {y}
-              </Link>
-            ))}
-          </nav>
+          {/* ══════════════════════════════════════════════════════════
+              MOVIES TABLE
+          ══════════════════════════════════════════════════════ */}
+          <section aria-labelledby="movies-table-heading">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-orange-500/15 rounded-lg flex items-center justify-center">
+                <Clapperboard className="w-4 h-4 text-orange-500" />
+              </div>
+              <div>
+                <h2 id="movies-table-heading" className="font-display text-lg font-bold text-white">
+                  {total > 0
+                    ? `${total} Odia Films Released in ${year}`
+                    : `No Movies Found for ${year}`}
+                </h2>
+                {total > 0 && (
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Sorted by release date — newest first. Click a movie name to view full details.
+                  </p>
+                )}
+              </div>
+            </div>
 
-          {/* ── Movies table — single <table>, responsive on all screen sizes ── */}
-          {movies.length > 0 ? (
-            <section aria-labelledby="table-heading">
-              <h2 id="table-heading" className="sr-only">
-                All Odia Movies Released in {year}
-              </h2>
-
-              {/* Outer wrapper: rounded border + horizontal scroll on small screens */}
-              <div className="rounded-2xl border border-[#1f1f1f] overflow-hidden">
-                <div className="overflow-x-auto">
+            {total === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="w-16 h-16 bg-[#141414] border border-[#222] rounded-2xl flex items-center justify-center mb-4">
+                  <Film className="w-7 h-7 text-gray-600" />
+                </div>
+                <p className="text-gray-300 font-semibold text-lg mb-1">No movies found for {year}</p>
+                <p className="text-gray-600 text-sm mb-5">
+                  We may not have data for this year yet. Check back later or browse another year.
+                </p>
+                <Link
+                  href="/movies"
+                  className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-xl transition-colors"
+                >
+                  Browse All Movies
+                </Link>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-[#1f1f1f] overflow-hidden bg-[#0d0d0d]">
+                {/* min-w keeps all 5 cols visible; on very small screens a subtle scroll appears */}
+                <div className="w-full overflow-x-auto -webkit-overflow-scrolling-touch">
                   <table
-                    className="w-full min-w-[480px] border-collapse text-sm"
-                    aria-label={`Odia movies of ${year}`}
+                    className="w-full min-w-[480px] text-sm"
+                    role="table"
+                    aria-label={`Odia movies list ${year}`}
                   >
-                    {/* ── thead ─────────────────────────────────────────── */}
                     <thead>
-                      <tr className="bg-[#111] border-b border-[#1f1f1f]">
-                        <th
-                          scope="col"
-                          className="w-10 px-3 py-3 text-left text-[10px] font-bold text-gray-600 uppercase tracking-widest"
-                        >
+                      <tr className="border-b border-[#1f1f1f] bg-[#111]">
+                        <th scope="col" className="text-left px-2 sm:px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 w-7">
                           #
                         </th>
-                        <th
-                          scope="col"
-                          className="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest"
-                        >
+                        <th scope="col" className="text-left px-2 sm:px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">
                           Movie Name
                         </th>
-                        <th
-                          scope="col"
-                          className="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap"
-                        >
-                          Director
+                        <th scope="col" className="text-left px-2 sm:px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <User className="w-3 h-3 flex-shrink-0" />
+                            Director
+                          </span>
                         </th>
-                        <th
-                          scope="col"
-                          className="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap"
-                        >
-                          Release Date
+                        <th scope="col" className="text-left px-2 sm:px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 whitespace-nowrap">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3 flex-shrink-0" />
+                            Release
+                          </span>
                         </th>
-                        <th
-                          scope="col"
-                          className="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest"
-                        >
+                        <th scope="col" className="text-left px-2 sm:px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">
                           Verdict
                         </th>
                       </tr>
                     </thead>
-
-                    {/* ── tbody ─────────────────────────────────────────── */}
-                    <tbody className="divide-y divide-[#161616]">
-                      {movies.map((movie: any, idx: number) => {
-                        const dirs = Array.isArray(movie.director)
-                          ? movie.director.filter(Boolean).join(", ")
-                          : movie.director || "—";
-
-                        const verdictColor: Record<string, string> = {
-                          Blockbuster: "text-orange-400",
-                          Superhit:    "text-yellow-400",
-                          Hit:         "text-green-400",
-                          Average:     "text-blue-400",
-                          Flop:        "text-red-400",
-                          Upcoming:    "text-sky-400",
-                          Released:    "text-green-400",
-                        };
-                        const vColor = verdictColor[movie.verdict] ?? "text-gray-500";
-                        const tba    = isTBA(movie);
-
+                    <tbody>
+                      {movies.map((movie: any, index: number) => {
+                        const verdictCfg = movie.verdict ? VERDICT_CONFIG[movie.verdict] : null;
+                        const VerdictIcon = verdictCfg?.icon;
                         return (
                           <tr
                             key={String(movie._id)}
-                            className="group hover:bg-white/[0.03] transition-colors"
+                            className="border-b border-[#161616] last:border-0 hover:bg-[#111] transition-colors group"
                           >
                             {/* # */}
-                            <td className="px-3 py-3.5 text-xs text-gray-600 tabular-nums select-none align-middle">
-                              {idx + 1}
+                            <td className="px-2 sm:px-4 py-3 text-gray-600 text-[11px] tabular-nums align-top">
+                              {index + 1}
                             </td>
 
-                            {/* Movie name — links to movie page */}
-                            <td className="px-3 py-3.5 align-middle">
+                            {/* Movie name */}
+                            <td className="px-2 sm:px-4 py-3 align-top">
                               <Link
-                                href={`/movie/${movie.slug || movie._id}`}
-                                title={`${movie.title} – Odia movie ${year}`}
-                                className="font-semibold text-gray-200 hover:text-orange-400 transition-colors leading-snug line-clamp-2"
+                                href={`/movie/${movie.slug}`}
+                                className="font-semibold text-white hover:text-orange-400 transition-colors inline-flex items-start gap-1 group/link"
+                                title={`${movie.title} – Odia Movie ${year}`}
                               >
-                                {movie.title}
+                                <span className="leading-snug">{movie.title}</span>
+                                <ExternalLink className="w-3 h-3 mt-0.5 opacity-0 group-hover/link:opacity-50 transition-opacity flex-shrink-0" />
                               </Link>
                             </td>
 
                             {/* Director */}
-                            <td className="px-3 py-3.5 text-gray-400 align-middle whitespace-nowrap">
-                              {dirs}
+                            <td className="px-2 sm:px-4 py-3 text-gray-400 text-xs align-top leading-snug">
+                              {movie.director ?? <span className="text-gray-700">—</span>}
                             </td>
 
-                            {/* Release date / TBA badge */}
-                            <td className="px-3 py-3.5 align-middle whitespace-nowrap">
-                              {tba ? (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-400 bg-sky-500/10 border border-sky-500/25 px-2 py-0.5 rounded-full">
-                                  TBA
-                                </span>
-                              ) : (
-                                <time
-                                  dateTime={String(movie.releaseDate).split("T")[0]}
-                                  className="text-gray-400 text-xs tabular-nums"
-                                >
-                                  {fmtDate(movie.releaseDate)}
-                                </time>
-                              )}
+                            {/* Release date */}
+                            <td className="px-2 sm:px-4 py-3 text-gray-400 text-[11px] tabular-nums whitespace-nowrap align-top">
+                              <time dateTime={movie.releaseDate || ""}>
+                                {formatReleaseDate(movie.releaseDate, movie.releaseTBA)}
+                              </time>
                             </td>
 
                             {/* Verdict */}
-                            <td className="px-3 py-3.5 align-middle">
-                              {movie.verdict ? (
-                                <span className={`text-[11px] font-semibold whitespace-nowrap ${vColor}`}>
+                            <td className="px-2 sm:px-4 py-3 align-top">
+                              {verdictCfg && VerdictIcon ? (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-semibold whitespace-nowrap ${verdictCfg.color}`}>
+                                  <VerdictIcon className="w-2.5 h-2.5 flex-shrink-0" />
                                   {movie.verdict}
                                 </span>
                               ) : (
-                                <span className="text-gray-600 text-xs">—</span>
+                                <span className="text-gray-700 text-xs">—</span>
                               )}
                             </td>
                           </tr>
@@ -824,188 +508,456 @@ export default async function OdiaMoviesYearPage({
                 </div>
 
                 {/* Table footer */}
-                <div className="flex items-center justify-between px-4 py-3 border-t border-[#161616] bg-[#0d0d0d]">
-                  <span className="text-[11px] text-gray-600">
-                    {movies.length} films
-                    {(() => {
-                      const tbaCount = movies.filter((m: any) => isTBA(m)).length;
-                      return tbaCount > 0 ? ` · ${tbaCount} TBA` : "";
-                    })()}
-                    {" · TBA → Upcoming → New to Old"}
-                  </span>
+                <div className="px-4 py-3 bg-[#111] border-t border-[#1a1a1a] flex items-center justify-between">
+                  <p className="text-xs text-gray-600">
+                    Showing <span className="text-gray-400 font-semibold">{total}</span> Odia films from {year}
+                  </p>
                   <Link
                     href="/movies"
-                    className="text-xs font-semibold text-orange-400 hover:text-orange-300 transition-colors"
+                    className="text-xs text-orange-400 hover:text-orange-300 font-semibold transition-colors flex items-center gap-1"
                   >
-                    Browse all years →
+                    View all years <ChevronRight className="w-3 h-3" />
                   </Link>
-                </div>
-              </div>
-            </section>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-24 text-center border border-[#1f1f1f] rounded-2xl bg-[#0d0d0d]">
-              <span className="text-5xl mb-4">🎬</span>
-              <p className="text-gray-400 text-sm">
-                No Odia movies found for <strong className="text-white">{year}</strong>.
-              </p>
-              <Link href="/movies" className="mt-4 text-xs text-orange-400 hover:text-orange-300 underline underline-offset-4">
-                Browse all Odia movies →
-              </Link>
-            </div>
-          )}
-
-          {/* ── Prev / Next year — rel="prev/next" for crawl signal ───────── */}
-          <nav
-            aria-label="Year navigation"
-            className="flex items-center justify-between pt-4 border-t border-[#1f1f1f]"
-          >
-            {prevYear ? (
-              <Link
-                href={`/movies/year/${prevYear}`}
-                rel="prev"
-                className="text-sm text-gray-400 hover:text-orange-400 transition-colors flex items-center gap-1"
-              >
-                ← Odia Movies {prevYear}
-              </Link>
-            ) : <span />}
-            {nextYear ? (
-              <Link
-                href={`/movies/year/${nextYear}`}
-                rel="next"
-                className="text-sm text-gray-400 hover:text-orange-400 transition-colors flex items-center gap-1"
-              >
-                Odia Movies {nextYear} →
-              </Link>
-            ) : <span />}
-          </nav>
-
-          {/* ══════════════════════════════════════════════════════════════════
-              SEO CONTENT — fully visible, NOT in accordion/details/hidden
-              Google needs to read this text to understand the page topic.
-          ═══════════════════════════════════════════════════════════════════ */}
-          <section
-            aria-label={`About Odia movies ${year}`}
-            className="pt-8 border-t border-[#1f1f1f] space-y-8 text-sm text-gray-500 leading-relaxed"
-          >
-
-            {/* ── Overview paragraph ──────────────────────────────────── */}
-            <div className="space-y-3">
-              <h2 className="text-base font-bold text-gray-300">
-                Odia Movies {year} – Complete Ollywood Film List
-              </h2>
-              <p>
-                {movies.length > 0 ? (
-                  <>
-                    A total of{" "}
-                    <strong className="text-gray-300">{movies.length} Odia movies</strong> were
-                    released in{" "}
-                    <strong className="text-gray-300">{year}</strong> by the{" "}
-                    <strong className="text-gray-300">Odia film industry (Ollywood)</strong>.{" "}
-                    {topDirectors.length > 0 && (
-                      <>
-                        The year featured films directed by{" "}
-                        <strong className="text-gray-300">{topDirectors.slice(0, 3).join(", ")}</strong> among others.{" "}
-                      </>
-                    )}
-                    {verdictMap["Blockbuster"]
-                      ? `${verdictMap["Blockbuster"]} film${verdictMap["Blockbuster"] > 1 ? "s" : ""} achieved Blockbuster status at the Odia box office. `
-                      : null}
-                    Ollypedia maintains the most comprehensive database of Odia cinema, with complete
-                    records for every Odia film from {YEAR_START} to {YEAR_END}.
-                  </>
-                ) : (
-                  <>
-                    Ollypedia is building the most comprehensive database of Odia (Ollywood) cinema.
-                    Movie data for{" "}
-                    <strong className="text-gray-300">{year}</strong> will be updated as information
-                    becomes available. Browse other years using the navigation above.
-                  </>
-                )}
-              </p>
-              <p>
-                The Odia film industry, popularly known as{" "}
-                <strong className="text-gray-300">Ollywood</strong>, is one of India's oldest
-                regional film industries, based in Bhubaneswar and Cuttack, Odisha. Ollywood
-                produces films in the Odia language covering genres including Action, Romance,
-                Drama, Comedy, Devotional and Thriller. This page lists all Odia films released
-                in{" "}
-                <strong className="text-gray-300">{year}</strong> with release dates and director
-                names. Click any movie title for full details — cast, songs, trailer and box
-                office collection.
-              </p>
-            </div>
-
-            {/* ── Verdict breakdown — visible stats ───────────────────── */}
-            {movies.length > 0 && Object.keys(verdictMap).length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-gray-400">
-                  {year} Odia Box Office at a Glance
-                </h3>
-                <div className="flex flex-wrap gap-3">
-                  {Object.entries(verdictMap)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([verdict, count]) => (
-                      <span
-                        key={verdict}
-                        className="text-xs px-3 py-1.5 rounded-lg bg-[#111] border border-[#1f1f1f] text-gray-400"
-                      >
-                        <span className="text-gray-200 font-semibold">{count}</span> {verdict}
-                      </span>
-                    ))}
                 </div>
               </div>
             )}
-
-            {/* ── Internal year links — anchor-text SEO + crawl signal ── */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-400">
-                Browse Odia Movies by Year
-              </h3>
-              {/* Plain anchor links — Google reads all of these */}
-              <div className="flex flex-wrap gap-x-5 gap-y-2">
-                {ALL_YEARS.map((y) => (
-                  <Link
-                    key={y}
-                    href={`/movies/year/${y}`}
-                    className={`text-xs hover:text-orange-400 transition-colors ${
-                      y === year ? "text-orange-400 font-semibold" : "text-gray-500"
-                    }`}
-                  >
-                    Odia Movies {y}
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* ── FAQ — rendered as VISIBLE H3+P pairs, not <details> ───
-                 CRITICAL: JSON-LD FAQPage only gets rich results if the same
-                 Q+A text appears visibly in the HTML. <details> is risky.     */}
-            <div className="space-y-6">
-              <h3 className="text-sm font-semibold text-gray-400">
-                Frequently Asked Questions – Odia Movies {year}
-              </h3>
-              <div className="space-y-5">
-                {faqs.map((faq, i) => (
-                  <div
-                    key={i}
-                    className="border border-[#1a1a1a] rounded-xl px-4 py-4 space-y-1.5"
-                    itemScope
-                    itemType="https://schema.org/Question"
-                  >
-                    <p className="text-xs font-semibold text-gray-300" itemProp="name">
-                      {faq.q}
-                    </p>
-                    <div itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
-                      <p className="text-xs text-gray-500 leading-relaxed" itemProp="text">
-                        {faq.a}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
           </section>
+
+          {/* ══════════════════════════════════════════════════════════
+              YEAR NAVIGATION — prev / next (directly after table)
+          ══════════════════════════════════════════════════════ */}
+          <nav
+            aria-label="Navigate between years"
+            className="flex items-center justify-between py-2"
+          >
+            <div>
+              {prevYear && (
+                <Link
+                  href={`/movies/year/${prevYear}`}
+                  aria-label={`Odia movies of ${prevYear}`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111] border border-[#222] text-sm font-semibold text-gray-400 hover:text-orange-400 hover:border-orange-500/30 transition-all group"
+                >
+                  <ChevronRight className="w-4 h-4 rotate-180 group-hover:-translate-x-0.5 transition-transform" />
+                  {prevYear} Films
+                </Link>
+              )}
+            </div>
+
+            <Link
+              href="/movies"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-sm font-semibold text-orange-400 hover:bg-orange-500/20 transition-all"
+            >
+              <Film className="w-3.5 h-3.5" />
+              All Movies
+            </Link>
+
+            <div>
+              {nextYear && (
+                <Link
+                  href={`/movies/year/${nextYear}`}
+                  aria-label={`Odia movies of ${nextYear}`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111] border border-[#222] text-sm font-semibold text-gray-400 hover:text-orange-400 hover:border-orange-500/30 transition-all group"
+                >
+                  {nextYear} Films
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              )}
+            </div>
+          </nav>
+
+          {total > 0 && (
+            <>
+              {/* ══════════════════════════════════════════════════════════
+                  SECTION 1 — OVERVIEW EDITORIAL
+              ══════════════════════════════════════════════════════ */}
+              <section
+                aria-labelledby="seo-overview-heading"
+                className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-6 md:p-8 space-y-4"
+              >
+                <h2
+                  id="seo-overview-heading"
+                  className="font-display text-lg font-bold text-white flex items-center gap-2"
+                >
+                  <BookOpen className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                  Odia Movies {year} – Complete Ollywood Overview
+                </h2>
+                <div className="space-y-3 text-sm text-gray-400 leading-relaxed">
+                  <p>
+                    The year <strong className="text-gray-200">{year}</strong> is a landmark chapter
+                    in <strong className="text-gray-200">Odia cinema</strong>, also known as{" "}
+                    <strong className="text-gray-200">Ollywood</strong>. A total of{" "}
+                    <strong className="text-gray-200">{total} Odia films</strong> were produced and
+                    released in {year}, spanning a wide range of genres including action, romance,
+                    family drama, comedy, mythology, thriller, and social issue-based narratives.
+                    These films were shot predominantly in the Odia language and released across
+                    Odisha and among Odia-speaking audiences globally.
+                  </p>
+                  <p>
+                    Odia cinema has its roots dating back to 1936 with the release of{" "}
+                    <em>Sita Bibaha</em>, the first Odia-language film. Over the decades, Ollywood
+                    has grown into a thriving regional film industry, producing commercially
+                    successful and critically acclaimed films each year. The {year} slate reflects
+                    that continued growth, with films targeting multiplex audiences as well as
+                    traditional single-screen theatres across Odisha.
+                  </p>
+                  {(verdictCounts["Blockbuster"] || verdictCounts["Superhit"] || verdictCounts["Hit"]) && (
+                    <p>
+                      In terms of box office performance, the {year} Ollywood season saw{" "}
+                      {[
+                        verdictCounts["Blockbuster"] && (
+                          <strong key="bb" className="text-orange-400">
+                            {verdictCounts["Blockbuster"]} Blockbuster{verdictCounts["Blockbuster"] > 1 ? "s" : ""}
+                          </strong>
+                        ),
+                        verdictCounts["Superhit"] && (
+                          <strong key="sh" className="text-yellow-400">
+                            {verdictCounts["Superhit"]} Superhit{verdictCounts["Superhit"] > 1 ? "s" : ""}
+                          </strong>
+                        ),
+                        verdictCounts["Hit"] && (
+                          <strong key="h" className="text-green-400">
+                            {verdictCounts["Hit"]} Hit{verdictCounts["Hit"] > 1 ? "s" : ""}
+                          </strong>
+                        ),
+                      ]
+                        .filter(Boolean)
+                        .reduce<React.ReactNode[]>((acc, el, i, arr) => {
+                          acc.push(el);
+                          if (i < arr.length - 1) acc.push(i === arr.length - 2 ? " and " : ", ");
+                          return acc;
+                        }, [])}{" "}
+                      — demonstrating the strong appetite of Odia audiences for quality regional
+                      content. These successes helped boost confidence among producers and
+                      distributors to invest further in the Ollywood ecosystem.
+                    </p>
+                  )}
+                  {verdictCounts["Upcoming"] > 0 && (
+                    <p>
+                      Additionally, <strong className="text-sky-400">{verdictCounts["Upcoming"]} upcoming Odia films</strong>{" "}
+                      are currently in production or post-production, with release dates yet to be
+                      officially announced. These films are expected to release in theatres soon —
+                      stay tuned to Ollypedia for the latest updates on cast, crew, trailers, and
+                      release date announcements.
+                    </p>
+                  )}
+                  <p>
+                    Each movie listed in the table above has a dedicated page on Ollypedia featuring
+                    the complete cast and crew, synopsis, songs, trailer, box office collection, and
+                    audience reviews. Click any movie name to explore the full details.
+                  </p>
+                </div>
+              </section>
+
+              {/* ══════════════════════════════════════════════════════════
+                  KEYWORD TAGS — visible to Google, subtle on-page
+              ══════════════════════════════════════════════════════ */}
+              <section aria-label={`Search tags for Odia movies ${year}`} className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl px-5 py-4">
+                <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest mb-3">Related Searches</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    `Odia Movies ${year}`,
+                    `${year} Odia Movies A to Z`,
+                    `Ollywood ${year}`,
+                    `${year} Odia Films List`,
+                    `New Odia Movies ${year}`,
+                    `Upcoming Odia Movies ${year}`,
+                    `${year} Ollywood Blockbuster`,
+                    `${year} Odia Hit Movies`,
+                    `Odia Movies ${year} Full List`,
+                    `${year} Ollywood Box Office`,
+                    `${year} Odia Movie Cast`,
+                    `${year} Odia Movie Release Date`,
+                    `Best Odia Movies ${year}`,
+                    `Latest Odia Movies ${year}`,
+                    `All Odia Movies ${year}`,
+                    `${year} Odia Movie Download`,
+                    `${year} Odia Movie Watch Online`,
+                    `Odia Cinema ${year}`,
+                    `Ollywood Films ${year}`,
+                    `${year} Odia Romantic Movies`,
+                    `${year} Odia Action Movies`,
+                    `${year} Odia Comedy Movies`,
+                    `${year} Odia Family Movies`,
+                    `Odia Movie Director ${year}`,
+                    `Odia Film Industry ${year}`,
+                  ].map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-3 py-1 text-[11px] rounded-full border border-[#1f1f1f] bg-[#111] text-gray-600"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </section>
+
+              {/* ══════════════════════════════════════════════════════════
+                  SECTION 2 — BOX OFFICE VERDICT BREAKDOWN
+              ══════════════════════════════════════════════════════ */}
+              {Object.keys(verdictCounts).length > 0 && (
+                <section
+                  aria-labelledby="verdict-breakdown-heading"
+                  className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-6 md:p-8"
+                >
+                  <h2
+                    id="verdict-breakdown-heading"
+                    className="font-display text-lg font-bold text-white flex items-center gap-2 mb-4"
+                  >
+                    <Award className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                    {year} Ollywood Box Office Verdict Breakdown
+                  </h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-5">
+                    {Object.entries(verdictCounts)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([verdict, count]) => {
+                        const cfg = VERDICT_CONFIG[verdict];
+                        if (!cfg) return null;
+                        const Icon = cfg.icon;
+                        return (
+                          <div
+                            key={verdict}
+                            className={`flex flex-col items-center justify-center gap-1 py-4 px-3 rounded-xl border text-center ${cfg.color}`}
+                          >
+                            <Icon className="w-5 h-5 mb-1" />
+                            <span className="text-lg font-black">{count}</span>
+                            <span className="text-[11px] font-semibold opacity-80">{verdict}</span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                  <p className="text-sm text-gray-500 leading-relaxed">
+                    Out of <strong className="text-gray-300">{total} Odia movies in {year}</strong>,
+                    the box office verdicts above reflect audience turnout and theatrical collection
+                    across Odisha. Blockbuster and Superhit films typically run for 4–8 weeks in
+                    theatres, while Average and Flop films have shorter runs. Upcoming films have
+                    not yet been released and their verdict will be updated post-release.
+                  </p>
+                </section>
+              )}
+
+              {/* ══════════════════════════════════════════════════════════
+                  SECTION 3 — ABOUT OLLYWOOD
+              ══════════════════════════════════════════════════════ */}
+              <section
+                aria-labelledby="about-ollywood-heading"
+                className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-6 md:p-8 space-y-3"
+              >
+                <h2
+                  id="about-ollywood-heading"
+                  className="font-display text-lg font-bold text-white flex items-center gap-2"
+                >
+                  <Globe className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                  About Ollywood – Odia Film Industry
+                </h2>
+                <div className="space-y-3 text-sm text-gray-400 leading-relaxed">
+                  <p>
+                    <strong className="text-gray-200">Ollywood</strong> is the colloquial name for
+                    the <strong className="text-gray-200">Odia-language film industry</strong> based
+                    in <strong className="text-gray-200">Bhubaneswar and Cuttack</strong>, Odisha,
+                    India. The industry produces over 30–50 films annually and has a dedicated
+                    audience base of over 45 million Odia speakers in Odisha as well as Odia
+                    diaspora communities across India and abroad.
+                  </p>
+                  <p>
+                    Ollywood films are primarily exhibited in single-screen and multiplex theatres
+                    across Odisha, with major centres in Bhubaneswar, Cuttack, Berhampur,
+                    Sambalpur, Rourkela, and Balasore. Popular Ollywood stars include actors such
+                    as Babushaan Mohanty, Sabyasachi Mishra, Anubhav Mohanty, Elina Samantray,
+                    Sivani Sangita, and Archita Sahu, among many others.
+                  </p>
+                  <p>
+                    Major Odia film production houses active in {year} include Ollywood studios and
+                    independent producers who collaborate with OTT platforms like ZEE5, SonyLIV,
+                    MX Player, and Odia-specific streaming services for digital releases following
+                    their theatrical run.
+                  </p>
+                  <p>
+                    <strong className="text-gray-200">Ollypedia</strong> is the most comprehensive
+                    online encyclopedia for Odia cinema, covering every film from{" "}
+                    {Math.min(...VALID_YEARS)} to {Math.max(...VALID_YEARS)} with detailed
+                    information on cast, crew, songs, trailers, box office performance, and audience
+                    reviews — all in one place.
+                  </p>
+                </div>
+              </section>
+
+              {/* ══════════════════════════════════════════════════════════
+                  SECTION 4 — FAQ (triggers Google FAQ rich results)
+              ══════════════════════════════════════════════════════ */}
+              <section
+                aria-labelledby="faq-heading"
+                className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-6 md:p-8"
+              >
+                <h2
+                  id="faq-heading"
+                  className="font-display text-lg font-bold text-white flex items-center gap-2 mb-5"
+                >
+                  <HelpCircle className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                  Frequently Asked Questions – Odia Movies {year}
+                </h2>
+
+                {/* FAQ JSON-LD for Google rich results */}
+                <script
+                  type="application/ld+json"
+                  dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                      "@context": "https://schema.org",
+                      "@type": "FAQPage",
+                      mainEntity: [
+                        {
+                          "@type": "Question",
+                          name: `What is the A to Z list of Odia movies in ${year}?`,
+                          acceptedAnswer: {
+                            "@type": "Answer",
+                            text: `The complete A to Z list of ${year} Odia movies includes all ${total} Ollywood films released in ${year}, listed with movie name, director, release date, and box office verdict. The full list is available on Ollypedia.`,
+                          },
+                        },
+                        {
+                          "@type": "Question",
+                          name: `How many Odia movies were released in ${year}?`,
+                          acceptedAnswer: {
+                            "@type": "Answer",
+                            text: `A total of ${total} Odia (Ollywood) movies were released in ${year}. These films span a range of genres including action, romance, drama, comedy, mythology, and thriller.`,
+                          },
+                        },
+                        {
+                          "@type": "Question",
+                          name: `Which is the best Odia movie of ${year}?`,
+                          acceptedAnswer: {
+                            "@type": "Answer",
+                            text: `The best Odia movies of ${year} include films that earned Blockbuster and Superhit verdicts at the box office. Visit Ollypedia's ${year} Odia movies list to see all films ranked by performance.`,
+                          },
+                        },
+                        {
+                          "@type": "Question",
+                          name: `What are the new Odia movies releasing in ${year}?`,
+                          acceptedAnswer: {
+                            "@type": "Answer",
+                            text: `New Odia movies releasing in ${year} are updated regularly on Ollypedia. Several upcoming Ollywood films have TBA release dates. Visit the ${year} Odia movies page on Ollypedia for the latest announcements.`,
+                          },
+                        },
+                        {
+                          "@type": "Question",
+                          name: `Which is the biggest Odia blockbuster of ${year}?`,
+                          acceptedAnswer: {
+                            "@type": "Answer",
+                            text: `Ollypedia tracks box office verdicts for all ${year} Odia films. Visit individual movie pages on Ollypedia to check which films earned the Blockbuster verdict in ${year}.`,
+                          },
+                        },
+                        {
+                          "@type": "Question",
+                          name: `Where can I watch Odia movies of ${year} online?`,
+                          acceptedAnswer: {
+                            "@type": "Answer",
+                            text: `${year} Odia movies are available to stream on platforms like ZEE5, SonyLIV, MX Player, and other OTT services following their theatrical release. Check individual movie pages on Ollypedia for streaming availability.`,
+                          },
+                        },
+                        {
+                          "@type": "Question",
+                          name: `Which upcoming Odia movies are releasing in ${year}?`,
+                          acceptedAnswer: {
+                            "@type": "Answer",
+                            text: `Several Odia films are upcoming in ${year} with TBA (To Be Announced) release dates. Visit Ollypedia's ${year} Odia movies page for the latest list of upcoming Ollywood films with their announced cast and directors.`,
+                          },
+                        },
+                        {
+                          "@type": "Question",
+                          name: `What is Ollywood?`,
+                          acceptedAnswer: {
+                            "@type": "Answer",
+                            text: `Ollywood is the informal name for the Odia-language film industry based in Odisha, India. It produces films primarily in the Odia language for audiences in Odisha and the global Odia diaspora.`,
+                          },
+                        },
+                      ],
+                    }),
+                  }}
+                />
+
+                <div className="space-y-4">
+                  {[
+                    {
+                      q: `What is the A to Z list of Odia movies in ${year}?`,
+                      a: `The complete A to Z list of ${year} Odia movies is available in the table above. All ${total} Ollywood films released in ${year} are listed alphabetically by title, along with their director, release date, and box office verdict.`,
+                    },
+                    {
+                      q: `How many Odia movies were released in ${year}?`,
+                      a: `A total of ${total} Odia (Ollywood) movies were released in ${year}, spanning genres like action, romance, family drama, comedy, mythology, and thriller. The full list with release dates and directors is available in the table above.`,
+                    },
+                    {
+                      q: `Which is the best Odia movie of ${year}?`,
+                      a: `The best Odia movies of ${year} are determined by box office performance and audience ratings. Ollypedia tracks verdicts like Blockbuster, Superhit, and Hit for all ${year} Odia films. Click any movie in the list above to see its full ratings, reviews, and verdict.`,
+                    },
+                    {
+                      q: `Which is the biggest Odia blockbuster of ${year}?`,
+                      a: `Ollypedia tracks box office verdicts for all ${year} Odia films. Click on any movie name in the table above to see its full box office collection, verdict, and audience response.`,
+                    },
+                    {
+                      q: `What are the new Odia movies releasing in ${year}?`,
+                      a: `New Odia movies releasing in ${year} are listed at the top of the table above, with upcoming films marked "TBA" for release date. Ollypedia updates the ${year} Odia movies list regularly as new films are announced and released.`,
+                    },
+                    {
+                      q: `Where can I watch Odia movies of ${year} online?`,
+                      a: `Most ${year} Odia movies are available to stream on ZEE5, SonyLIV, MX Player, and Odia-specific OTT platforms after their theatrical run. Individual movie pages on Ollypedia include streaming links where available.`,
+                    },
+                    {
+                      q: `Which upcoming Odia movies are releasing in ${year}?`,
+                      a: `Several Odia films have TBA (To Be Announced) release dates in ${year}. These are shown at the top of the table above marked as "Upcoming". Ollypedia updates this list regularly as official release dates are announced.`,
+                    },
+                    {
+                      q: `What is Ollywood?`,
+                      a: `Ollywood is the name for the Odia-language film industry based in Bhubaneswar and Cuttack, Odisha. It produces 30–50 films annually for Odia-speaking audiences across India and the global diaspora.`,
+                    },
+                  ].map(({ q, a }, i) => (
+                    <details
+                      key={i}
+                      className="group border border-[#1f1f1f] rounded-xl overflow-hidden"
+                    >
+                      <summary className="flex items-center justify-between gap-3 px-4 py-3.5 cursor-pointer list-none bg-[#111] hover:bg-[#161616] transition-colors">
+                        <span className="text-sm font-semibold text-gray-200">{q}</span>
+                        <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0 transition-transform group-open:rotate-90" />
+                      </summary>
+                      <div className="px-4 py-3 text-sm text-gray-400 leading-relaxed border-t border-[#1a1a1a] bg-[#0d0d0d]">
+                        {a}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              </section>
+
+              {/* ══════════════════════════════════════════════════════════
+                  SECTION 5 — EXPLORE BY YEAR (internal links)
+              ══════════════════════════════════════════════════════ */}
+              <section
+                aria-labelledby="browse-years-heading"
+                className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-6 md:p-8"
+              >
+                <h2
+                  id="browse-years-heading"
+                  className="font-display text-base font-bold text-white flex items-center gap-2 mb-4"
+                >
+                  <Sparkles className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                  Explore Odia Movies by Year
+                </h2>
+                <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+                  Ollypedia covers the complete history of Ollywood films from{" "}
+                  {Math.min(...VALID_YEARS)} to {Math.max(...VALID_YEARS)}. Browse any year below to
+                  see the full list of Odia movies with directors, release dates, and box office verdicts.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {VALID_YEARS.filter((yr) => yr !== year).map((yr) => (
+                    <Link
+                      key={yr}
+                      href={`/movies/year/${yr}`}
+                      title={`Odia movies released in ${yr}`}
+                      className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-[#222] bg-[#111] text-gray-400 hover:border-orange-500/40 hover:text-orange-400 transition-all"
+                    >
+                      Odia Movies {yr}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            </>
+          )}
 
         </div>
       </div>
