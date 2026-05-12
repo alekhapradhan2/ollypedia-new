@@ -87,6 +87,17 @@ export async function GET() {
     entries.push(urlEntry(`${SITE_URL}/songs/category/${cat}`, today, "weekly", pri));
   });
 
+  // ── Movies by year pages ────────────────────────────────────
+  // These pages EXIST via app/movies/year/[year]/page.tsx
+  const YEAR_START = 2000;
+  const YEAR_END   = new Date().getFullYear();
+  for (let yr = YEAR_END; yr >= YEAR_START; yr--) {
+    // Current and last 2 years change often (new releases); older years are stable
+    const freq = yr >= YEAR_END - 1 ? "daily"   : yr >= YEAR_END - 4 ? "monthly" : "yearly";
+    const pri  = yr >= YEAR_END - 1 ? "0.85"    : yr >= YEAR_END - 4 ? "0.75"    : "0.6";
+    entries.push(urlEntry(`${SITE_URL}/movies/year/${yr}`, today, freq, pri));
+  }
+
   try {
     await connectDB();
 
