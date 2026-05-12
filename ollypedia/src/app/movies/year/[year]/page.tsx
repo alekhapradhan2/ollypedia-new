@@ -37,17 +37,89 @@ export async function generateStaticParams() {
 }
 
 // ─── Data fetcher ─────────────────────────────────────────────────────────────
+// Handles all three ways a movie can belong to a year:
+//   1. releaseDate stored as ISO string  → string prefix range match
+//   2. releaseDate stored as Date object → $year extraction
+//   3. TBA / no releaseDate              → year or announcedYear field fallback
 async function getMoviesByYear(year: number) {
   await connectDB();
-  const start = new Date(`${year}-01-01T00:00:00.000Z`);
-  const end   = new Date(`${year + 1}-01-01T00:00:00.000Z`);
-  const movies = await Movie.find(
-    { releaseDate: { $gte: start, $lt: end } },
-    "title slug releaseDate director genre verdict posterUrl"
-  )
-    .sort({ releaseDate: 1 })
-    .lean();
+
+  const startStr = `${year}-01-01`;
+  const endStr   = `${year + 1}-01-01`;
+
+  const movies = await Movie.aggregate([
+    {
+      $match: {
+        $or: [
+          // ── Case 1: releaseDate stored as ISO string ─────────────────────
+          // Covers "2024-05-15", "2024-05-15T00:00:00.000Z", "2024-05-15T00:00:00Z"
+          {
+            releaseDate: {
+              $type: "string",
+              $gte:  startStr,
+              $lt:   endStr,
+            },
+          },
+
+          // ── Case 2: releaseDate stored as a real BSON Date object ────────
+          {
+            $expr: {
+              $and: [
+                { $eq: [{ $type: "$releaseDate" }, "date"] },
+                { $eq: [{ $year: "$releaseDate" }, year] },
+              ],
+            },
+          },
+
+          // ── Case 3: TBA movies — releaseTBA: true, releaseDate: "" ───────
+          // Your DB stores TBA films with releaseTBA: true and releaseDate: "".
+          // We match these by releaseTBA + createdAt year (the year they were
+          // added to the DB, which matches the announced year).
+          {
+            $and: [
+              { releaseTBA: true },
+              {
+                $expr: {
+                  $eq: [{ $year: "$createdAt" }, year],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      $project: {
+        title:       1,
+        slug:        1,
+        releaseDate: 1,
+        releaseTBA:  1,   // true for TBA movies
+        director:    1,
+        genre:       1,
+        verdict:     1,
+        posterUrl:   1,
+        createdAt:   1,
+      },
+    },
+    // Add a sort key: 0 for real dates (sort first), 1 for TBA (sort last)
+    {
+      $addFields: {
+        _tbaSortKey: {
+          $cond: [{ $eq: ["$releaseTBA", true] }, 1, 0],
+        },
+      },
+    },
+    {
+      $sort: { _tbaSortKey: 1, releaseDate: 1 },
+    },
+  ]);
+
   return JSON.parse(JSON.stringify(movies));
+}
+
+// Returns true if the movie has no confirmed release date
+function isTBA(movie: any): boolean {
+  return movie.releaseTBA === true || !movie.releaseDate || movie.releaseDate === "";
 }
 
 // ─── SEO text helpers ─────────────────────────────────────────────────────────
@@ -99,12 +171,14 @@ function uniqueDirs(movies: any[]): string[] {
 }
 
 function fmtDate(iso?: string): string {
-  if (!iso) return "—";
+  if (!iso || iso === "TBA" || iso === "") return "TBA";
   try {
-    return new Date(iso).toLocaleDateString("en-IN", {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "TBA";
+    return d.toLocaleDateString("en-IN", {
       day: "numeric", month: "short", year: "numeric",
     });
-  } catch { return "—"; }
+  } catch { return "TBA"; }
 }
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -579,12 +653,18 @@ export default async function OdiaMoviesYearPage({
                             {movie.title}
                           </span>
                           <span className="text-sm text-gray-400 truncate">{dirs}</span>
-                          <time
-                            dateTime={movie.releaseDate ? String(movie.releaseDate).split("T")[0] : undefined}
-                            className="text-sm text-gray-400"
-                          >
-                            {fmtDate(movie.releaseDate)}
-                          </time>
+                          {isTBA(movie) ? (
+                            <span className="text-xs font-semibold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-full">
+                              TBA
+                            </span>
+                          ) : (
+                            <time
+                              dateTime={String(movie.releaseDate).split("T")[0]}
+                              className="text-sm text-gray-400"
+                            >
+                              {fmtDate(movie.releaseDate)}
+                            </time>
+                          )}
                           <span className={`text-xs font-semibold ${vColor}`}>
                             {movie.verdict || "—"}
                           </span>
@@ -600,12 +680,18 @@ export default async function OdiaMoviesYearPage({
                               <p className="text-xs text-gray-500 truncate mt-0.5">{dirs}</p>
                             )}
                           </div>
-                          <time
-                            dateTime={movie.releaseDate ? String(movie.releaseDate).split("T")[0] : undefined}
-                            className="text-xs text-gray-400 text-right"
-                          >
-                            {fmtDate(movie.releaseDate)}
-                          </time>
+                          {isTBA(movie) ? (
+                            <span className="text-xs font-semibold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-full text-right">
+                              TBA
+                            </span>
+                          ) : (
+                            <time
+                              dateTime={String(movie.releaseDate).split("T")[0]}
+                              className="text-xs text-gray-400 text-right"
+                            >
+                              {fmtDate(movie.releaseDate)}
+                            </time>
+                          )}
                         </div>
                       </Link>
                     );
