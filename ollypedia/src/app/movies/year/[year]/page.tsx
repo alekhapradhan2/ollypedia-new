@@ -110,20 +110,80 @@ async function getMoviesByYear(year: number) {
 
   const startDate = new Date(`${year}-01-01`);
   const endDate   = new Date(`${year}-12-31T23:59:59`);
+  const currentYear = new Date().getFullYear();
+
+  // For the current year we also include TBA movies (releaseTBA:true or
+  // releaseDate:"") that are marked Upcoming — they have no date yet but
+  // clearly belong to this year's slate.
+  const matchStage =
+    year === currentYear
+      ? {
+          $or: [
+            {
+              releaseDate: {
+                $gte: startDate.toISOString().split("T")[0],
+                $lte: endDate.toISOString().split("T")[0],
+              },
+            },
+            { releaseTBA: true },
+            {
+              $and: [
+                { $or: [{ releaseDate: "" }, { releaseDate: null }, { releaseDate: { $exists: false } }] },
+                { $or: [{ verdict: "Upcoming" }, { status: "Upcoming" }] },
+              ],
+            },
+          ],
+        }
+      : {
+          releaseDate: {
+            $gte: startDate.toISOString().split("T")[0],
+            $lte: endDate.toISOString().split("T")[0],
+          },
+        };
 
   const movies = await Movie.aggregate([
-    {
-      $match: {
-        releaseDate: {
-          $gte: startDate.toISOString().split("T")[0],
-          $lte: endDate.toISOString().split("T")[0],
-        },
-      },
-    },
+    { $match: matchStage },
     { $project: { reviews: 0 } },
     {
       $addFields: {
-        _releaseDateObj: { $toDate: "$releaseDate" },
+        // Guard against empty/null releaseDate (TBA movies) — sort them to the bottom
+        _releaseDateObj: {
+          $cond: {
+            if: { $and: [{ $ifNull: ["$releaseDate", false] }, { $ne: ["$releaseDate", ""] }] },
+            then: { $toDate: "$releaseDate" },
+            else: new Date("9999-12-31"),
+          },
+        },
+        // Resolve director: use top-level field first, then fall back to
+        // the first cast/crew entry whose role contains "director" (case-insensitive)
+        director: {
+          $cond: {
+            if: { $and: [{ $ifNull: ["$director", false] }, { $ne: ["$director", ""] }] },
+            then: "$director",
+            else: {
+              $let: {
+                vars: {
+                  directorEntry: {
+                    $first: {
+                      $filter: {
+                        input: { $ifNull: ["$cast", []] },
+                        as: "member",
+                        cond: {
+                          $regexMatch: {
+                            input: { $ifNull: ["$$member.role", ""] },
+                            regex: "director",
+                            options: "i",
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                in: { $ifNull: ["$$directorEntry.name", null] },
+              },
+            },
+          },
+        },
       },
     },
     { $sort: { _releaseDateObj: -1, _id: -1 } },
@@ -143,16 +203,18 @@ const VERDICT_CONFIG: Record<string, { color: string; icon: React.ElementType }>
 };
 
 // ─── Format release date ────────────────────────────────────────────────────────
-function formatReleaseDate(dateStr: string): string {
-  if (!dateStr) return "—";
+function formatReleaseDate(dateStr: string, isTBA?: boolean): string {
+  if (isTBA || !dateStr || dateStr.trim() === "") return "TBA";
   try {
-    return new Date(dateStr).toLocaleDateString("en-IN", {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "TBA";
+    return d.toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
       year: "numeric",
     });
   } catch {
-    return dateStr;
+    return "TBA";
   }
 }
 
@@ -397,8 +459,8 @@ export default async function MoviesByYearPage({
 
                             {/* Release date */}
                             <td className="px-2 sm:px-4 py-3 text-gray-400 text-[11px] tabular-nums whitespace-nowrap align-top">
-                              <time dateTime={movie.releaseDate}>
-                                {formatReleaseDate(movie.releaseDate)}
+                              <time dateTime={movie.releaseDate || ""}>
+                                {formatReleaseDate(movie.releaseDate, movie.releaseTBA)}
                               </time>
                             </td>
 

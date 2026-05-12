@@ -664,22 +664,17 @@ export default async function MoviesPage({
             </h2>
           </div>
           <div className="flex flex-wrap gap-2">
-            {[2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015].map((yr) => (
+            {Array.from({ length: new Date().getFullYear() - 2014 + 1 }, (_, i) => new Date().getFullYear() - i).map((yr) => (
               <Link
                 key={yr}
-                href={`/movies?year=${yr}`}
+                href={`/movies/year/${yr}`}
                 title={`Odia movies released in ${yr}`}
                 className="px-3.5 py-1.5 text-xs font-semibold rounded-lg border border-[#222] bg-[#111] text-gray-400 hover:border-orange-500/40 hover:text-orange-400 transition-all"
               >
                 {yr}
               </Link>
             ))}
-            <Link
-              href="/movies?sort=oldest"
-              className="px-3.5 py-1.5 text-xs font-semibold rounded-lg border border-[#222] bg-[#111] text-gray-500 hover:border-orange-500/40 hover:text-orange-400 transition-all"
-            >
-              Older Films →
-            </Link>
+
           </div>
         </section>
 
