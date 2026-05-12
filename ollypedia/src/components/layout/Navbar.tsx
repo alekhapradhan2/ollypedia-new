@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Search, Menu, X, Film,
-  Clapperboard, Users, BookOpen, Music2, TrendingUp, ChevronRight, ArrowRight,
+  Clapperboard, Users, BookOpen, Music2, TrendingUp, ChevronRight, ArrowRight, Calendar,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -14,12 +14,19 @@ import clsx from "clsx";
 // Nav links
 // ─────────────────────────────────────────────────────────────────────────────
 
+const OLDEST_YEAR = 2014;
+const _currentYear = new Date().getFullYear();
+const MOVIE_YEARS: number[] = Array.from(
+  { length: _currentYear - OLDEST_YEAR + 1 },
+  (_, i) => _currentYear - i,
+);
+
 const NAV_LINKS = [
-  { label: "Movies",     href: "/movies"      },
-  { label: "Songs",      href: "/songs"       },
-  { label: "Cast",       href: "/cast"       },
-  { label: "Box Office", href: "/box-office" },
-  { label: "Blog",       href: "/blog"       },
+  { label: "Movies",     href: "/movies",     hasDropdown: true },
+  { label: "Songs",      href: "/songs",      hasDropdown: false },
+  { label: "Cast",       href: "/cast",       hasDropdown: false },
+  { label: "Box Office", href: "/box-office", hasDropdown: false },
+  { label: "Blog",       href: "/blog",       hasDropdown: false },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -364,6 +371,84 @@ function SearchDropdown({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Movies By Year Mega Dropdown
+// ─────────────────────────────────────────────────────────────────────────────
+
+function MoviesYearDropdown({ onClose }: { onClose: () => void }) {
+  const currentYear = new Date().getFullYear();
+
+  return (
+    <div
+      className="absolute top-[calc(100%+8px)] left-0 w-[340px] bg-[#0d0d0d] border border-white/10 rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.8)] overflow-hidden z-50"
+      onMouseLeave={onClose}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2.5 px-4 py-3.5 border-b border-white/[0.07] bg-orange-500/5">
+        <div className="w-7 h-7 bg-orange-500/20 rounded-lg flex items-center justify-center">
+          <Calendar className="w-3.5 h-3.5 text-orange-400" />
+        </div>
+        <div>
+          <p className="text-xs font-bold text-white tracking-wide">Movies by Year</p>
+          <p className="text-[10px] text-gray-500 mt-0.5">Browse Odia films by release year</p>
+        </div>
+      </div>
+
+      {/* Year grid */}
+      <div className="p-3">
+        <div className="grid grid-cols-3 gap-1.5">
+          {MOVIE_YEARS.map((yr) => {
+            const isCurrent = yr === currentYear;
+            return (
+              <Link
+                key={yr}
+                href={`/movies/year/${yr}`}
+                onClick={onClose}
+                className={clsx(
+                  "group relative flex flex-col items-center justify-center py-3 px-2 rounded-xl transition-all duration-150 text-center overflow-hidden",
+                  isCurrent
+                    ? "bg-orange-500/20 border border-orange-500/40 hover:bg-orange-500/30"
+                    : "bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] hover:border-orange-500/25",
+                )}
+              >
+                {isCurrent && (
+                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                )}
+                <span className={clsx(
+                  "text-sm font-bold transition-colors",
+                  isCurrent ? "text-orange-400" : "text-gray-300 group-hover:text-orange-400",
+                )}>
+                  {yr}
+                </span>
+                {isCurrent && (
+                  <span className="text-[9px] text-orange-500/80 font-semibold mt-0.5 uppercase tracking-wider">Latest</span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* View all movies link */}
+        <div className="mt-2 pt-2 border-t border-white/[0.06]">
+          <Link
+            href="/movies"
+            onClick={onClose}
+            className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl bg-white/[0.03] hover:bg-orange-500/10 border border-white/[0.06] hover:border-orange-500/30 transition-all group"
+          >
+            <div className="flex items-center gap-2">
+              <Film className="w-3.5 h-3.5 text-orange-500" />
+              <span className="text-xs font-semibold text-gray-300 group-hover:text-orange-400 transition-colors">
+                All Odia Movies
+              </span>
+            </div>
+            <ChevronRight className="w-3.5 h-3.5 text-gray-600 group-hover:text-orange-400 group-hover:translate-x-0.5 transition-all" />
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Navbar
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -371,17 +456,21 @@ export function Navbar() {
   const pathname = usePathname();
   const router   = useRouter();
 
-  const [menuOpen,    setMenuOpen]    = useState(false);
-  const [searchOpen,  setSearchOpen]  = useState(false);
-  const [query,       setQuery]       = useState("");
-  const [results,     setResults]     = useState<Suggestion[]>([]);
-  const [loading,     setLoading]     = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
+  const [menuOpen,         setMenuOpen]         = useState(false);
+  const [searchOpen,       setSearchOpen]       = useState(false);
+  const [query,            setQuery]            = useState("");
+  const [results,          setResults]          = useState<Suggestion[]>([]);
+  const [loading,          setLoading]          = useState(false);
+  const [activeIndex,      setActiveIndex]      = useState(-1);
+  const [moviesDropOpen,   setMoviesDropOpen]   = useState(false);
+  const [mobileYearsOpen,  setMobileYearsOpen]  = useState(false);
 
-  const inputRef     = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const abortRef     = useRef<AbortController | null>(null);
+  const inputRef       = useRef<HTMLInputElement>(null);
+  const containerRef   = useRef<HTMLDivElement>(null);
+  const moviesNavRef   = useRef<HTMLDivElement>(null);
+  const debounceRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef       = useRef<AbortController | null>(null);
+  const closeTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Fetch /api/search ─────────────────────────────────────────────────────
   const runSearch = useCallback((q: string) => {
@@ -409,9 +498,6 @@ export function Navbar() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data: ApiResponse = await res.json();
-
-        // ✅ Removed stale-response guard — it was the main cause of "no results"
-        //    because route.ts lowercases/trims query differently.
         setResults(toSuggestions(data));
         setActiveIndex(-1);
       } catch (err: any) {
@@ -422,7 +508,7 @@ export function Navbar() {
       } finally {
         setLoading(false);
       }
-    }, 250); // 250 ms debounce
+    }, 250);
   }, []);
 
   useEffect(() => { runSearch(query); }, [query, runSearch]);
@@ -437,6 +523,16 @@ export function Navbar() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // ── Movies dropdown hover handlers ────────────────────────────────────────
+  function handleMoviesMouseEnter() {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    setMoviesDropOpen(true);
+  }
+
+  function handleMoviesMouseLeave() {
+    closeTimerRef.current = setTimeout(() => setMoviesDropOpen(false), 120);
+  }
 
   // ── Keyboard ──────────────────────────────────────────────────────────────
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -511,21 +607,57 @@ export function Navbar() {
 
           {/* ── Desktop Nav ───────────────────────────────────────────────── */}
           <nav className="hidden md:flex items-center gap-0.5" aria-label="Main navigation">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                aria-current={pathname?.startsWith(link.href) ? "page" : undefined}
-                className={clsx(
-                  "px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150",
-                  pathname?.startsWith(link.href)
-                    ? "text-orange-400 bg-orange-500/10"
-                    : "text-gray-400 hover:text-white hover:bg-white/5",
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {NAV_LINKS.map((link) =>
+              link.hasDropdown ? (
+                // Movies link with year dropdown
+                <div
+                  key={link.href}
+                  ref={moviesNavRef}
+                  className="relative"
+                  onMouseEnter={handleMoviesMouseEnter}
+                  onMouseLeave={handleMoviesMouseLeave}
+                >
+                  <Link
+                    href={link.href}
+                    aria-current={pathname?.startsWith(link.href) ? "page" : undefined}
+                    aria-haspopup="true"
+                    aria-expanded={moviesDropOpen}
+                    className={clsx(
+                      "flex items-center gap-1 px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+                      pathname?.startsWith(link.href)
+                        ? "text-orange-400 bg-orange-500/10"
+                        : "text-gray-400 hover:text-white hover:bg-white/5",
+                    )}
+                  >
+                    {link.label}
+                    <ChevronRight
+                      className={clsx(
+                        "w-3 h-3 transition-transform duration-200",
+                        moviesDropOpen ? "rotate-90 text-orange-400" : "rotate-0",
+                      )}
+                    />
+                  </Link>
+
+                  {moviesDropOpen && (
+                    <MoviesYearDropdown onClose={() => setMoviesDropOpen(false)} />
+                  )}
+                </div>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  aria-current={pathname?.startsWith(link.href) ? "page" : undefined}
+                  className={clsx(
+                    "px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+                    pathname?.startsWith(link.href)
+                      ? "text-orange-400 bg-orange-500/10"
+                      : "text-gray-400 hover:text-white hover:bg-white/5",
+                  )}
+                >
+                  {link.label}
+                </Link>
+              )
+            )}
           </nav>
 
           {/* ── Right: search + hamburger ─────────────────────────────────── */}
@@ -657,22 +789,72 @@ export function Navbar() {
             </div>
 
             {/* Nav links */}
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMenuOpen(false)}
-                aria-current={pathname?.startsWith(link.href) ? "page" : undefined}
-                className={clsx(
-                  "flex items-center px-3 py-2.5 rounded-xl text-sm font-medium mb-0.5 transition-colors",
-                  pathname?.startsWith(link.href)
-                    ? "text-orange-400 bg-orange-500/10"
-                    : "text-gray-400 hover:text-white hover:bg-white/5",
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {NAV_LINKS.map((link) =>
+              link.hasDropdown ? (
+                <div key={link.href}>
+                  {/* Movies accordion toggle */}
+                  <button
+                    onClick={() => setMobileYearsOpen((v) => !v)}
+                    className={clsx(
+                      "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium mb-0.5 transition-colors",
+                      pathname?.startsWith(link.href)
+                        ? "text-orange-400 bg-orange-500/10"
+                        : "text-gray-400 hover:text-white hover:bg-white/5",
+                    )}
+                  >
+                    <span>{link.label}</span>
+                    <ChevronRight className={clsx(
+                      "w-4 h-4 transition-transform duration-200",
+                      mobileYearsOpen ? "rotate-90 text-orange-400" : "",
+                    )} />
+                  </button>
+
+                  {/* Expandable year grid */}
+                  {mobileYearsOpen && (
+                    <div className="mb-2 mx-2 p-3 bg-white/[0.03] border border-white/[0.07] rounded-xl">
+                      <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-2 px-1">
+                        Browse by Year
+                      </p>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {MOVIE_YEARS.map((yr) => (
+                          <Link
+                            key={yr}
+                            href={`/movies/year/${yr}`}
+                            onClick={() => { setMenuOpen(false); setMobileYearsOpen(false); }}
+                            className="flex items-center justify-center py-2 rounded-lg bg-white/[0.04] border border-white/[0.07] hover:bg-orange-500/15 hover:border-orange-500/30 text-xs font-semibold text-gray-400 hover:text-orange-400 transition-all"
+                          >
+                            {yr}
+                          </Link>
+                        ))}
+                      </div>
+                      <Link
+                        href="/movies"
+                        onClick={() => { setMenuOpen(false); setMobileYearsOpen(false); }}
+                        className="flex items-center justify-center gap-1.5 mt-2 py-2 rounded-lg bg-orange-500/10 border border-orange-500/20 text-xs font-semibold text-orange-400 hover:bg-orange-500/20 transition-all"
+                      >
+                        <Film className="w-3 h-3" />
+                        All Movies
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  aria-current={pathname?.startsWith(link.href) ? "page" : undefined}
+                  className={clsx(
+                    "flex items-center px-3 py-2.5 rounded-xl text-sm font-medium mb-0.5 transition-colors",
+                    pathname?.startsWith(link.href)
+                      ? "text-orange-400 bg-orange-500/10"
+                      : "text-gray-400 hover:text-white hover:bg-white/5",
+                  )}
+                >
+                  {link.label}
+                </Link>
+              )
+            )}
           </div>
         )}
       </div>
