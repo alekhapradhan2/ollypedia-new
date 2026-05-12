@@ -37,10 +37,17 @@ export async function generateStaticParams() {
 }
 
 // ─── Data fetcher ─────────────────────────────────────────────────────────────
-// Handles all three ways a movie can belong to a year:
-//   1. releaseDate stored as ISO string  → string prefix range match
-//   2. releaseDate stored as Date object → $year extraction
-//   3. TBA / no releaseDate              → year or announcedYear field fallback
+// Sort order: TBA first → Upcoming (no date but not TBA) → Released new→old
+//
+// Director resolution:
+//   1. movie.director field (if non-empty string)
+//   2. cast[] entry where role === "Director" (your DB stores director in cast)
+//
+// TBA matching — three cases:
+//   A. releaseTBA: true  (explicit flag, any year — show on current year page)
+//   B. releaseDate: "" | null | missing  AND  verdict: "Upcoming"
+//   C. releaseDate starts with the year string e.g. "2025-..." (normal released)
+//   D. releaseDate is a BSON Date object for that year
 async function getMoviesByYear(year: number) {
   await connectDB();
 
@@ -51,36 +58,47 @@ async function getMoviesByYear(year: number) {
     {
       $match: {
         $or: [
-          // ── Case 1: releaseDate stored as ISO string ─────────────────────
-          // Covers "2024-05-15", "2024-05-15T00:00:00.000Z", "2024-05-15T00:00:00Z"
-          {
-            releaseDate: {
-              $type: "string",
-              $gte:  startStr,
-              $lt:   endStr,
-            },
-          },
+          // ── A: explicit TBA flag ─────────────────────────────────────────
+          // releaseTBA:true means the movie is announced for this year but
+          // has no confirmed date. We show ALL releaseTBA movies on the
+          // current-year page regardless of createdAt, because the flag itself
+          // signals the movie belongs to the upcoming slate.
+          { releaseTBA: true },
 
-          // ── Case 2: releaseDate stored as a real BSON Date object ────────
-          {
-            $expr: {
-              $and: [
-                { $eq: [{ $type: "$releaseDate" }, "date"] },
-                { $eq: [{ $year: "$releaseDate" }, year] },
-              ],
-            },
-          },
-
-          // ── Case 3: TBA movies — releaseTBA: true, releaseDate: "" ───────
-          // Your DB stores TBA films with releaseTBA: true and releaseDate: "".
-          // We match these by releaseTBA + createdAt year (the year they were
-          // added to the DB, which matches the announced year).
+          // ── B: verdict=Upcoming with blank/missing releaseDate ───────────
+          // Some upcoming movies don't set releaseTBA but have verdict=Upcoming
+          // and an empty releaseDate. Show them on the current year page.
           {
             $and: [
-              { releaseTBA: true },
+              { verdict: "Upcoming" },
+              {
+                $or: [
+                  { releaseDate: "" },
+                  { releaseDate: null },
+                  { releaseDate: { $exists: false } },
+                ],
+              },
+            ],
+          },
+
+          // ── C: releaseDate stored as ISO string for this year ────────────
+          {
+            $and: [
+              { releaseTBA: { $ne: true } },
+              { releaseDate: { $type: "string", $gte: startStr, $lt: endStr } },
+            ],
+          },
+
+          // ── D: releaseDate stored as BSON Date object for this year ──────
+          {
+            $and: [
+              { releaseTBA: { $ne: true } },
               {
                 $expr: {
-                  $eq: [{ $year: "$createdAt" }, year],
+                  $and: [
+                    { $eq: [{ $type: "$releaseDate" }, "date"] },
+                    { $eq: [{ $year: "$releaseDate" }, year] },
+                  ],
                 },
               },
             ],
@@ -88,29 +106,102 @@ async function getMoviesByYear(year: number) {
         ],
       },
     },
-    {
-      $project: {
-        title:       1,
-        slug:        1,
-        releaseDate: 1,
-        releaseTBA:  1,   // true for TBA movies
-        director:    1,
-        genre:       1,
-        verdict:     1,
-        posterUrl:   1,
-        createdAt:   1,
-      },
-    },
-    // Add a sort key: 0 for real dates (sort first), 1 for TBA (sort last)
+
+    // ── Derive director name from cast array if director field is blank ───
     {
       $addFields: {
-        _tbaSortKey: {
-          $cond: [{ $eq: ["$releaseTBA", true] }, 1, 0],
+        // Find the first cast member whose role is "Director" (case-insensitive)
+        _directorFromCast: {
+          $let: {
+            vars: {
+              directorEntry: {
+                $first: {
+                  $filter: {
+                    input: { $ifNull: ["$cast", []] },
+                    as:    "member",
+                    cond: {
+                      $regexMatch: {
+                        input: { $toString: { $ifNull: ["$$member.role", ""] } },
+                        regex: "director",
+                        options: "i",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            in: { $ifNull: ["$$directorEntry.name", ""] },
+          },
         },
       },
     },
     {
-      $sort: { _tbaSortKey: 1, releaseDate: 1 },
+      // Use movie.director if non-empty, else fall back to cast-derived name
+      $addFields: {
+        resolvedDirector: {
+          $cond: {
+            if: { $and: [
+              { $ne: ["$director", null] },
+              { $ne: ["$director", ""] },
+            ]},
+            then: "$director",
+            else: "$_directorFromCast",
+          },
+        },
+      },
+    },
+
+    // ── Sort: TBA → Upcoming → Released new-to-old ───────────────────────
+    {
+      $addFields: {
+        _sortGroup: {
+          $switch: {
+            branches: [
+              // Group 0 — TBA (releaseTBA flag)
+              {
+                case: { $eq: ["$releaseTBA", true] },
+                then: 0,
+              },
+              // Group 1 — Upcoming verdict with no date
+              {
+                case: {
+                  $and: [
+                    { $eq: ["$verdict", "Upcoming"] },
+                    {
+                      $or: [
+                        { $eq: ["$releaseDate", ""] },
+                        { $eq: ["$releaseDate", null] },
+                      ],
+                    },
+                  ],
+                },
+                then: 1,
+              },
+            ],
+            // Group 2 — all released/dated movies
+            default: 2,
+          },
+        },
+      },
+    },
+    {
+      // Within group 2 (released), sort new-to-old (descending releaseDate)
+      // Within group 0/1 (TBA/Upcoming), secondary sort by title
+      $sort: { _sortGroup: 1, releaseDate: -1, title: 1 },
+    },
+
+    {
+      $project: {
+        title:            1,
+        slug:             1,
+        releaseDate:      1,
+        releaseTBA:       1,
+        director:         "$resolvedDirector",
+        genre:            1,
+        verdict:          1,
+        posterUrl:        1,
+        _sortGroup:       1,
+      },
     },
   ]);
 
@@ -119,7 +210,10 @@ async function getMoviesByYear(year: number) {
 
 // Returns true if the movie has no confirmed release date
 function isTBA(movie: any): boolean {
-  return movie.releaseTBA === true || !movie.releaseDate || movie.releaseDate === "";
+  return (
+    movie.releaseTBA === true ||
+    (!movie.releaseDate || movie.releaseDate === "") && movie.verdict === "Upcoming"
+  );
 }
 
 // ─── SEO text helpers ─────────────────────────────────────────────────────────
@@ -601,107 +695,143 @@ export default async function OdiaMoviesYearPage({
             ))}
           </nav>
 
-          {/* ── Movies table ──────────────────────────────────────────────── */}
+          {/* ── Movies table — single <table>, responsive on all screen sizes ── */}
           {movies.length > 0 ? (
             <section aria-labelledby="table-heading">
               <h2 id="table-heading" className="sr-only">
                 All Odia Movies Released in {year}
               </h2>
 
+              {/* Outer wrapper: rounded border + horizontal scroll on small screens */}
               <div className="rounded-2xl border border-[#1f1f1f] overflow-hidden">
-                {/* Table header */}
-                <div className="hidden sm:grid sm:grid-cols-[2rem_2fr_1.2fr_1.2fr_1fr] bg-[#111] border-b border-[#1f1f1f] px-4 sm:px-6 py-3 gap-4">
-                  <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">#</span>
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Movie Name</span>
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Director</span>
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Release Date</span>
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Verdict</span>
-                </div>
+                <div className="overflow-x-auto">
+                  <table
+                    className="w-full min-w-[480px] border-collapse text-sm"
+                    aria-label={`Odia movies of ${year}`}
+                  >
+                    {/* ── thead ─────────────────────────────────────────── */}
+                    <thead>
+                      <tr className="bg-[#111] border-b border-[#1f1f1f]">
+                        <th
+                          scope="col"
+                          className="w-10 px-3 py-3 text-left text-[10px] font-bold text-gray-600 uppercase tracking-widest"
+                        >
+                          #
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest"
+                        >
+                          Movie Name
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap"
+                        >
+                          Director
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap"
+                        >
+                          Release Date
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest"
+                        >
+                          Verdict
+                        </th>
+                      </tr>
+                    </thead>
 
-                {/* Mobile header */}
-                <div className="grid grid-cols-[2fr_1fr] sm:hidden bg-[#111] border-b border-[#1f1f1f] px-4 py-3 gap-4">
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Movie</span>
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Date</span>
-                </div>
+                    {/* ── tbody ─────────────────────────────────────────── */}
+                    <tbody className="divide-y divide-[#161616]">
+                      {movies.map((movie: any, idx: number) => {
+                        const dirs = Array.isArray(movie.director)
+                          ? movie.director.filter(Boolean).join(", ")
+                          : movie.director || "—";
 
-                {/* Rows */}
-                <div className="divide-y divide-[#161616]">
-                  {movies.map((movie: any, idx: number) => {
-                    const dirs = Array.isArray(movie.director)
-                      ? movie.director.join(", ")
-                      : movie.director || "—";
-                    const verdictColor: Record<string, string> = {
-                      Blockbuster: "text-orange-400",
-                      Superhit:    "text-yellow-400",
-                      Hit:         "text-green-400",
-                      Average:     "text-blue-400",
-                      Flop:        "text-red-400",
-                    };
-                    const vColor = verdictColor[movie.verdict] ?? "text-gray-500";
+                        const verdictColor: Record<string, string> = {
+                          Blockbuster: "text-orange-400",
+                          Superhit:    "text-yellow-400",
+                          Hit:         "text-green-400",
+                          Average:     "text-blue-400",
+                          Flop:        "text-red-400",
+                          Upcoming:    "text-sky-400",
+                          Released:    "text-green-400",
+                        };
+                        const vColor = verdictColor[movie.verdict] ?? "text-gray-500";
+                        const tba    = isTBA(movie);
 
-                    return (
-                      <Link
-                        key={String(movie._id)}
-                        href={`/movie/${movie.slug || movie._id}`}
-                        title={`${movie.title} – Odia movie ${year}${dirs !== "—" ? `, directed by ${dirs}` : ""}`}
-                        className="group block"
-                      >
-                        {/* Desktop row */}
-                        <div className="hidden sm:grid sm:grid-cols-[2rem_2fr_1.2fr_1.2fr_1fr] items-center px-4 sm:px-6 py-4 gap-4 hover:bg-[#0f0f0f] transition-colors">
-                          <span className="text-xs text-gray-600 tabular-nums select-none">{idx + 1}</span>
-                          <span className="text-sm font-semibold text-gray-200 group-hover:text-orange-400 transition-colors truncate">
-                            {movie.title}
-                          </span>
-                          <span className="text-sm text-gray-400 truncate">{dirs}</span>
-                          {isTBA(movie) ? (
-                            <span className="text-xs font-semibold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-full">
-                              TBA
-                            </span>
-                          ) : (
-                            <time
-                              dateTime={String(movie.releaseDate).split("T")[0]}
-                              className="text-sm text-gray-400"
-                            >
-                              {fmtDate(movie.releaseDate)}
-                            </time>
-                          )}
-                          <span className={`text-xs font-semibold ${vColor}`}>
-                            {movie.verdict || "—"}
-                          </span>
-                        </div>
+                        return (
+                          <tr
+                            key={String(movie._id)}
+                            className="group hover:bg-white/[0.03] transition-colors"
+                          >
+                            {/* # */}
+                            <td className="px-3 py-3.5 text-xs text-gray-600 tabular-nums select-none align-middle">
+                              {idx + 1}
+                            </td>
 
-                        {/* Mobile row */}
-                        <div className="grid grid-cols-[2fr_1fr] sm:hidden items-center px-4 py-3.5 gap-4 hover:bg-[#0f0f0f] transition-colors">
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-gray-200 group-hover:text-orange-400 transition-colors truncate">
-                              {movie.title}
-                            </p>
-                            {dirs !== "—" && (
-                              <p className="text-xs text-gray-500 truncate mt-0.5">{dirs}</p>
-                            )}
-                          </div>
-                          {isTBA(movie) ? (
-                            <span className="text-xs font-semibold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-full text-right">
-                              TBA
-                            </span>
-                          ) : (
-                            <time
-                              dateTime={String(movie.releaseDate).split("T")[0]}
-                              className="text-xs text-gray-400 text-right"
-                            >
-                              {fmtDate(movie.releaseDate)}
-                            </time>
-                          )}
-                        </div>
-                      </Link>
-                    );
-                  })}
+                            {/* Movie name — links to movie page */}
+                            <td className="px-3 py-3.5 align-middle">
+                              <Link
+                                href={`/movie/${movie.slug || movie._id}`}
+                                title={`${movie.title} – Odia movie ${year}`}
+                                className="font-semibold text-gray-200 hover:text-orange-400 transition-colors leading-snug line-clamp-2"
+                              >
+                                {movie.title}
+                              </Link>
+                            </td>
+
+                            {/* Director */}
+                            <td className="px-3 py-3.5 text-gray-400 align-middle whitespace-nowrap">
+                              {dirs}
+                            </td>
+
+                            {/* Release date / TBA badge */}
+                            <td className="px-3 py-3.5 align-middle whitespace-nowrap">
+                              {tba ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-400 bg-sky-500/10 border border-sky-500/25 px-2 py-0.5 rounded-full">
+                                  TBA
+                                </span>
+                              ) : (
+                                <time
+                                  dateTime={String(movie.releaseDate).split("T")[0]}
+                                  className="text-gray-400 text-xs tabular-nums"
+                                >
+                                  {fmtDate(movie.releaseDate)}
+                                </time>
+                              )}
+                            </td>
+
+                            {/* Verdict */}
+                            <td className="px-3 py-3.5 align-middle">
+                              {movie.verdict ? (
+                                <span className={`text-[11px] font-semibold whitespace-nowrap ${vColor}`}>
+                                  {movie.verdict}
+                                </span>
+                              ) : (
+                                <span className="text-gray-600 text-xs">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
 
                 {/* Table footer */}
-                <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-t border-[#161616] bg-[#0d0d0d]">
+                <div className="flex items-center justify-between px-4 py-3 border-t border-[#161616] bg-[#0d0d0d]">
                   <span className="text-[11px] text-gray-600">
-                    {movies.length} Odia films from {year} · Sorted by release date
+                    {movies.length} films
+                    {(() => {
+                      const tbaCount = movies.filter((m: any) => isTBA(m)).length;
+                      return tbaCount > 0 ? ` · ${tbaCount} TBA` : "";
+                    })()}
+                    {" · TBA → Upcoming → New to Old"}
                   </span>
                   <Link
                     href="/movies"
