@@ -284,7 +284,7 @@ function QuickLinksSidebar({ movie }: { movie: Movie }) {
         </Link>
 
         {year && (
-          <Link href={`/movies?year=${year}`}
+          <Link href={`/movies/year/${year}`}
             className="flex items-center gap-2.5 px-3 py-2.5 bg-[#111] hover:bg-[#181818] border border-[#1f1f1f] hover:border-orange-500/20 rounded-lg transition-all group">
             <Calendar className="w-4 h-4 text-yellow-400 flex-shrink-0" />
             <div>
@@ -295,6 +295,119 @@ function QuickLinksSidebar({ movie }: { movie: Movie }) {
           </Link>
         )}
       </div>
+    </div>
+  );
+}
+
+
+// ─── SVG Bar Chart — works for any number of days ────────────────────────────
+function BoxOfficeChart({ days, maxNet }: { days: BoxOfficeDay[]; maxNet: number }) {
+  const [tooltip, setTooltip] = useState<{ day: number; net: string; x: number; y: number } | null>(null);
+
+  const CHART_H   = 180;  // SVG height px
+  const BAR_AREA  = 140;  // usable bar height
+  const LABEL_H   = 30;   // space for D1 labels below
+  const MIN_BAR_W = 28;   // minimum bar width before scroll kicks in
+  const GAP       = 6;    // gap between bars
+
+  // Each bar unit width — grows to fill container, floors at MIN_BAR_W
+  const barUnit   = Math.max(MIN_BAR_W, Math.floor(560 / Math.max(days.length, 1)));
+  const svgWidth  = days.length * (barUnit + GAP);
+
+  return (
+    <div className="bg-[#111] rounded-xl border border-[#1f1f1f] p-4 overflow-x-auto relative">
+      <svg
+        width={svgWidth}
+        height={CHART_H}
+        style={{ display: "block", minWidth: "100%" }}
+        aria-label="Day-wise box office bar chart"
+      >
+        <defs>
+          <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#fb923c" />
+            <stop offset="100%" stopColor="#f97316" />
+          </linearGradient>
+          <linearGradient id="barGradHover" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#fdba74" />
+            <stop offset="100%" stopColor="#f97316" />
+          </linearGradient>
+        </defs>
+
+        {/* Horizontal guide lines */}
+        {[0.25, 0.5, 0.75, 1].map((frac) => {
+          const y = (BAR_AREA - frac * BAR_AREA) + 4;
+          return (
+            <line key={frac} x1={0} y1={y} x2={svgWidth} y2={y}
+              stroke="#1f1f1f" strokeWidth={1} strokeDasharray="3 3" />
+          );
+        })}
+
+        {/* Bars */}
+        {days.map((d, i) => {
+          const net      = parseN(d.net);
+          const barH     = Math.max(6, (net / maxNet) * BAR_AREA);
+          const x        = i * (barUnit + GAP);
+          const y        = BAR_AREA - barH + 4;
+          const isActive = tooltip?.day === d.day;
+
+          return (
+            <g key={d.day}
+              onMouseEnter={(e) => {
+                const rect = (e.currentTarget as SVGGElement).closest("svg")!.getBoundingClientRect();
+                const cx   = x + barUnit / 2;
+                setTooltip({ day: d.day, net: fmtINR(d.net), x: cx, y: y - 8 });
+              }}
+              onMouseLeave={() => setTooltip(null)}
+              style={{ cursor: "pointer" }}
+            >
+              {/* Bar */}
+              <rect
+                x={x} y={y}
+                width={barUnit} height={barH}
+                rx={4} ry={4}
+                fill={isActive ? "url(#barGradHover)" : "url(#barGrad)"}
+                opacity={isActive ? 1 : 0.85}
+              />
+              {/* Day label */}
+              <text
+                x={x + barUnit / 2}
+                y={CHART_H - 6}
+                textAnchor="middle"
+                fontSize={barUnit > 36 ? 11 : 9}
+                fill={isActive ? "#fb923c" : "#6b7280"}
+                fontWeight={isActive ? "700" : "600"}
+              >
+                D{d.day}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Tooltip */}
+        {tooltip && (
+          <g>
+            <rect
+              x={Math.min(tooltip.x - 30, svgWidth - 70)}
+              y={tooltip.y - 24}
+              width={70} height={22}
+              rx={4} fill="#1a1a1a" stroke="#2a2a2a" strokeWidth={1}
+            />
+            <text
+              x={Math.min(tooltip.x, svgWidth - 35)}
+              y={tooltip.y - 8}
+              textAnchor="middle"
+              fontSize={11}
+              fill="white"
+              fontWeight="700"
+            >
+              {tooltip.net}
+            </text>
+          </g>
+        )}
+      </svg>
+      {days.length > 15 && (
+        <p className="text-[10px] text-gray-600 text-center mt-1">← scroll to see all days</p>
+      )}
     </div>
   );
 }
@@ -549,31 +662,13 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                   </div>
                 </section>
 
-                {/* ── Bar Chart ── */}
+                {/* ── Bar Chart (SVG — works for any number of days) ── */}
                 <section>
                   <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
                     <BarChart3 className="w-5 h-5 text-orange-400" />
                     Day-wise Net Collection — {movie.title}
                   </h2>
-                  <div className="bg-[#111] rounded-xl border border-[#1f1f1f] p-5 overflow-x-auto">
-                    <div className="flex items-end gap-2" style={{ minWidth: days.length * 52, height: 140 }}>
-                      {days.map((d) => {
-                        const net = parseN(d.net);
-                        const pct = Math.max(4, (net / maxNet) * 100);
-                        return (
-                          <div key={d.day} className="flex flex-col items-center gap-1" style={{ flex: 1, minWidth: 40 }}>
-                            <div className="w-full rounded-t-md relative group"
-                              style={{ height: `${pct}%`, background: "linear-gradient(to top, #f97316, #fb923c)", minHeight: 6 }}>
-                              <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-0.5 text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                                {fmtINR(d.net)}
-                              </div>
-                            </div>
-                            <span className="text-xs text-gray-500 font-semibold">D{d.day}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <BoxOfficeChart days={days} maxNet={maxNet} />
                 </section>
 
                 {/* ── Day-wise Table ── */}
@@ -868,7 +963,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                       📊 All Box Office
                     </Link>
                     {year && (
-                      <Link href={`/movies?year=${year}`}
+                      <Link href={`/movies/year/${year}`}
                         className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-semibold text-gray-400 transition-all">
                         🗓 Odia Movies {year}
                       </Link>

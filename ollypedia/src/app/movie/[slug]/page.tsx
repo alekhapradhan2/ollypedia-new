@@ -57,10 +57,62 @@ function verdictStyle(v?: string) {
   return VERDICT_STYLE[v || ""] || { bg: "bg-orange-500/15", text: "text-orange-400", border: "border-orange-500/30" };
 }
 
+// ─── Cast / Crew helpers ───────────────────────────────────────────────────
+const CREW_ROLES = ["Director", "Producer", "Writer", "Screenplay", "Story", "Dialogue",
+  "Music", "Cinematographer", "Editor", "Choreographer", "Art Director",
+  "Costume Designer", "Sound Designer", "Stunt Coordinator", "VFX Supervisor"];
+
+const CREW_ROLE_ORDER: Record<string, number> = Object.fromEntries(
+  CREW_ROLES.map((r, i) => [r.toLowerCase(), i])
+);
+
+function isCrewRole(role?: string): boolean {
+  if (!role) return false;
+  const r = role.toLowerCase();
+  return CREW_ROLES.some((cr) => r.includes(cr.toLowerCase()));
+}
+
+function splitCastCrew(castList: any[]): { crew: any[]; cast: any[] } {
+  const crew: any[] = [];
+  const cast: any[] = [];
+  for (const m of (castList || [])) {
+    if (isCrewRole(m.role) || isCrewRole(m.type)) {
+      crew.push(m);
+    } else {
+      cast.push(m);
+    }
+  }
+  // Sort crew by role priority
+  crew.sort((a, b) => {
+    const ra = (a.role || a.type || "").toLowerCase();
+    const rb = (b.role || b.type || "").toLowerCase();
+    const orderA = Math.min(...CREW_ROLES.map((cr, i) => ra.includes(cr.toLowerCase()) ? i : 999));
+    const orderB = Math.min(...CREW_ROLES.map((cr, i) => rb.includes(cr.toLowerCase()) ? i : 999));
+    return orderA - orderB;
+  });
+  return { crew, cast };
+}
+
+function getDirectorFromCast(castList: any[]): string | undefined {
+  const found = (castList || []).find((m: any) => {
+    const r = (m.role || m.type || "").toLowerCase();
+    return r.includes("director");
+  });
+  return found?.name;
+}
+
+function getProducerFromCast(castList: any[]): string | undefined {
+  const found = (castList || []).find((m: any) => {
+    const r = (m.role || m.type || "").toLowerCase();
+    return r.includes("producer");
+  });
+  return found?.name;
+}
+
 // ─── Static params ─────────────────────────────────────────────────────────
 export async function generateStaticParams() {
   await connectDB();
-  const movies = await Movie.find({}, "slug _id").sort({ releaseDate: -1 }).limit(50).lean();
+  const movies = await Movie.find({}, "slug _id").sort({ releaseDate: -1 }).limit(200).lean();
   return movies.map((m: any) => ({ slug: m.slug || String(m._id) }));
 }
 
@@ -131,6 +183,11 @@ function getMisspellings(title: string): string[] {
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const movie = await getMovie(params.slug);
   if (!movie) return { robots: { index: false, follow: false } };
+  if (!movie.title?.trim()) return { robots: { index: false, follow: false } };
+
+  // Prefer cast-list data for director/producer, fall back to movie fields
+  const directorName  = getDirectorFromCast(movie.cast || []) || movie.director;
+  const producerName  = getProducerFromCast(movie.cast || []) || movie.producer;
 
   const year      = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
   const yearStr   = year ? ` (${year})` : "";
@@ -154,8 +211,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     `${movie.title} box office`,
     year ? `${movie.title} ${year}` : null,
     year ? `${movie.title} odia movie ${year}` : null,
-    movie.director ? `${movie.director} movie` : null,
-    movie.director ? `${movie.director} odia film` : null,
+    directorName ? `${directorName} movie` : null,
+    directorName ? `${directorName} odia film` : null,
+    producerName ? `${producerName} production` : null,
     "Odia movie", "Ollywood", "Odia film", "Odia cinema",
     year ? `Odia movie ${year}` : null,
     ...(movie.genre || []).map((g: string) => `${g} Odia film`),
@@ -165,8 +223,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
   return {
     title, description, keywords,
+    metadataBase: new URL("https://ollypedia.in"),
     alternates: { canonical },
-    robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
+    robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-snippet": -1, "max-image-preview": "large" } },
     openGraph: {
       title, description, url: canonical, siteName: "Ollypedia",
       type: "video.movie",
@@ -177,12 +236,12 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 // ─── JSON-LD helpers ──────────────────────────────────────────────────────
-function buildFaqJsonLd(movie: any, year: string | number, avgRating: number | null, songs: any[]) {
+function buildFaqJsonLd(movie: any, year: string | number, avgRating: number | null, songs: any[], directorName?: string, producerName?: string) {
   const items = [
     {
       question: `What is ${movie.title} movie about?`,
       answer: movie.synopsis?.slice(0, 300) ||
-        `${movie.title} is an Odia ${movie.genre?.join(", ") || "drama"} film${year ? ` released in ${year}` : ""}${movie.director ? `, directed by ${movie.director}` : ""}.`,
+        `${movie.title} is an Odia ${movie.genre?.join(", ") || "drama"} film${year ? ` released in ${year}` : ""}${directorName ? `, directed by ${directorName}` : ""}.`,
     },
     ...(movie.cast?.length ? [{
       question: `Who is in the cast of ${movie.title}?`,
@@ -199,6 +258,10 @@ function buildFaqJsonLd(movie: any, year: string | number, avgRating: number | n
     ...(songs.length > 0 ? [{
       question: `How many songs does ${movie.title} have?`,
       answer: `${movie.title} has ${songs.length} song${songs.length > 1 ? "s" : ""} in its soundtrack.`,
+    }] : []),
+    ...(directorName ? [{
+      question: `Who is the director of ${movie.title}?`,
+      answer: `${movie.title} was directed by ${directorName}${producerName ? ` and produced by ${producerName}` : ""}${year ? ` (${year})` : ""}.`,
     }] : []),
   ];
   return {
@@ -288,6 +351,10 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
   const canonical = `https://ollypedia.in/movie/${movie.slug || movie._id}`;
   const vs        = verdictStyle(movie.verdict);
 
+  // Prefer cast-list names, fall back to movie fields
+  const directorName = getDirectorFromCast(movie.cast || []) || movie.director;
+  const producerName = getProducerFromCast(movie.cast || []) || movie.producer;
+
   const structuredData = [
     movieJsonLd(movie),
     breadcrumbJsonLd([
@@ -295,7 +362,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
       { name: "Movies", url: "https://ollypedia.in/movies" },
       { name: movie.title, url: canonical },
     ]),
-    buildFaqJsonLd(movie, year, avgRating, songs),
+    buildFaqJsonLd(movie, year, avgRating, songs, directorName, producerName),
     ...(avgRating !== null ? [buildAggregateRatingJsonLd(movie, avgRating as number)] : []),
     ...(blogs.length > 0 ? [{
       "@context": "https://schema.org",
@@ -429,12 +496,28 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   />
                 )}
                 {movie.runtime && <StatChip label="Runtime" value={movie.runtime} />}
-                {movie.director && (
-                  <div className="hidden md:flex flex-col items-center justify-center rounded-xl px-3 py-2.5 border border-[#1f1f1f] bg-[#111] text-center">
-                    <p className="text-sm font-black text-white truncate w-full">{movie.director}</p>
-                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mt-0.5">Director</p>
-                  </div>
-                )}
+                {/* Director: prefer cast list, fallback to movie.director field */}
+                {(() => {
+                  const dirFromCast = getDirectorFromCast(movie.cast || []);
+                  const dirName = dirFromCast || movie.director;
+                  return dirName ? (
+                    <div className="hidden md:flex flex-col items-center justify-center rounded-xl px-3 py-2.5 border border-orange-500/20 bg-orange-500/5 text-center">
+                      <p className="text-sm font-black text-white truncate w-full">{dirName}</p>
+                      <p className="text-[10px] text-orange-400 uppercase tracking-wider mt-0.5">Director</p>
+                    </div>
+                  ) : null;
+                })()}
+                {/* Producer: prefer cast list, fallback to movie.producer field */}
+                {(() => {
+                  const prodFromCast = getProducerFromCast(movie.cast || []);
+                  const prodName = prodFromCast || movie.producer;
+                  return prodName ? (
+                    <div className="hidden md:flex flex-col items-center justify-center rounded-xl px-3 py-2.5 border border-[#1f1f1f] bg-[#111] text-center">
+                      <p className="text-sm font-black text-white truncate w-full">{prodName}</p>
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-wider mt-0.5">Producer</p>
+                    </div>
+                  ) : null;
+                })()}
                 {movie.verdict && (
                   <div className={`flex flex-col items-center justify-center rounded-xl px-3 py-2.5 border text-center ${vs.bg} ${vs.border}`}>
                     <p className={`text-sm sm:text-base font-black font-display ${vs.text}`}>{movie.verdict}</p>
@@ -470,8 +553,8 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               <InfoRow icon={Calendar}     label="Release Date"  value={fmtDate(movie.releaseDate) || (movie.releaseTBA ? "TBA" : undefined)} />
               <InfoRow icon={Clock}        label="Runtime"       value={movie.runtime} />
               <InfoRow icon={Globe}        label="Language"      value={movie.language || "Odia"} />
-              <InfoRow icon={Clapperboard} label="Director"      value={movie.director} />
-              <InfoRow icon={User}         label="Producer"      value={movie.producer} />
+              <InfoRow icon={Clapperboard} label="Director"      value={getDirectorFromCast(movie.cast || []) || movie.director} />
+              <InfoRow icon={User}         label="Producer"      value={getProducerFromCast(movie.cast || []) || movie.producer} />
               <InfoRow icon={DollarSign}   label="Budget"        value={movie.budget} />
               <InfoRow icon={Film}         label="Category"      value={movie.category} />
               <InfoRow icon={Star}         label="Content Rating" value={movie.contentRating} />
@@ -583,8 +666,8 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   <p className="text-gray-500 text-sm mt-4 pt-4 border-t border-[#1f1f1f]">
                     <strong className="text-gray-400">{movie.title}</strong> is a{" "}
                     {(movie.genre || []).join(", ") || "Odia"} film
-                    {year ? ` released in ${year}` : ""}{movie.director ? `, directed by ${movie.director}` : ""}
-                    {movie.producer ? `, produced by ${movie.producer}` : ""}.
+                    {year ? ` released in ${year}` : ""}{directorName ? `, directed by ${directorName}` : ""}
+                    {producerName ? `, produced by ${producerName}` : ""}.
                     {movie.language ? ` Produced in ${movie.language} language for Ollywood audiences.` : " An Ollywood production."}
                   </p>
                 </div>
@@ -601,30 +684,62 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               </section>
             )}
 
-            {/* ── Cast & Crew ── */}
-            {movie.cast?.length > 0 && (
-              <section aria-label={`${movie.title} cast and crew`}>
-                <SectionHeading icon={Users} title="Cast & Crew" count={movie.cast.length} />
-                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {movie.cast.map((member: any, i: number) => (
-                    <Link key={i} href={`/cast/${member.castId}`}
-                      className="group bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl p-3 flex items-center gap-3 transition-all hover:-translate-y-0.5">
-                      <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-[#2a2a2a] group-hover:border-orange-500/50 transition-colors">
-                        <Image
-                          src={member.photo || "/placeholder-person.svg"}
-                          alt={`${member.name} in ${movie.title} – ${member.role || member.type || "cast"}`}
-                          fill className="object-cover"
-                        />
+            {/* ── Crew ── */}
+            {(() => {
+              const { crew, cast: castOnly } = splitCastCrew(movie.cast || []);
+              return (
+                <>
+                  {crew.length > 0 && (
+                    <section aria-label={`${movie.title} crew`}>
+                      <SectionHeading icon={Clapperboard} title="Crew" count={crew.length} />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {crew.map((member: any, i: number) => (
+                          <Link key={i} href={`/cast/${member.castId}`}
+                            className="group bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl p-3 flex items-center gap-4 transition-all hover:-translate-y-0.5">
+                            <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 border-2 border-[#2a2a2a] group-hover:border-orange-500/50 transition-colors">
+                              <Image
+                                src={member.photo || "/placeholder-person.svg"}
+                                alt={`${member.name} – ${member.role || member.type || "crew"} of ${movie.title}`}
+                                fill className="object-cover"
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-bold text-white line-clamp-1 group-hover:text-orange-400 transition-colors">{member.name}</p>
+                              <p className="text-[11px] font-semibold text-orange-400/70 uppercase tracking-wider mt-0.5 line-clamp-1">{member.role || member.type}</p>
+                            </div>
+                          </Link>
+                        ))}
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-white line-clamp-1 group-hover:text-orange-400 transition-colors">{member.name}</p>
-                        <p className="text-[11px] text-gray-500 line-clamp-1">{member.role || member.type}</p>
+                    </section>
+                  )}
+
+                  {/* ── Cast ── */}
+                  {castOnly.length > 0 && (
+                    <section aria-label={`${movie.title} cast`}>
+                      <SectionHeading icon={Users} title="Cast" count={castOnly.length} />
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {castOnly.map((member: any, i: number) => (
+                          <Link key={i} href={`/cast/${member.castId}`}
+                            className="group bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl p-3 flex items-center gap-3 transition-all hover:-translate-y-0.5">
+                            <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-[#2a2a2a] group-hover:border-orange-500/50 transition-colors">
+                              <Image
+                                src={member.photo || "/placeholder-person.svg"}
+                                alt={`${member.name} in ${movie.title} – ${member.role || member.type || "actor"}`}
+                                fill className="object-cover"
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-white line-clamp-1 group-hover:text-orange-400 transition-colors">{member.name}</p>
+                              <p className="text-[11px] text-gray-500 line-clamp-1">{member.role || member.type || "Actor"}</p>
+                            </div>
+                          </Link>
+                        ))}
                       </div>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )}
+                    </section>
+                  )}
+                </>
+              );
+            })()}
 
             {/* ── Songs ── */}
             {songs.length > 0 && (
@@ -685,8 +800,8 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                     {(movie.genre || []).length > 0
                       ? `a ${(movie.genre as string[]).join(", ")} Odia film`
                       : "an Odia film"}
-                    {year ? ` released in ${year}` : ""}{movie.director ? `, directed by ${movie.director}` : ""}
-                    {movie.producer ? ` and produced by ${movie.producer}` : ""}.
+                    {year ? ` released in ${year}` : ""}{directorName ? `, directed by ${directorName}` : ""}
+                    {producerName ? ` and produced by ${producerName}` : ""}.
                     {movie.language ? ` The film is in the ${movie.language} language` : " The film is in the Odia language"},
                     making it a part of the <strong className="text-white">Ollywood film industry</strong> — the Odia language cinema based in Bhubaneswar, Odisha.
                   </p>
@@ -775,9 +890,9 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                       q: `How many songs does ${movie.title} have?`,
                       a: `${movie.title} has ${songs.length} song${songs.length > 1 ? "s" : ""} in its soundtrack${songs[0]?.singer ? `, sung by ${[...new Set(songs.slice(0,3).map((s:any)=>s.singer).filter(Boolean))].join(", ")}` : ""}.`,
                     }] : []),
-                    ...(movie.director ? [{
+                    ...(directorName ? [{
                       q: `Who directed ${movie.title}?`,
-                      a: `${movie.title} was directed by ${movie.director}${movie.producer ? `, produced by ${movie.producer}` : ""}${year ? ` and released in ${year}` : ""}.`,
+                      a: `${movie.title} was directed by ${directorName}${producerName ? `, produced by ${producerName}` : ""}${year ? ` and released in ${year}` : ""}.`,
                     }] : []),
                     {
                       q: `Is ${movie.title} available on OTT?`,
