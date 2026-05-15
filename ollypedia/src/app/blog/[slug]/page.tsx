@@ -10,7 +10,7 @@
 //  8. ★ NEW: Odia-specific long-tail keywords (e.g. "Odia movie review 2025")
 
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { connectDB } from "@/lib/db";
 import Blog from "@/models/Blog";
@@ -127,12 +127,7 @@ export async function generateMetadata({
 }: {
   params: { slug: string };
 }): Promise<Metadata> {
-  // If slug has a trailing ID, resolve the clean version for metadata
-  const resolvedSlug = TRAILING_ID_RE.test(params.slug)
-    ? params.slug.replace(TRAILING_ID_RE, "")
-    : params.slug;
-
-  const blog = await getBlog(resolvedSlug);
+  const blog = await getBlog(params.slug);
   if (!blog) return { robots: { index: false, follow: false } };
 
   const title       = `${blog.title} | Ollypedia`;
@@ -514,27 +509,11 @@ function RecentBlogs({ blogs }: { blogs: any[] }) {
 }
 
 // ─── Page ─────────────────────────────────────────────────────
-/**
- * Strip trailing random ID suffix (e.g. "-mp6gucjj") from slugs.
- * Matches a hyphen followed by exactly 8 lowercase alphanumeric chars at end.
- * If the clean slug resolves to a blog, 301-redirect to the canonical URL.
- */
-const TRAILING_ID_RE = /-[a-z0-9]{8}$/;
-
 export default async function BlogPage({
   params,
 }: {
   params: { slug: string };
 }) {
-  // ── 301 redirect: strip trailing ID suffix if present ──────
-  if (TRAILING_ID_RE.test(params.slug)) {
-    const cleanSlug = params.slug.replace(TRAILING_ID_RE, "");
-    const cleanBlog = await getBlog(cleanSlug);
-    if (cleanBlog) {
-      redirect(`/blog/${cleanSlug}`); // permanent 301 in Next.js App Router
-    }
-  }
-
   const blog  = await getBlog(params.slug);
   if (!blog) notFound();
 
