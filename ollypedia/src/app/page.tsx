@@ -13,6 +13,9 @@ import {
   ChevronRight, Clapperboard, Users, Mic2, Trophy,
 } from "lucide-react";
 import HeroCarousel, { type HeroMovie } from "@/components/layout/HeroCarousel";
+import RandomMoviePicker from "@/components/home/RandomMoviePicker";
+import DidYouKnow, { type TriviaCard } from "@/components/home/DidYouKnow";
+import { TRIVIA_EMOJIS } from "@/lib/trivia-constants";
 
 export const revalidate = 600;
 
@@ -184,7 +187,7 @@ async function getHomeData() {
       return { ...m, _days: days, _totalNet: totalNet, _totalGross: totalGross };
     })
     .sort((a: any, b: any) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
-    .slice(0, 6);
+    .slice(0, 10);
 
   // ── JS-side re-sort as guarantee: dated (soonest first) → TBA last ──
   const sortedUpcoming = (upcomingMovies as any[]).sort((a, b) => {
@@ -196,7 +199,100 @@ async function getHomeData() {
     return 0;                                  // both TBA: keep order
   });
 
-  return { heroMovies, latestMovies, upcomingMovies: sortedUpcoming, latestBlogs, topMovies, boxOfficeMovies };
+  // ── This Month in Ollywood ──────────────────────────────────
+  const thisMonthReleased = (allMovies as any[])
+    .filter((m) => isThisMonth(m.releaseDate) && m.releaseDate && new Date(m.releaseDate) <= _now)
+    .sort((a: any, b: any) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
+
+  const thisMonthUpcoming = (upcomingMovies as any[])
+    .filter((m) => m.releaseDate && isThisMonth(m.releaseDate) && new Date(m.releaseDate) > _now)
+    .sort((a: any, b: any) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
+
+  const thisMonthAll = [...thisMonthReleased, ...thisMonthUpcoming].slice(0, 8);
+
+  // ── Random movie pool — year-aware, poster required ───────────
+  const currentYear = _now.getFullYear();
+  const randomMoviePool = (allMovies as any[])
+    .filter((m) => m.releaseDate && new Date(m.releaseDate) <= _now && (m.posterUrl || m.thumbnailUrl))
+    .map((m) => {
+      const y = m.releaseDate ? new Date(m.releaseDate).getFullYear() : 0;
+      return {
+        _id:         String(m._id),
+        slug:        m.slug || "",
+        title:       m.title,
+        posterUrl:   m.posterUrl || m.thumbnailUrl || "",
+        releaseDate: m.releaseDate || "",
+        verdict:     m.verdict || "",
+        language:    m.language || "",
+        genre:       (m.genre || []).slice(0, 2),
+        year:        y,
+      };
+    });
+
+  // ── Did You Know — trivia extracted from synopses ─────────────
+  // Static Ollywood facts always shown (guaranteed content)
+  const staticTrivia: TriviaCard[] = [
+    {
+      fact:   "Odia cinema, known as Ollywood, traces its roots to 1936 when the first Odia film 'Sita Bibaha' was released — making it one of India's oldest regional film industries.",
+      source: "About Ollywood",
+      href:   "/movies",
+      emoji:  TRIVIA_EMOJIS[0],
+    },
+    {
+      fact:   "The Odia film industry is headquartered in Bhubaneswar, Odisha's capital, and produces 40–60 films every year for audiences across Odisha and the diaspora.",
+      source: "Ollywood Industry",
+      href:   "/movies",
+      emoji:  TRIVIA_EMOJIS[1],
+    },
+    {
+      fact:   "Babushaan Mohanty holds the record for multiple consecutive Blockbuster hits in Ollywood and is widely regarded as one of the biggest stars in contemporary Odia cinema.",
+      source: "Cast Profiles",
+      href:   "/cast",
+      emoji:  TRIVIA_EMOJIS[2],
+    },
+    {
+      fact:   "Odia films with devotional themes set at the Jagannath Temple in Puri have historically performed exceptionally well at the box office, drawing massive audiences across Odisha.",
+      source: "Ollywood Box Office",
+      href:   "/box-office",
+      emoji:  TRIVIA_EMOJIS[3],
+    },
+    {
+      fact:   "The Ollywood music industry is as big as the films — many Odia movie songs become independent hits on YouTube, often crossing millions of views before the film even releases.",
+      source: "Odia Songs",
+      href:   "/songs",
+      emoji:  TRIVIA_EMOJIS[4],
+    },
+  ];
+
+  // Dynamic trivia extracted from movie synopses
+  const synopsisTrivia: TriviaCard[] = (allMovies as any[])
+    .filter((m) => {
+      if (!m.synopsis || m.synopsis.length < 80) return false;
+      if (!m.releaseDate || new Date(m.releaseDate) > _now) return false;
+      return true;
+    })
+    .sort(() => Math.random() - 0.5) // shuffle
+    .slice(0, 8)
+    .map((m: any, i: number) => {
+      // Extract a clean first sentence (up to 180 chars) from synopsis
+      const raw = String(m.synopsis || "").replace(/\(.*?\)/g, "").trim(); // strip parens like (Odia: ...)
+      const sentMatch = raw.match(/^[^.!?]{40,180}[.!?]/);
+      const fact = sentMatch
+        ? sentMatch[0].trim()
+        : raw.slice(0, 160).trim() + (raw.length > 160 ? "…" : "");
+      return {
+        fact,
+        source: m.title,
+        href:   `/movie/${m.slug || m._id}`,
+        emoji:  TRIVIA_EMOJIS[(i + 5) % TRIVIA_EMOJIS.length],
+      };
+    })
+    .filter((t: TriviaCard) => t.fact.length > 40);
+
+  // Merge: static first, then dynamic, cap at 12
+  const triviaCards: TriviaCard[] = [...staticTrivia, ...synopsisTrivia].slice(0, 12);
+
+  return { heroMovies, latestMovies, upcomingMovies: sortedUpcoming, latestBlogs, topMovies, boxOfficeMovies, thisMonthAll, randomMoviePool, triviaCards, currentYear };
 }
 
 // ── Category pills for blog ───────────────────────────────────────
@@ -212,7 +308,7 @@ const BLOG_CATEGORIES = [
 ];
 
 export default async function HomePage() {
-  const { heroMovies, latestMovies, upcomingMovies, latestBlogs, topMovies, boxOfficeMovies } =
+  const { heroMovies, latestMovies, upcomingMovies, latestBlogs, topMovies, boxOfficeMovies, thisMonthAll, randomMoviePool, triviaCards, currentYear } =
     await getHomeData();
 
   return (
@@ -479,6 +575,219 @@ export default async function HomePage() {
           </section>
         )}
 
+        {/* ══ CURRENTLY RUNNING ══ */}
+        {(() => {
+          const now30 = Date.now();
+          const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+          const sevenDays  =  7 * 24 * 60 * 60 * 1000;
+          const oneDay     = 24 * 60 * 60 * 1000;
+
+          // Films released in the last 30 days that have box office data
+          const running = (boxOfficeMovies as any[])
+            .filter((m) => {
+              if (!m.releaseDate) return false;
+              const age = now30 - new Date(m.releaseDate).getTime();
+              return age >= 0 && age <= thirtyDays;
+            })
+            .sort((a: any, b: any) => (b._totalNet as number) - (a._totalNet as number))
+            .slice(0, 6);
+
+          if (running.length === 0) return null;
+
+          // This week's top collector — sum only day-entries whose calendar date is within last 7 days
+          const withWeekNet = running.map((m: any) => {
+            const relTs = new Date(m.releaseDate).getTime();
+            const weekNet = ((m._days || []) as any[]).reduce((s: number, d: any) => {
+              const dayTs = relTs + (d.day - 1) * oneDay;
+              return now30 - dayTs <= sevenDays ? s + parseNum(d.net) : s;
+            }, 0);
+            return { ...m, _weekNet: weekNet };
+          });
+          const weekTop = [...withWeekNet]
+            .filter((m: any) => m._weekNet > 0)
+            .sort((a: any, b: any) => b._weekNet - a._weekNet)[0] || running[0];
+
+          const verdictColorMap: Record<string, string> = {
+            Blockbuster: "#22c55e", "Super Hit": "#4ade80", Hit: "#86efac",
+            Average: "#facc15", Flop: "#f87171", Disaster: "#ef4444",
+          };
+
+          return (
+            <section aria-label="Currently running Odia movies at box office">
+              <SectionHeader
+                title="Currently Running"
+                subtitle="Odia films live at the box office right now"
+                href="/box-office"
+              />
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                {/* ── This Week's Top Performer — big card ── */}
+                {weekTop && (
+                  <Link
+                    href={`/box-office/${weekTop.slug || weekTop._id}`}
+                    className="group lg:col-span-1 relative overflow-hidden rounded-2xl border border-orange-500/20
+                      bg-gradient-to-br from-orange-500/10 via-[#111] to-[#0f0f0f]
+                      hover:border-orange-500/50 transition-all p-4 flex flex-col justify-between min-h-[200px]"
+                  >
+                    {/* bg poster faint */}
+                    {(weekTop.posterUrl || weekTop.thumbnailUrl) && (
+                      <div className="absolute inset-0 opacity-10">
+                        <Image
+                          src={weekTop.posterUrl || weekTop.thumbnailUrl}
+                          alt={weekTop.title}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#0b0b0b]/80 to-[#0b0b0b]" />
+                      </div>
+                    )}
+
+                    <div className="relative z-10">
+                      {/* Badge */}
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest
+                          text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded-full px-2.5 py-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse inline-block" />
+                          🔥 This Week&apos;s Top
+                        </span>
+                      </div>
+
+                      <div className="flex gap-3">
+                        {(weekTop.posterUrl || weekTop.thumbnailUrl) && (
+                          <div className="relative w-16 h-[88px] flex-shrink-0 rounded-xl overflow-hidden shadow-lg">
+                            <Image
+                              src={weekTop.posterUrl || weekTop.thumbnailUrl}
+                              alt={weekTop.title}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <h3 className="font-black text-base text-white group-hover:text-orange-400
+                            transition-colors leading-tight line-clamp-2 mb-1">
+                            {weekTop.title}
+                          </h3>
+                          <p className="text-[11px] text-gray-500 mb-3">
+                            {weekTop.releaseDate
+                              ? new Date(weekTop.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+                              : ""}
+                          </p>
+                          <p className="text-2xl font-black text-orange-400 leading-none">
+                            {fmtINR(weekTop._weekNet || weekTop._totalNet)}
+                          </p>
+                          <p className="text-[10px] text-gray-600 mt-0.5">
+                            {weekTop._weekNet > 0 ? "This week's net" : "Total net"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="relative z-10 mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
+                      <div>
+                        {weekTop.verdict && !["Released","Upcoming"].includes(weekTop.verdict) && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            style={{
+                              background: `${verdictColorMap[weekTop.verdict] || "#94a3b8"}18`,
+                              color:       verdictColorMap[weekTop.verdict] || "#94a3b8",
+                              border:      `1px solid ${verdictColorMap[weekTop.verdict] || "#94a3b8"}40`,
+                            }}>
+                            {weekTop.verdict}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-orange-400 font-semibold flex items-center gap-1 group-hover:gap-2 transition-all">
+                        Full data <ChevronRight className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
+
+                    {/* Watermark */}
+                    <div className="absolute bottom-4 right-5 text-orange-500/10 text-6xl font-black
+                      pointer-events-none select-none group-hover:text-orange-500/20 transition-colors">
+                      #1
+                    </div>
+                  </Link>
+                )}
+
+                {/* ── Other running films — compact list ── */}
+                <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {running
+                    .filter((m: any) => String(m._id) !== String(weekTop?._id))
+                    .slice(0, 4)
+                    .map((m: any) => {
+                      const vc = verdictColorMap[m.verdict] || "#94a3b8";
+                      const days = m._days?.length || 0;
+                      return (
+                        <Link
+                          key={String(m._id)}
+                          href={`/box-office/${m.slug || m._id}`}
+                          className="group flex items-center gap-3 bg-[#111] border border-[#1f1f1f]
+                            hover:border-orange-500/30 rounded-xl p-3 transition-all"
+                        >
+                          {/* Poster */}
+                          <div className="relative w-11 h-[60px] rounded-lg overflow-hidden flex-shrink-0 bg-[#1a1a1a]">
+                            {(m.posterUrl || m.thumbnailUrl) ? (
+                              <Image src={m.posterUrl || m.thumbnailUrl} alt={m.title} fill className="object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Clapperboard className="w-4 h-4 text-gray-600" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-white group-hover:text-orange-300
+                              transition-colors line-clamp-1 leading-snug">
+                              {m.title}
+                            </p>
+                            <p className="text-[10px] text-gray-600 mt-0.5">
+                              {m.releaseDate
+                                ? new Date(m.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+                                : ""}
+                              {days > 0 ? ` · ${days}d` : ""}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className="text-xs font-bold text-orange-400">
+                                {fmtINR(m._totalNet)}
+                              </span>
+                              {m.verdict && !["Released","Upcoming"].includes(m.verdict) && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                                  style={{ background: `${vc}18`, color: vc, border: `1px solid ${vc}40` }}>
+                                  {m.verdict}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <ChevronRight className="w-3.5 h-3.5 text-gray-700 group-hover:text-orange-400
+                            flex-shrink-0 transition-colors" />
+                        </Link>
+                      );
+                    })}
+
+                  {/* View all CTA */}
+                  <Link
+                    href="/box-office"
+                    className="sm:col-span-2 flex items-center justify-between rounded-xl
+                      bg-gradient-to-br from-orange-500/8 to-transparent border border-orange-500/20
+                      hover:border-orange-500/50 px-4 py-3 group transition-all"
+                  >
+                    <div>
+                      <p className="text-white font-bold text-sm">See Full Box Office Report</p>
+                      <p className="text-gray-500 text-xs mt-0.5">Day-wise net &amp; gross for all films</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-orange-400 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </div>
+
+              </div>
+            </section>
+          );
+        })()}
+
         {/* ══ BLOG CATEGORIES ══ */}
         <section aria-label="Browse blog by category">
           <SectionHeader
@@ -499,6 +808,120 @@ export default async function HomePage() {
             ))}
           </div>
         </section>
+
+        {/* ══ THIS MONTH IN OLLYWOOD ══ */}
+        {thisMonthAll.length > 0 && (() => {
+          const monthName = _now.toLocaleDateString("en-IN", { month: "long" });
+          const year      = _now.getFullYear();
+          return (
+            <section aria-label={`Odia movies releasing in ${monthName} ${year}`}>
+              <SectionHeader
+                title={`This Month in Ollywood`}
+                subtitle={`${monthName} ${year} releases — what's out and what's coming`}
+                href="/movies"
+              />
+
+              {/* Timeline */}
+              <div className="relative">
+                {/* Vertical line */}
+                <div className="absolute left-[18px] sm:left-[22px] top-0 bottom-0 w-px bg-gradient-to-b from-orange-500/40 via-orange-500/20 to-transparent" />
+
+                <div className="space-y-3">
+                  {thisMonthAll.map((m: any, i: number) => {
+                    const released  = new Date(m.releaseDate) <= _now;
+                    const isToday   = new Date(m.releaseDate).toDateString() === _now.toDateString();
+                    const dateLabel = m.releaseDate
+                      ? new Date(m.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+                      : "TBA";
+                    const hasVerdict = m.verdict && !["Upcoming","Released",""].includes(m.verdict);
+
+                    const verdictColorMap: Record<string,string> = {
+                      Blockbuster:"#22c55e","Super Hit":"#4ade80",Hit:"#86efac",
+                      Average:"#facc15",Flop:"#f87171",Disaster:"#ef4444",
+                    };
+                    const vc = verdictColorMap[m.verdict] || "#94a3b8";
+
+                    return (
+                      <Link
+                        key={String(m._id)}
+                        href={`/movie/${m.slug || m._id}`}
+                        className="group relative flex items-center gap-3 sm:gap-4 pl-10 sm:pl-14"
+                      >
+                        {/* Timeline dot */}
+                        <div className={`absolute left-[12px] sm:left-[16px] w-[13px] h-[13px] rounded-full border-2 flex-shrink-0 transition-all
+                          ${isToday
+                            ? "bg-orange-500 border-orange-400 shadow-[0_0_8px_#f97316]"
+                            : released
+                              ? "bg-orange-500/70 border-orange-500/50"
+                              : "bg-[#1a1a1a] border-[#333] group-hover:border-orange-500/50"
+                          }`}
+                        />
+
+                        {/* Card */}
+                        <div className={`flex-1 flex items-center gap-3 rounded-xl px-3 py-2.5 border transition-all
+                          ${released
+                            ? "bg-[#111] border-[#1f1f1f] hover:border-orange-500/30"
+                            : "bg-[#0d0d0d] border-[#181818] border-dashed hover:border-orange-500/20"
+                          }`}
+                        >
+                          {/* Poster */}
+                          {(m.posterUrl || m.thumbnailUrl) && (
+                            <div className="relative w-8 h-11 rounded-md overflow-hidden flex-shrink-0">
+                              <Image src={m.posterUrl || m.thumbnailUrl} alt={m.title} fill className="object-cover" />
+                            </div>
+                          )}
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-bold leading-snug line-clamp-1 transition-colors
+                              ${released ? "text-white group-hover:text-orange-400" : "text-gray-400 group-hover:text-gray-200"}`}>
+                              {m.title}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <span className={`text-[10px] font-medium ${released ? "text-orange-400" : "text-gray-600"}`}>
+                                {dateLabel}
+                              </span>
+                              {isToday && (
+                                <span className="text-[9px] font-black uppercase tracking-widest text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded-full px-1.5 py-0.5 animate-pulse">
+                                  Today!
+                                </span>
+                              )}
+                              {!released && (
+                                <span className="text-[9px] text-gray-600 uppercase tracking-widest">Upcoming</span>
+                              )}
+                              {hasVerdict && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                                  style={{ background:`${vc}18`, color:vc, border:`1px solid ${vc}40` }}>
+                                  {m.verdict}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <ChevronRight className="w-3.5 h-3.5 text-gray-700 group-hover:text-orange-400 flex-shrink-0 transition-colors" />
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          );
+        })()}
+
+        {/* ══ DISCOVER + DID YOU KNOW — 2 col grid ══ */}
+        {(randomMoviePool.length > 0 || triviaCards.length > 0) && (
+          <section aria-label="Discover Odia movies and Ollywood trivia">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+              {randomMoviePool.length > 0 && (
+                <RandomMoviePicker movies={randomMoviePool} currentYear={currentYear} />
+              )}
+              {triviaCards.length > 0 && (
+                <DidYouKnow cards={triviaCards} />
+              )}
+            </div>
+          </section>
+        )}
 
         {/* ══ UPCOMING MOVIES ══ */}
         {upcomingMovies.length > 0 && (

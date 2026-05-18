@@ -16,6 +16,7 @@ import { ReviewForm }    from "@/components/movie/ReviewForm";
 import { MovieCard }     from "@/components/movie/MovieCard";
 import { StarRating }    from "@/components/ui/StarRating";
 import { SongRowClient } from "@/components/movie/SongRowClient";
+import { BoxOfficeDaysChart } from "@/components/movie/BoxOfficeDaysChart";
 import {
   Calendar, Clock, User, DollarSign, Film, Star,
   Clapperboard, Music, FileText, ChevronRight,
@@ -325,11 +326,13 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
 
 function StatChip({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className={`flex flex-col items-center justify-center rounded-xl px-2 sm:px-4 py-2.5 border text-center ${
-      accent ? "bg-orange-500/10 border-orange-500/30" : "bg-[#111] border-[#1f1f1f]"
+    <div className={`flex items-center gap-2 rounded-lg px-3 py-2 border ${
+      accent ? "bg-orange-500/8 border-orange-500/20" : "bg-[#111] border-[#1f1f1f]"
     }`}>
-      <p className={`text-sm sm:text-base font-black font-display w-full truncate ${accent ? "text-orange-400" : "text-white"}`}>{value}</p>
-      <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">{label}</p>
+      <div className="min-w-0">
+        <p className="text-[9px] text-gray-600 uppercase tracking-widest leading-none mb-0.5">{label}</p>
+        <p className={`text-xs font-bold truncate leading-snug ${accent ? "text-orange-400" : "text-white"}`}>{value}</p>
+      </div>
     </div>
   );
 }
@@ -488,7 +491,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               )}
 
               {/* Stat chips — 2 per row on mobile, inline on sm+ */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 sm:gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {movie.releaseDate && (
                   <StatChip
                     label="Release"
@@ -501,9 +504,11 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   const dirFromCast = getDirectorFromCast(movie.cast || []);
                   const dirName = dirFromCast || movie.director;
                   return dirName ? (
-                    <div className="hidden md:flex flex-col items-center justify-center rounded-xl px-3 py-2.5 border border-orange-500/20 bg-orange-500/5 text-center">
-                      <p className="text-sm font-black text-white truncate w-full">{dirName}</p>
-                      <p className="text-[10px] text-orange-400 uppercase tracking-wider mt-0.5">Director</p>
+                    <div className="flex items-center gap-2 rounded-lg px-3 py-2 border border-orange-500/20 bg-orange-500/8">
+                      <div className="min-w-0">
+                        <p className="text-[9px] text-orange-400/70 uppercase tracking-widest leading-none mb-0.5">Director</p>
+                        <p className="text-xs font-bold text-white truncate">{dirName}</p>
+                      </div>
                     </div>
                   ) : null;
                 })()}
@@ -512,24 +517,28 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   const prodFromCast = getProducerFromCast(movie.cast || []);
                   const prodName = prodFromCast || movie.producer;
                   return prodName ? (
-                    <div className="hidden md:flex flex-col items-center justify-center rounded-xl px-3 py-2.5 border border-[#1f1f1f] bg-[#111] text-center">
-                      <p className="text-sm font-black text-white truncate w-full">{prodName}</p>
-                      <p className="text-[10px] text-zinc-500 uppercase tracking-wider mt-0.5">Producer</p>
+                    <div className="flex items-center gap-2 rounded-lg px-3 py-2 border border-[#1f1f1f] bg-[#111]">
+                      <div className="min-w-0">
+                        <p className="text-[9px] text-gray-600 uppercase tracking-widest leading-none mb-0.5">Producer</p>
+                        <p className="text-xs font-bold text-white truncate">{prodName}</p>
+                      </div>
                     </div>
                   ) : null;
                 })()}
                 {movie.verdict && (
-                  <div className={`flex flex-col items-center justify-center rounded-xl px-3 py-2.5 border text-center ${vs.bg} ${vs.border}`}>
-                    <p className={`text-sm sm:text-base font-black font-display ${vs.text}`}>{movie.verdict}</p>
-                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mt-0.5">Verdict</p>
+                  <div className={`flex items-center gap-2 rounded-lg px-3 py-2 border ${vs.bg} ${vs.border}`}>
+                    <div className="min-w-0">
+                      <p className="text-[9px] text-gray-600 uppercase tracking-widest leading-none mb-0.5">Verdict</p>
+                      <p className={`text-xs font-bold truncate ${vs.text}`}>{movie.verdict}</p>
+                    </div>
                   </div>
                 )}
               </div>
 
               {/* Synopsis — only on md+ to avoid cramping mobile layout */}
               {movie.synopsis && (
-                <p className="hidden md:block text-zinc-400 text-sm leading-relaxed line-clamp-2 max-w-2xl mt-3">
-                  {movie.synopsis}
+                <p className="hidden md:block text-zinc-400 text-sm leading-relaxed line-clamp-3 max-w-2xl mt-3">
+                  {movie.synopsis.length > 220 ? movie.synopsis.slice(0, 220).trimEnd() + "…" : movie.synopsis}
                 </p>
               )}
             </div>
@@ -581,6 +590,12 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                     </div>
                   ))}
                 </div>
+
+                {/* Day-by-day collection chart */}
+                {movie.boxOfficeDays?.length > 0 && (
+                  <BoxOfficeDaysChart days={movie.boxOfficeDays} />
+                )}
+
                 {movie.verdict && (
                   <div className={`mt-4 text-center py-2 rounded-xl border ${vs.bg} ${vs.border}`}>
                     <span className={`text-sm font-black ${vs.text}`}>{movie.verdict}</span>
@@ -660,16 +675,48 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
             {movie.synopsis && (
               <section aria-label={`${movie.title} synopsis`}>
                 <SectionHeading icon={Info} title="About the Film" />
-                <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-6">
-                  <p className="text-gray-300 leading-relaxed text-base">{movie.synopsis}</p>
-                  {/* SEO-rich context line */}
-                  <p className="text-gray-500 text-sm mt-4 pt-4 border-t border-[#1f1f1f]">
-                    <strong className="text-gray-400">{movie.title}</strong> is a{" "}
-                    {(movie.genre || []).join(", ") || "Odia"} film
-                    {year ? ` released in ${year}` : ""}{directorName ? `, directed by ${directorName}` : ""}
-                    {producerName ? `, produced by ${producerName}` : ""}.
-                    {movie.language ? ` Produced in ${movie.language} language for Ollywood audiences.` : " An Ollywood production."}
-                  </p>
+                <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl overflow-hidden">
+                  {/* Quick facts strip */}
+                  <div className="flex flex-wrap gap-0 border-b border-[#1f1f1f] divide-x divide-[#1f1f1f]">
+                    {[
+                      { icon: "🎬", label: "Genre",    value: (movie.genre||[]).join(", ") || "Drama" },
+                      { icon: "📅", label: "Year",     value: year ? String(year) : null },
+                      { icon: "⏱",  label: "Runtime",  value: movie.runtime || null },
+                      { icon: "🌐", label: "Language", value: movie.language || "Odia" },
+                    ].filter(f => f.value).map(f => (
+                      <div key={f.label} className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-[120px]">
+                        <span className="text-base">{f.icon}</span>
+                        <div>
+                          <p className="text-[9px] text-gray-600 uppercase tracking-widest">{f.label}</p>
+                          <p className="text-xs font-semibold text-white">{f.value}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Synopsis body */}
+                  <div className="p-6">
+                    <div className="flex gap-4">
+                      <div className="w-1 bg-gradient-to-b from-orange-500 to-orange-500/0 rounded-full flex-shrink-0 self-stretch min-h-[40px]" />
+                      <p className="text-gray-200 leading-[1.85] text-[15px] font-light tracking-wide">
+                        {movie.synopsis}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Mood / Watch tags */}
+                  {(movie.genre||[]).length > 0 && (
+                    <div className="px-6 pb-5 flex flex-wrap gap-2">
+                      <span className="text-[10px] text-gray-600 self-center mr-1">Watch if you like:</span>
+                      {(movie.genre as string[]).map((g) => (
+                        <Link key={g} href={`/movies?genre=${encodeURIComponent(g)}`}
+                          className="text-[10px] font-semibold text-orange-400/80 hover:text-orange-400
+                            bg-orange-500/8 border border-orange-500/15 px-2 py-0.5 rounded-full transition-colors">
+                          {g}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </section>
             )}
@@ -684,6 +731,25 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               </section>
             )}
 
+            {/* ── Where to Watch ── */}
+            {movie.streamingOn && (
+              <section aria-label={`Where to watch ${movie.title}`}>
+                <SectionHeading icon={Play} title="Where to Watch" />
+                <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-5 flex items-center gap-4">
+                  <div className="w-10 h-10 bg-emerald-500/10 border border-emerald-500/20 rounded-xl
+                    flex items-center justify-center flex-shrink-0 text-xl">🎬</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white">{movie.streamingOn}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Now streaming on {movie.streamingOn}</p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full
+                    bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex-shrink-0">
+                    OTT
+                  </span>
+                </div>
+              </section>
+            )}
+
             {/* ── Crew ── */}
             {(() => {
               const { crew, cast: castOnly } = splitCastCrew(movie.cast || []);
@@ -692,23 +758,38 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   {crew.length > 0 && (
                     <section aria-label={`${movie.title} crew`}>
                       <SectionHeading icon={Clapperboard} title="Crew" count={crew.length} />
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {crew.map((member: any, i: number) => (
-                          <Link key={i} href={`/cast/${member.castId}`}
-                            className="group bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl p-3 flex items-center gap-4 transition-all hover:-translate-y-0.5">
-                            <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 border-2 border-[#2a2a2a] group-hover:border-orange-500/50 transition-colors">
-                              <Image
-                                src={member.photo || "/placeholder-person.svg"}
-                                alt={`${member.name} – ${member.role || member.type || "crew"} of ${movie.title}`}
-                                fill className="object-cover"
-                              />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-bold text-white line-clamp-1 group-hover:text-orange-400 transition-colors">{member.name}</p>
-                              <p className="text-[11px] font-semibold text-orange-400/70 uppercase tracking-wider mt-0.5 line-clamp-1">{member.role || member.type}</p>
-                            </div>
-                          </Link>
-                        ))}
+                      <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl overflow-hidden">
+                        <table className="w-full text-sm">
+                          <tbody>
+                            {crew.map((member: any, i: number) => (
+                              <tr key={i} className={`group border-b border-[#1a1a1a] last:border-0
+                                hover:bg-orange-500/3 transition-colors`}>
+                                {/* Role */}
+                                <td className="px-4 py-2.5 w-[38%] align-middle">
+                                  <span className="text-[10px] font-bold text-orange-400/70 uppercase tracking-widest">
+                                    {member.role || member.type || "Crew"}
+                                  </span>
+                                </td>
+                                {/* Photo + Name */}
+                                <td className="px-4 py-2.5 align-middle">
+                                  <Link href={`/cast/${member.castId}`}
+                                    className="flex items-center gap-2.5 group/link">
+                                    <div className="relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0 border border-[#333]">
+                                      <Image
+                                        src={member.photo || "/placeholder-person.svg"}
+                                        alt={member.name}
+                                        fill className="object-cover"
+                                      />
+                                    </div>
+                                    <span className="text-sm font-semibold text-white group-hover/link:text-orange-400 transition-colors line-clamp-1">
+                                      {member.name}
+                                    </span>
+                                  </Link>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </section>
                   )}
@@ -717,23 +798,50 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   {castOnly.length > 0 && (
                     <section aria-label={`${movie.title} cast`}>
                       <SectionHeading icon={Users} title="Cast" count={castOnly.length} />
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                        {castOnly.map((member: any, i: number) => (
-                          <Link key={i} href={`/cast/${member.castId}`}
-                            className="group bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl p-3 flex items-center gap-3 transition-all hover:-translate-y-0.5">
-                            <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-[#2a2a2a] group-hover:border-orange-500/50 transition-colors">
-                              <Image
-                                src={member.photo || "/placeholder-person.svg"}
-                                alt={`${member.name} in ${movie.title} – ${member.role || member.type || "actor"}`}
-                                fill className="object-cover"
-                              />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-white line-clamp-1 group-hover:text-orange-400 transition-colors">{member.name}</p>
-                              <p className="text-[11px] text-gray-500 line-clamp-1">{member.role || member.type || "Actor"}</p>
-                            </div>
-                          </Link>
-                        ))}
+                      <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-[#242424] bg-[#0d0d0d]">
+                              <th className="px-4 py-2.5 text-left text-[10px] font-bold text-orange-400/60 uppercase tracking-widest w-[35%]">Actor</th>
+                              <th className="px-4 py-2.5 text-left text-[10px] font-bold text-gray-600 uppercase tracking-widest w-[30%]">Role / Type</th>
+                              <th className="px-4 py-2.5 text-left text-[10px] font-bold text-gray-600 uppercase tracking-widest">Character</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {castOnly.map((member: any, i: number) => (
+                              <tr key={i} className="group border-b border-[#1a1a1a] last:border-0 hover:bg-orange-500/3 transition-colors">
+                                {/* Photo + Name */}
+                                <td className="px-4 py-2.5 align-middle">
+                                  <Link href={`/cast/${member.castId}`}
+                                    className="flex items-center gap-2.5 group/link">
+                                    <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-[#333]">
+                                      <Image
+                                        src={member.photo || "/placeholder-person.svg"}
+                                        alt={`${member.name} in ${movie.title}`}
+                                        fill className="object-cover"
+                                      />
+                                    </div>
+                                    <span className="text-sm font-semibold text-white group-hover/link:text-orange-400 transition-colors line-clamp-1">
+                                      {member.name}
+                                    </span>
+                                  </Link>
+                                </td>
+                                {/* Role / Type */}
+                                <td className="px-4 py-2.5 align-middle">
+                                  <span className="text-[10px] font-bold text-orange-400/70 uppercase tracking-widest">
+                                    {member.role || member.type || "Actor"}
+                                  </span>
+                                </td>
+                                {/* Character name */}
+                                <td className="px-4 py-2.5 align-middle">
+                                  <span className="text-xs text-gray-400 italic">
+                                    {member.character || member.characterName || "—"}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </section>
                   )}
@@ -807,7 +915,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   </p>
                   {movie.synopsis && (
                     <p>
-                      {movie.synopsis.length > 200 ? movie.synopsis.slice(0, 300) + "…" : movie.synopsis}
+                      {movie.synopsis.length > 350 ? movie.synopsis.slice(0, 350).trimEnd() + "…" : movie.synopsis}
                     </p>
                   )}
                   {movie.verdict && (

@@ -732,43 +732,75 @@ export default async function CastDetailPage({ params }: { params: { id: string 
             {movies.length > 0 && (
               <section id="cast-filmography" aria-label={`${person.name} filmography`}>
                 <SectionHeading icon={Film} title="Filmography" count={movies.length} />
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {movies.map((m: any) => {
-                    const entry = (m.cast || []).find((c: any) => String(c.castId) === String(person._id));
-                    const style = vs(m.verdict);
-                    return (
-                      <Link key={String(m._id)} href={`/movie/${m.slug || String(m._id)}`}
-                        className="group block bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl overflow-hidden transition-all hover:-translate-y-0.5">
-                        <div className="relative aspect-[2/3] bg-[#1a1a1a]">
-                          {m.posterUrl ? (
-                            <Image src={m.posterUrl} alt={`${m.title} – Odia film`}
-                              fill className="object-cover" sizes="180px" />
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center text-3xl">🎬</div>
-                          )}
-                          {m.verdict && (
-                            <div className="absolute top-2 left-2">
-                              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${style.bg} ${style.text} ${style.border}`}>
-                                {m.verdict}
+                <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-[#242424] bg-[#0d0d0d]">
+                        <th className="px-4 py-3 text-left text-[10px] font-bold text-orange-400/60 uppercase tracking-widest w-[40%]">Film</th>
+                        <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-600 uppercase tracking-widest w-[20%]">Release Date</th>
+                        <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-600 uppercase tracking-widest w-[20%]">Role</th>
+                        <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-600 uppercase tracking-widest w-[20%]">Verdict</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {movies.map((m: any) => {
+                        const entry = (m.cast || []).find((c: any) => String(c.castId) === String(person._id));
+                        const style = vs(m.verdict);
+                        const releaseDate = m.releaseDate ? fmtDate(m.releaseDate) : "TBA";
+                        return (
+                          <tr key={String(m._id)}
+                            className="group border-b border-[#1a1a1a] last:border-0 hover:bg-orange-500/3 transition-colors">
+
+                            {/* Poster + Title */}
+                            <td className="px-4 py-3 align-middle">
+                              <Link href={`/movie/${m.slug || String(m._id)}`}
+                                className="flex items-center gap-3 group/link">
+                                <div className="relative w-8 h-11 rounded-md overflow-hidden flex-shrink-0 border border-[#2a2a2a]">
+                                  {m.posterUrl ? (
+                                    <Image src={m.posterUrl} alt={m.title}
+                                      fill className="object-cover" sizes="32px" />
+                                  ) : (
+                                    <div className="absolute inset-0 flex items-center justify-center text-base bg-[#1a1a1a]">🎬</div>
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-white group-hover/link:text-orange-400 transition-colors line-clamp-1">
+                                    {m.title}
+                                  </p>
+                                  {m.genre?.[0] && (
+                                    <p className="text-[10px] text-gray-600 mt-0.5">{m.genre[0]}</p>
+                                  )}
+                                </div>
+                              </Link>
+                            </td>
+
+                            {/* Release Date */}
+                            <td className="px-4 py-3 align-middle">
+                              <span className="text-xs text-gray-400 font-medium">{releaseDate}</span>
+                            </td>
+
+                            {/* Role */}
+                            <td className="px-4 py-3 align-middle">
+                              <span className="text-[10px] font-bold text-orange-400/70 uppercase tracking-widest">
+                                {entry?.role || entry?.type || rolesStr.split(",")[0] || "—"}
                               </span>
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                          <div className="absolute bottom-0 left-0 right-0 p-2">
-                            {m.genre?.[0] && (
-                              <span className="text-[9px] text-gray-400">{m.genre[0]}</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="p-2.5">
-                          <p className="text-xs font-semibold text-white line-clamp-1 group-hover:text-orange-400 transition-colors">{m.title}</p>
-                          <p className="text-[10px] text-gray-500 mt-0.5">
-                            {entry?.role ? `as ${entry.role}` : fmtDate(m.releaseDate)}
-                          </p>
-                        </div>
-                      </Link>
-                    );
-                  })}
+                            </td>
+
+                            {/* Verdict */}
+                            <td className="px-4 py-3 align-middle">
+                              {m.verdict ? (
+                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${style.bg} ${style.text} ${style.border}`}>
+                                  {m.verdict}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-gray-600">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </section>
             )}
