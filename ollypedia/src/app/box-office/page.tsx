@@ -5,8 +5,9 @@ import type { Metadata } from "next";
 import Link              from "next/link";
 import { connectDB }     from "@/lib/db";
 import Movie             from "@/models/Movie";
+import Blog              from "@/models/Blog";
 
-export const revalidate = 1800;
+export const revalidate = 600; // revalidate every 10 min — box office data changes daily
 
 export const metadata: Metadata = {
   title:       "Odia Box Office Collection 2026 | Ollypedia",
@@ -17,6 +18,10 @@ export const metadata: Metadata = {
     "Odia box office", "Ollywood collection", "Odia movie collection 2026",
     "Odia cinema box office", "Ollywood box office 2026", "Odia film earnings",
     "Ollywood hit flop verdict", "Odia movie first day collection",
+    "Ollywood movie verdict 2026", "Odia film box office report",
+    "Ollywood hit or flop", "Odia movie total collection",
+    "today Odia box office", "Odia movie this week collection",
+    "Ollywood 2026 hit flop list", "Odia cinema earnings report",
   ],
   openGraph: {
     title:       "Odia Box Office Collection 2026 | Ollypedia",
@@ -24,6 +29,15 @@ export const metadata: Metadata = {
     url:         "https://ollypedia.in/box-office",
     siteName:    "Ollypedia",
     type:        "website",
+    locale:      "en_IN",
+    images: [{ url: "https://ollypedia.in/og-box-office.jpg", width: 1200, height: 630, alt: "Odia Box Office Collection 2026 — Ollypedia" }],
+  },
+  twitter: {
+    card:        "summary_large_image",
+    title:       "Odia Box Office Collection 2026 | Ollypedia",
+    description: "Day-wise net & gross earnings for all Odia (Ollywood) movies. Updated daily.",
+    images:      ["https://ollypedia.in/og-box-office.jpg"],
+    site:        "@ollypedia",
   },
 };
 
@@ -95,10 +109,23 @@ async function getBoxOfficeMovies() {
   return JSON.parse(JSON.stringify(movies));
 }
 
+async function getBoxOfficeBlogs() {
+  await connectDB();
+  const blogs = await (Blog as any)
+    .find(
+      { published: true, category: "Box Office" },
+      "title slug excerpt coverImage createdAt featured"
+    )
+    .sort({ createdAt: -1 })
+    .limit(12)
+    .lean();
+  return JSON.parse(JSON.stringify(blogs));
+}
+
 /* ─── Page ──────────────────────────────────────────────────── */
 
 export default async function BoxOfficePage() {
-  const movies = await getBoxOfficeMovies();
+  const [movies, blogs] = await Promise.all([getBoxOfficeMovies(), getBoxOfficeBlogs()]);
 
   const enriched = movies.map((m: any) => {
     const days       = (m.boxOfficeDays || []).sort((a: any, b: any) => a.day - b.day);
@@ -143,18 +170,145 @@ export default async function BoxOfficePage() {
     m.verdict && ["hit","superhit","blockbuster"].some((k: string) => m.verdict.toLowerCase().includes(k))
   ).length;
 
-  const jsonLd = {
-    "@context":  "https://schema.org",
-    "@type":     "CollectionPage",
-    "name":      "Odia Box Office Collection 2026 | Ollypedia",
-    "description": "Complete day-wise box office collection for Odia (Ollywood) movies. Updated daily.",
-    "url":       "https://ollypedia.in/box-office",
-    "publisher": { "@type": "Organization", "name": "Ollypedia", "url": "https://ollypedia.in" },
+  const lastUpdated = enriched[0]?.updatedAt
+    ? new Date(enriched[0].updatedAt).toISOString()
+    : new Date().toISOString();
+
+  // Recently updated — updatedAt within last 48h, max 4
+  const twoDays = 2 * 24 * 60 * 60 * 1000;
+  const recentlyUpdated = enriched
+    .filter((m: any) => m.updatedAt && now - new Date(m.updatedAt).getTime() <= twoDays)
+    .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 4);
+
+  // Month-grouped movie list
+  const MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  type MovieGroup = { label: string; items: any[] };
+  const monthGroups: MovieGroup[] = [];
+  enriched.forEach((m: any) => {
+    const iso = String(m.releaseDate || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const label = iso ? `${MONTHS_FULL[parseInt(iso[2], 10) - 1]} ${iso[1]}` : "Unknown";
+    const last = monthGroups[monthGroups.length - 1];
+    if (last && last.label === label) { last.items.push(m); }
+    else { monthGroups.push({ label, items: [m] }); }
+  });
+
+  // Unique languages for filter links
+  const languages = [...new Set(enriched.map((m: any) => m.language).filter(Boolean))] as string[];
+
+  // ── Schema: BreadcrumbList ──
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type":    "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home",       "item": "https://ollypedia.in" },
+      { "@type": "ListItem", "position": 2, "name": "Box Office", "item": "https://ollypedia.in/box-office" },
+    ],
   };
+
+  // ── Schema: WebSite with SearchAction (Google Sitelinks Search Box) ──
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type":    "WebSite",
+    "name":     "Ollypedia",
+    "url":      "https://ollypedia.in",
+    "potentialAction": {
+      "@type":       "SearchAction",
+      "target":      { "@type": "EntryPoint", "urlTemplate": "https://ollypedia.in/search?q={search_term_string}" },
+      "query-input": "required name=search_term_string",
+    },
+  };
+  const movieListJsonLd = {
+    "@context": "https://schema.org",
+    "@type":    "CollectionPage",
+    "name":     "Odia Box Office Collection 2026 | Ollypedia",
+    "description": "Complete day-wise box office collection for Odia (Ollywood) movies. Updated daily.",
+    "url":      "https://ollypedia.in/box-office",
+    "dateModified": lastUpdated,
+    "publisher": { "@type": "Organization", "name": "Ollypedia", "url": "https://ollypedia.in" },
+    "mainEntity": {
+      "@type": "ItemList",
+      "name":  "Odia Movies Box Office 2026",
+      "numberOfItems": enriched.length,
+      "itemListElement": enriched.slice(0, 20).map((m: any, i: number) => ({
+        "@type":    "ListItem",
+        "position": i + 1,
+        "name":     m.title,
+        "url":      `https://ollypedia.in/box-office/${movieSlug(m)}`,
+      })),
+    },
+  };
+
+  // ── Schema: FAQPage ──
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type":    "FAQPage",
+    "mainEntity": [
+      {
+        "@type":          "Question",
+        "name":           "Where can I find the latest Odia movie box office collection?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Ollypedia publishes daily box office updates for all Odia movies. Bookmark this page and check back every day for fresh figures." },
+      },
+      {
+        "@type":          "Question",
+        "name":           "What is the difference between net and gross collection?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Gross is total revenue including taxes. Net is what remains after deducting GST and local entertainment tax — the actual revenue for producers and distributors." },
+      },
+      {
+        "@type":          "Question",
+        "name":           "How is an Odia movie verdict decided?",
+        "acceptedAnswer": { "@type": "Answer", "text": "A verdict is based on earnings vs total cost (production + prints + publicity). A film recovering more than twice its cost is called a Blockbuster; failing to recover costs is a Flop." },
+      },
+      {
+        "@type":          "Question",
+        "name":           "Does Ollypedia track worldwide collection of Odia movies?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes, where data is available we include worldwide figures covering Odisha, rest of India, and international markets." },
+      },
+      {
+        "@type":          "Question",
+        "name":           "Which Odia movie has the highest box office collection ever?",
+        "acceptedAnswer": { "@type": "Answer", "text": `${allTimeTop ? `${allTimeTop.title} holds the record for the highest net collection among all Odia films tracked on Ollypedia with a total of ${fmtINR(allTimeTop.totalNet)}.` : "Ollypedia tracks all Odia films and the all-time highest grosser is updated regularly on this page."}` },
+      },
+      {
+        "@type":          "Question",
+        "name":           "How many Odia movies released in 2026?",
+        "acceptedAnswer": { "@type": "Answer", "text": `As of the latest update, Ollypedia is tracking ${enriched.length} Odia films with box office data in 2026. New releases are added regularly.` },
+      },
+      {
+        "@type":          "Question",
+        "name":           "What does 'Day 1 collection' mean for Odia movies?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Day 1 collection refers to the box office earnings of an Odia film on its first day of release, including morning, afternoon, and evening shows across all theatres in Odisha and other regions." },
+      },
+      {
+        "@type":          "Question",
+        "name":           "Is Ollypedia free to use?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes, Ollypedia is completely free. All box office data, verdicts, and news about Odia cinema are available to everyone without any subscription or login." },
+      },
+    ],
+  };
+
+  // ── Schema: Blog articles ──
+  const blogListJsonLd = blogs.length > 0 ? {
+    "@context": "https://schema.org",
+    "@type":    "ItemList",
+    "name":     "Odia Box Office News & Analysis",
+    "itemListElement": blogs.map((b: any, i: number) => ({
+      "@type":    "ListItem",
+      "position": i + 1,
+      "url":      `https://ollypedia.in/blog/${b.slug}`,
+      "name":     b.title,
+    })),
+  } : null;
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(movieListJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      {blogListJsonLd && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogListJsonLd) }} />
+      )}
 
       <div className="min-h-screen bg-[#080808] text-white">
 
@@ -181,6 +335,9 @@ export default async function BoxOfficePage() {
             <p className="text-gray-500 text-xs mt-1.5">
               Day-wise net &amp; gross for all Odia (Ollywood) movies — latest releases first.
             </p>
+            <p className="text-[10px] text-gray-700 mt-1">
+              Last updated: <time dateTime={lastUpdated}>{fmtDate(lastUpdated)}</time>
+            </p>
           </div>
         </div>
 
@@ -202,6 +359,52 @@ export default async function BoxOfficePage() {
               ))}
             </div>
           )}
+
+          {/* ── 2026 Verdict Breakdown ── */}
+          {enriched.length > 0 && (() => {
+            const verdictGroups: Record<string, number> = {
+              Blockbuster: 0, Superhit: 0, Hit: 0, Average: 0, Flop: 0, Disaster: 0,
+            };
+            enriched.forEach((m: any) => {
+              if (!m.verdict) return;
+              const v = m.verdict.toLowerCase();
+              if (v.includes("blockbuster"))   verdictGroups["Blockbuster"]++;
+              else if (v.includes("superhit")) verdictGroups["Superhit"]++;
+              else if (v.includes("hit"))      verdictGroups["Hit"]++;
+              else if (v.includes("average"))  verdictGroups["Average"]++;
+              else if (v.includes("disaster")) verdictGroups["Disaster"]++;
+              else if (v.includes("flop"))     verdictGroups["Flop"]++;
+            });
+            const colorMap: Record<string, string> = {
+              Blockbuster: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+              Superhit:    "text-emerald-300 bg-emerald-500/10 border-emerald-500/20",
+              Hit:         "text-green-400 bg-green-500/10 border-green-500/20",
+              Average:     "text-yellow-400 bg-yellow-500/10 border-yellow-500/20",
+              Flop:        "text-red-400 bg-red-500/10 border-red-500/20",
+              Disaster:    "text-rose-500 bg-rose-500/10 border-rose-500/20",
+            };
+            const entries = Object.entries(verdictGroups).filter(([, n]) => n > 0);
+            if (!entries.length) return null;
+            return (
+              <div>
+                <div className="flex items-center gap-2 mb-2.5">
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">
+                    🏆 2026 Verdict Scorecard
+                  </span>
+                  <span className="text-[10px] text-gray-600">— how Ollywood performed this year</span>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                  {entries.map(([label, count]) => (
+                    <div key={label}
+                      className={`border rounded-xl px-3 py-2.5 text-center ${colorMap[label]}`}>
+                      <p className="text-lg font-black leading-none">{count}</p>
+                      <p className="text-[10px] font-semibold mt-1 opacity-80">{label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ── Highlight Cards Row ── */}
           {enriched.length > 0 && (
@@ -374,137 +577,259 @@ export default async function BoxOfficePage() {
             </div>
           )}
 
-          {/* ── Full List ── */}
-          <div>
+          {/* ── Recently Updated ── */}
+          {recentlyUpdated.length > 0 && (
+            <section aria-label="Recently updated box office figures">
+              <div className="flex items-center gap-2 mb-2.5">
+                <span className="text-xs font-bold text-white uppercase tracking-wider">
+                  🔄 Recently Updated
+                </span>
+                <span className="text-[10px] text-gray-600">— figures updated in last 48 hours</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {recentlyUpdated.map((m: any) => (
+                  <Link
+                    key={m._id}
+                    href={`/box-office/${movieSlug(m)}`}
+                    className="group flex gap-2 items-center bg-[#0f0f0f] border border-[#1c1c1c]
+                      rounded-xl p-2.5 hover:border-orange-500/30 transition-all"
+                  >
+                    {(m.posterUrl || m.thumbnailUrl) ? (
+                      <img src={m.posterUrl || m.thumbnailUrl} alt={m.title} loading="lazy"
+                        className="w-8 h-11 object-cover rounded-md flex-shrink-0" />
+                    ) : (
+                      <div className="w-8 h-11 bg-[#1a1a1a] rounded-md flex items-center
+                        justify-center text-sm text-gray-700 flex-shrink-0">🎬</div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-bold text-white group-hover:text-orange-400
+                        transition-colors truncate leading-snug">{m.title}</p>
+                      <p className="text-[10px] text-orange-400 font-bold mt-0.5">{fmtINR(m.totalNet)}</p>
+                      <p className="text-[9px] text-gray-700 mt-0.5">{m.lastDay}d data</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ── Language Filter Links ── */}
+          {languages.length > 1 && (
+            <nav aria-label="Filter movies by language">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wider">Filter by Language:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {languages.map((lang: string) => (
+                    <a
+                      key={lang}
+                      href={`#lang-${lang.toLowerCase().replace(/\s+/g, "-")}`}
+                      className="text-[10px] text-gray-400 hover:text-orange-400 border border-[#1c1c1c]
+                        hover:border-orange-500/30 bg-[#0f0f0f] rounded-full px-2.5 py-1 transition-colors"
+                    >
+                      {lang}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </nav>
+          )}
+
+          {/* ── Full List — Month Grouped ── */}
+          <section aria-label="All Odia movies box office collection 2026">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs font-bold text-white uppercase tracking-wider">
                 📋 All Releases
               </span>
-              <span className="text-[10px] text-gray-600">— sorted by release date</span>
+              <span className="text-[10px] text-gray-600">— {enriched.length} films, sorted by release date</span>
             </div>
 
-            {/* Desktop column headers */}
-            <div className="hidden sm:flex items-center gap-2 px-2 pb-2 mb-0.5
-              border-b border-[#1c1c1c]
-              text-[10px] font-semibold uppercase tracking-widest text-gray-600">
-              <span className="w-6 text-center">#</span>
-              <span className="w-9" />
-              <span className="flex-1">Movie</span>
-              <span className="w-28 text-left">Released</span>
-              <span className="w-20 text-right">Net</span>
-              <span className="w-20 text-right hidden md:block">Gross</span>
-              <span className="w-24 text-right">Verdict</span>
-              <span className="w-4" />
-            </div>
-
-            <div className="divide-y divide-[#141414]">
-              {enriched.map((m: any, idx: number) => {
-                const slug          = movieSlug(m);
-                const storedVerdict = isValidVerdict(m.verdict) ? m.verdict : null;
-                const vColor        = storedVerdict ? verdictColor(storedVerdict) : "";
-                const relDate       = fmtDate(m.releaseDate);
-                const isNew         = now - dateTs(m.releaseDate) <= oneWeek;
-
-                return (
-                  <Link
-                    key={m._id}
-                    href={`/box-office/${slug}`}
-                    className="group flex items-center gap-2 sm:gap-3 py-2.5 px-2 rounded-lg
-                      hover:bg-white/[0.03] transition-colors duration-100"
-                  >
-                    {/* Rank */}
-                    <span className="w-6 text-center text-xs font-black text-gray-700
-                      group-hover:text-orange-500 transition-colors flex-shrink-0">
-                      {idx + 1}
+            {monthGroups.map((group, gi) => {
+              // running rank offset
+              const offset = monthGroups.slice(0, gi).reduce((s, g) => s + g.items.length, 0);
+              // find dominant language in group for id anchor
+              const groupLang = group.items[0]?.language || "";
+              return (
+                <div key={group.label} className="mb-4"
+                  id={`lang-${groupLang.toLowerCase().replace(/\s+/g, "-")}`}>
+                  {/* Month heading — crawlable H3 */}
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-600
+                    border-b border-[#1c1c1c] pb-1.5 mb-0.5 flex items-center gap-2">
+                    <span>{group.label}</span>
+                    <span className="text-gray-700 font-normal normal-case tracking-normal">
+                      — {group.items.length} film{group.items.length !== 1 ? "s" : ""}
                     </span>
+                  </h3>
 
-                    {/* Poster */}
-                    <div className="flex-shrink-0">
-                      {(m.posterUrl || m.thumbnailUrl) ? (
-                        <img
-                          src={m.posterUrl || m.thumbnailUrl}
-                          alt={m.title}
-                          loading="lazy"
-                          className="w-8 h-11 sm:w-9 sm:h-[52px] object-cover rounded-md shadow-md"
-                        />
-                      ) : (
-                        <div className="w-8 h-11 sm:w-9 sm:h-[52px] bg-[#1a1a1a] rounded-md
-                          flex items-center justify-center text-sm text-gray-700">🎬</div>
-                      )}
+                  {/* Desktop column headers — only on first group */}
+                  {gi === 0 && (
+                    <div className="hidden sm:flex items-center gap-2 px-2 py-1.5
+                      text-[10px] font-semibold uppercase tracking-widest text-gray-700">
+                      <span className="w-6 text-center">#</span>
+                      <span className="w-9" />
+                      <span className="flex-1">Movie</span>
+                      <span className="w-28 text-left">Released</span>
+                      <span className="w-20 text-right">Net</span>
+                      <span className="w-20 text-right hidden md:block">Gross</span>
+                      <span className="w-24 text-right">Verdict</span>
+                      <span className="w-4" />
                     </div>
+                  )}
 
-                    {/* Title block */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <p className="font-semibold text-white group-hover:text-orange-400
-                          transition-colors truncate text-xs sm:text-sm leading-snug">
-                          {m.title}
+                  <div className="divide-y divide-[#141414]">
+                    {group.items.map((m: any, idx: number) => {
+                      const slug          = movieSlug(m);
+                      const storedVerdict = isValidVerdict(m.verdict) ? m.verdict : null;
+                      const vColor        = storedVerdict ? verdictColor(storedVerdict) : "";
+                      const relDate       = fmtDate(m.releaseDate);
+                      const isNew         = now - dateTs(m.releaseDate) <= oneWeek;
+                      const globalRank    = offset + idx + 1;
+
+                      return (
+                        <Link
+                          key={m._id}
+                          href={`/box-office/${slug}`}
+                          className="group flex items-center gap-2 sm:gap-3 py-2.5 px-2 rounded-lg
+                            hover:bg-white/[0.03] transition-colors duration-100"
+                        >
+                          <span className="w-6 text-center text-xs font-black text-gray-700
+                            group-hover:text-orange-500 transition-colors flex-shrink-0">
+                            {globalRank}
+                          </span>
+
+                          <div className="flex-shrink-0">
+                            {(m.posterUrl || m.thumbnailUrl) ? (
+                              <img src={m.posterUrl || m.thumbnailUrl} alt={`${m.title} box office collection`}
+                                loading="lazy"
+                                className="w-8 h-11 sm:w-9 sm:h-[52px] object-cover rounded-md shadow-md" />
+                            ) : (
+                              <div className="w-8 h-11 sm:w-9 sm:h-[52px] bg-[#1a1a1a] rounded-md
+                                flex items-center justify-center text-sm text-gray-700">🎬</div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-semibold text-white group-hover:text-orange-400
+                                transition-colors truncate text-xs sm:text-sm leading-snug">
+                                {m.title}
+                              </p>
+                              {isNew && (
+                                <span className="flex-shrink-0 text-[8px] font-black uppercase
+                                  tracking-widest text-orange-400 bg-orange-500/10 border border-orange-500/20
+                                  rounded-full px-1.5 py-0.5 hidden sm:inline">New</span>
+                              )}
+                            </div>
+                            <div className="sm:hidden flex items-center gap-2 mt-1 flex-wrap">
+                              {relDate !== "—" && <span className="text-[10px] text-gray-500">{relDate}</span>}
+                              {m.totalNet > 0 && <span className="text-[10px] font-bold text-orange-400">{fmtINR(m.totalNet)}</span>}
+                              {storedVerdict && (
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${vColor}`}>
+                                  {storedVerdict}
+                                </span>
+                              )}
+                            </div>
+                            <div className="hidden sm:flex items-center gap-1 mt-0.5 text-[10px] text-gray-600">
+                              {m.language && <span>{m.language}</span>}
+                              {m.lastDay > 0 && <span>· {m.lastDay}d</span>}
+                            </div>
+                          </div>
+
+                          <div className="hidden sm:block w-28 flex-shrink-0">
+                            <span className="text-xs text-gray-400 whitespace-nowrap">{relDate}</span>
+                          </div>
+                          <div className="hidden sm:block w-20 text-right flex-shrink-0">
+                            <span className="font-bold text-orange-400 text-sm">{fmtINR(m.totalNet)}</span>
+                          </div>
+                          <div className="hidden md:block w-20 text-right flex-shrink-0">
+                            <span className="font-bold text-sky-300 text-sm">{fmtINR(m.totalGross)}</span>
+                          </div>
+                          <div className="hidden sm:flex w-24 justify-end flex-shrink-0">
+                            {storedVerdict && (
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${vColor}`}>
+                                {storedVerdict}
+                              </span>
+                            )}
+                          </div>
+                          <span className="w-4 text-right text-gray-700 group-hover:text-orange-400
+                            transition-colors text-xs flex-shrink-0">→</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </section>
+
+          {/* ── Box Office Blogs ── */}
+          {blogs.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">
+                    📰 Box Office News & Analysis
+                  </span>
+                  <span className="text-[10px] text-gray-600">— {blogs.length} articles</span>
+                </div>
+                <Link
+                  href="/blog?category=Box+Office"
+                  className="text-[10px] text-orange-400 hover:text-orange-300 transition-colors font-semibold"
+                >
+                  View all →
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {blogs.map((b: any) => (
+                  <Link
+                    key={b._id}
+                    href={`/blog/${b.slug}`}
+                    className="group flex gap-3 bg-[#0f0f0f] border border-[#1c1c1c] rounded-xl p-3
+                      hover:border-orange-500/30 hover:bg-[#111] transition-all duration-150"
+                  >
+                    {/* Thumbnail */}
+                    {b.coverImage ? (
+                      <img
+                        src={b.coverImage}
+                        alt={b.title}
+                        loading="lazy"
+                        className="w-20 h-14 sm:w-24 sm:h-16 object-cover rounded-lg flex-shrink-0
+                          group-hover:opacity-90 transition-opacity"
+                      />
+                    ) : (
+                      <div className="w-20 h-14 sm:w-24 sm:h-16 bg-[#1a1a1a] rounded-lg flex-shrink-0
+                        flex items-center justify-center text-xl text-gray-700">📰</div>
+                    )}
+
+                    {/* Text */}
+                    <div className="flex flex-col justify-between min-w-0 flex-1">
+                      <div>
+                        {b.featured && (
+                          <span className="inline-block text-[8px] font-black uppercase tracking-widest
+                            text-orange-400 bg-orange-500/10 border border-orange-500/20
+                            rounded-full px-1.5 py-0.5 mb-1">
+                            Featured
+                          </span>
+                        )}
+                        <p className="text-[11px] sm:text-xs font-bold text-white
+                          group-hover:text-orange-400 transition-colors leading-snug line-clamp-2">
+                          {b.title}
                         </p>
-                        {isNew && (
-                          <span className="flex-shrink-0 text-[8px] font-black uppercase
-                            tracking-widest text-orange-400 bg-orange-500/10 border border-orange-500/20
-                            rounded-full px-1.5 py-0.5 hidden sm:inline">
-                            New
-                          </span>
+                        {b.excerpt && (
+                          <p className="text-[10px] text-gray-600 leading-relaxed mt-1 line-clamp-2">
+                            {b.excerpt}
+                          </p>
                         )}
                       </div>
-
-                      {/* Mobile row */}
-                      <div className="sm:hidden flex items-center gap-2 mt-1 flex-wrap">
-                        {relDate !== "—" && (
-                          <span className="text-[10px] text-gray-500">{relDate}</span>
-                        )}
-                        {m.totalNet > 0 && (
-                          <span className="text-[10px] font-bold text-orange-400">
-                            {fmtINR(m.totalNet)}
-                          </span>
-                        )}
-                        {storedVerdict && (
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${vColor}`}>
-                            {storedVerdict}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Desktop sub-row */}
-                      <div className="hidden sm:flex items-center gap-1 mt-0.5 text-[10px] text-gray-600">
-                        {m.language && <span>{m.language}</span>}
-                        {m.lastDay > 0 && <span>· {m.lastDay}d</span>}
-                      </div>
+                      <p className="text-[9px] text-gray-700 mt-1.5">
+                        {fmtDate(b.createdAt)}
+                      </p>
                     </div>
-
-                    {/* Release date — sm+ */}
-                    <div className="hidden sm:block w-28 flex-shrink-0">
-                      <span className="text-xs text-gray-400 whitespace-nowrap">{relDate}</span>
-                    </div>
-
-                    {/* Net — sm+ */}
-                    <div className="hidden sm:block w-20 text-right flex-shrink-0">
-                      <span className="font-bold text-orange-400 text-sm">{fmtINR(m.totalNet)}</span>
-                    </div>
-
-                    {/* Gross — md+ */}
-                    <div className="hidden md:block w-20 text-right flex-shrink-0">
-                      <span className="font-bold text-sky-300 text-sm">{fmtINR(m.totalGross)}</span>
-                    </div>
-
-                    {/* Verdict — sm+ */}
-                    <div className="hidden sm:flex w-24 justify-end flex-shrink-0">
-                      {storedVerdict && (
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${vColor}`}>
-                          {storedVerdict}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Arrow */}
-                    <span className="w-4 text-right text-gray-700 group-hover:text-orange-400
-                      transition-colors text-xs flex-shrink-0">→</span>
                   </Link>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* ── SEO blocks ── */}
           <div className="space-y-4 pt-4">
@@ -528,6 +853,38 @@ export default async function BoxOfficePage() {
               </div>
             ))}
 
+            {/* Dynamic top movies paragraph — long-tail SEO */}
+            {enriched.length > 0 && (() => {
+              const top5 = [...enriched]
+                .sort((a: any, b: any) => b.totalNet - a.totalNet)
+                .slice(0, 5);
+              const names = top5.map((m: any) => m.title).join(", ");
+              return (
+                <div className="p-4 sm:p-5 bg-[#0f0f0f] border border-[#1c1c1c] rounded-xl">
+                  <h2 className="text-xs sm:text-sm font-bold text-white mb-2">
+                    Top Earning Odia Movies — All Time
+                  </h2>
+                  <p className="text-xs text-gray-400 leading-relaxed mb-3">
+                    Based on total net collection tracked on Ollypedia, the highest-grossing Odia films are{" "}
+                    <strong className="text-gray-300">{names}</strong>. These films represent the benchmark
+                    for Ollywood box office success and are regularly cited in trade reports across Odisha.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {top5.map((m: any) => (
+                      <Link
+                        key={m._id}
+                        href={`/box-office/${movieSlug(m)}`}
+                        className="text-[10px] text-orange-400 hover:text-orange-300 border border-orange-500/20
+                          bg-orange-500/5 hover:bg-orange-500/10 rounded-full px-2.5 py-1 transition-colors"
+                      >
+                        {m.title} — {fmtINR(m.totalNet)}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* FAQ */}
             <div className="p-4 sm:p-5 bg-[#0f0f0f] border border-[#1c1c1c] rounded-xl">
               <h2 className="text-xs sm:text-sm font-bold text-white mb-3">Frequently Asked Questions</h2>
@@ -549,6 +906,24 @@ export default async function BoxOfficePage() {
                     q: "Does Ollypedia track worldwide collection of Odia movies?",
                     a: "Yes, where data is available we include worldwide figures covering Odisha, rest of India, and international markets.",
                   },
+                  {
+                    q: "Which Odia movie has the highest box office collection ever?",
+                    a: allTimeTop
+                      ? `${allTimeTop.title} holds the record for the highest net collection among all Odia films tracked on Ollypedia with a total of ${fmtINR(allTimeTop.totalNet)}.`
+                      : "Ollypedia tracks all Odia films and the all-time highest grosser is updated regularly on this page.",
+                  },
+                  {
+                    q: "How many Odia movies released in 2026?",
+                    a: `As of the latest update, Ollypedia is tracking ${enriched.length} Odia films with box office data in 2026. New releases are added as they hit theatres.`,
+                  },
+                  {
+                    q: "What does 'Day 1 collection' mean for Odia movies?",
+                    a: "Day 1 collection refers to box office earnings on a film's first day of release, including morning, afternoon, and evening shows across all theatres in Odisha and other regions.",
+                  },
+                  {
+                    q: "Is Ollypedia free to use?",
+                    a: "Yes, Ollypedia is completely free. All box office data, verdicts, and Odia cinema news are available without any subscription or login.",
+                  },
                 ].map(({ q, a }) => (
                   <div key={q} className="border-t border-[#1c1c1c] pt-3 first:border-0 first:pt-0">
                     <p className="text-xs font-semibold text-gray-200 mb-1">{q}</p>
@@ -558,6 +933,30 @@ export default async function BoxOfficePage() {
               </div>
             </div>
           </div>
+
+          {/* ── Internal Link Footer — SEO hub ── */}
+          <nav aria-label="Explore more on Ollypedia"
+            className="border-t border-[#1c1c1c] pt-5 mt-2">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-3">
+              Explore Ollypedia
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { href: "/box-office",          label: "Box Office Home",         desc: "All Odia movie collections" },
+                { href: "/blog",                label: "Odia Cinema News",        desc: "Latest Ollywood updates" },
+                { href: "/blog?category=Box+Office", label: "Box Office Reports", desc: "Day-wise collection blogs" },
+                { href: "/",                    label: "Ollypedia Home",           desc: "Odisha's cinema database" },
+              ].map(({ href, label, desc }) => (
+                <Link key={href} href={href}
+                  className="group p-3 bg-[#0f0f0f] border border-[#1c1c1c] rounded-xl
+                    hover:border-orange-500/20 hover:bg-[#111] transition-all">
+                  <p className="text-[11px] font-bold text-white group-hover:text-orange-400
+                    transition-colors">{label}</p>
+                  <p className="text-[10px] text-gray-600 mt-0.5">{desc}</p>
+                </Link>
+              ))}
+            </div>
+          </nav>
 
         </div>
       </div>
