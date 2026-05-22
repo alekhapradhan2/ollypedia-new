@@ -110,6 +110,31 @@ function MovieListJsonLd({ movies, year }: { movies: any[]; year: number }) {
   );
 }
 
+// ─── WebPage JSON-LD (enhances Google sitelinks / knowledge panel) ─────────────
+function WebPageJsonLd({ year, total }: { year: number; total: number }) {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: `Odia Movies ${year} – Complete A to Z Ollywood Films List`,
+    description: `Full list of ${total} Odia movies released in ${year}. Browse all Ollywood films with director, release date, box office verdict, cast and songs.`,
+    url: `https://ollypedia.com/movies/year/${year}`,
+    inLanguage: "en-IN",
+    isPartOf: { "@type": "WebSite", name: "Ollypedia", url: "https://ollypedia.com" },
+    about: {
+      "@type": "Thing",
+      name: "Ollywood",
+      description: "Odia-language film industry based in Odisha, India",
+    },
+    dateModified: new Date().toISOString(),
+  };
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
+}
+
 // ─── BreadcrumbList JSON-LD ────────────────────────────────────────────────────
 function BreadcrumbJsonLd({ year }: { year: number }) {
   const schema = {
@@ -272,6 +297,7 @@ export default async function MoviesByYearPage({
     <>
       {/* ── JSON-LD Structured Data ── */}
       <BreadcrumbJsonLd year={year} />
+      <WebPageJsonLd year={year} total={total} />
       {total > 0 && <MovieListJsonLd movies={movies} year={year} />}
 
       <div className="min-h-screen bg-[#0a0a0a]">
@@ -680,6 +706,20 @@ export default async function MoviesByYearPage({
                     `${year} Odia Family Movies`,
                     `Odia Movie Director ${year}`,
                     `Odia Film Industry ${year}`,
+                    `Babushaan Mohanty Movies ${year}`,
+                    `Sabyasachi Mishra Movies ${year}`,
+                    `Elina Samantray Movies ${year}`,
+                    `Ollywood Blockbuster ${year}`,
+                    `ZEE5 Odia Movies ${year}`,
+                    `Odia Movies Watch Online ${year}`,
+                    `Odia Movie OTT ${year}`,
+                    `Odia Films ${year} IMDb`,
+                    `${year} Odia Mythological Movies`,
+                    `${year} Odia Thriller Movies`,
+                    `Sarthak Music ${year}`,
+                    `${year} Ollywood Superhit`,
+                    `Odia Movie Trailer ${year}`,
+                    `${year} Odia Film Songs`,
                   ].map((tag) => (
                     <span
                       key={tag}
@@ -868,6 +908,38 @@ export default async function MoviesByYearPage({
                             text: `Ollywood is the informal name for the Odia-language film industry based in Odisha, India. It produces films primarily in the Odia language for audiences in Odisha and the global Odia diaspora.`,
                           },
                         },
+                        {
+                          "@type": "Question",
+                          name: `Which OTT platform has the most ${year} Odia movies?`,
+                          acceptedAnswer: {
+                            "@type": "Answer",
+                            text: `ZEE5 carries the largest catalogue of Odia movies including many ${year} Ollywood releases. SonyLIV, MX Player, and regional Odia OTT platforms also stream ${year} Odia films after their theatrical run.`,
+                          },
+                        },
+                        {
+                          "@type": "Question",
+                          name: `Who are the top Ollywood actors of ${year}?`,
+                          acceptedAnswer: {
+                            "@type": "Answer",
+                            text: `Leading Ollywood actors in ${year} include Babushaan Mohanty, Sabyasachi Mishra, Anubhav Mohanty, and Sidhant Mohapatra. Top actresses include Elina Samantray, Sivani Sangita, Archita Sahu, and Riya Dey.`,
+                          },
+                        },
+                        {
+                          "@type": "Question",
+                          name: `What genres are popular in ${year} Odia cinema?`,
+                          acceptedAnswer: {
+                            "@type": "Answer",
+                            text: `The most popular genres in ${year} Odia cinema are action, romance, family drama, and comedy. Mythological, thriller, and social-issue films are also widely produced in Ollywood.`,
+                          },
+                        },
+                        {
+                          "@type": "Question",
+                          name: `How many Odia films were Blockbusters in ${year}?`,
+                          acceptedAnswer: {
+                            "@type": "Answer",
+                            text: `Ollypedia tracks the box office verdict for every ${year} Odia film. Visit the ${year} Odia movies page on Ollypedia to see the exact count of Blockbuster, Superhit, Hit, Average, and Flop verdicts for that year.`,
+                          },
+                        },
                       ],
                     }),
                   }}
@@ -906,6 +978,22 @@ export default async function MoviesByYearPage({
                     {
                       q: `What is Ollywood?`,
                       a: `Ollywood is the name for the Odia-language film industry based in Bhubaneswar and Cuttack, Odisha. It produces 30–50 films annually for Odia-speaking audiences across India and the global diaspora.`,
+                    },
+                    {
+                      q: `Which OTT platform has the most ${year} Odia movies?`,
+                      a: `ZEE5 carries the largest catalogue of Odia movies, including many ${year} Ollywood releases. SonyLIV, MX Player, and regional Odia OTT platforms also stream ${year} Odia films after their theatrical run. Visit individual movie pages on Ollypedia for direct streaming links.`,
+                    },
+                    {
+                      q: `Who are the top Ollywood actors of ${year}?`,
+                      a: `Leading Ollywood actors in ${year} include Babushaan Mohanty, Sabyasachi Mishra, Anubhav Mohanty, and Sidhant Mohapatra, among others. Top actresses include Elina Samantray, Sivani Sangita, Archita Sahu, and Riya Dey. See all cast details on individual movie pages on Ollypedia.`,
+                    },
+                    {
+                      q: `What genres are popular in ${year} Odia cinema?`,
+                      a: `The most popular genres in ${year} Odia cinema include action, romance, family drama, and comedy. Mythological, thriller, and social-issue films also have strong followings. The full ${year} Odia movies list on Ollypedia is filterable by genre.`,
+                    },
+                    {
+                      q: `How many Odia films were Blockbusters in ${year}?`,
+                      a: `Ollypedia tracks the box office verdict — Blockbuster, Superhit, Hit, Average, or Flop — for every ${year} Odia film. See the verdict breakdown section above for the exact number of ${year} Ollywood Blockbusters and Superhits.`,
                     },
                   ].map(({ q, a }, i) => (
                     <details
@@ -952,6 +1040,178 @@ export default async function MoviesByYearPage({
                       className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-[#222] bg-[#111] text-gray-400 hover:border-orange-500/40 hover:text-orange-400 transition-all"
                     >
                       Odia Movies {yr}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+
+              {/* ══════════════════════════════════════════════════════════
+                  SECTION 6 — BROWSE BY GENRE (internal link hub)
+              ══════════════════════════════════════════════════ */}
+              <section
+                aria-labelledby="browse-genre-heading"
+                className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-6 md:p-8"
+              >
+                <h2
+                  id="browse-genre-heading"
+                  className="font-display text-base font-bold text-white flex items-center gap-2 mb-4"
+                >
+                  <Film className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                  Browse {year} Odia Movies by Genre
+                </h2>
+                <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+                  Ollywood produces films across every genre. Filter {year} Odia movies by genre to find the exact type of film you are looking for.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: `${year} Odia Action Movies`,    href: `/movies/genre/action`    },
+                    { label: `${year} Odia Romance Movies`,   href: `/movies/genre/romance`   },
+                    { label: `${year} Odia Comedy Movies`,    href: `/movies/genre/comedy`    },
+                    { label: `${year} Odia Drama Movies`,     href: `/movies/genre/drama`     },
+                    { label: `${year} Odia Family Movies`,    href: `/movies/genre/family`    },
+                    { label: `${year} Odia Thriller Movies`,  href: `/movies/genre/thriller`  },
+                    { label: `${year} Odia Mythological Films`, href: `/movies/genre/mythological` },
+                    { label: `${year} Odia Horror Movies`,   href: `/movies/genre/horror`    },
+                    { label: `${year} Odia Social Films`,    href: `/movies/genre/social`    },
+                    { label: `${year} Odia Devotional Films`, href: `/movies/genre/devotional` },
+                  ].map(({ label, href }) => (
+                    <Link
+                      key={label}
+                      href={href}
+                      title={label}
+                      className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-[#222] bg-[#111] text-gray-400 hover:border-orange-500/40 hover:text-orange-400 transition-all"
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+
+              {/* ══════════════════════════════════════════════════════════
+                  SECTION 7 — POPULAR OLLYWOOD ACTORS & ACTRESSES
+              ══════════════════════════════════════════════════ */}
+              <section
+                aria-labelledby="popular-stars-heading"
+                className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-6 md:p-8"
+              >
+                <h2
+                  id="popular-stars-heading"
+                  className="font-display text-base font-bold text-white flex items-center gap-2 mb-2"
+                >
+                  <Star className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                  Popular Ollywood Stars in {year}
+                </h2>
+                <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+                  Leading actors and actresses of the Odia film industry who appeared in {year} Ollywood films. Click a star's name to see all their movies on Ollypedia.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {[
+                    { name: "Babushaan Mohanty",   slug: "babushaan-mohanty",   role: "Actor"    },
+                    { name: "Sabyasachi Mishra",   slug: "sabyasachi-mishra",   role: "Actor"    },
+                    { name: "Anubhav Mohanty",     slug: "anubhav-mohanty",     role: "Actor"    },
+                    { name: "Elina Samantray",     slug: "elina-samantray",     role: "Actress"  },
+                    { name: "Sivani Sangita",      slug: "sivani-sangita",      role: "Actress"  },
+                    { name: "Archita Sahu",        slug: "archita-sahu",        role: "Actress"  },
+                    { name: "Sidhant Mohapatra",   slug: "sidhant-mohapatra",   role: "Actor"    },
+                    { name: "Aman Mohanty",        slug: "aman-mohanty",        role: "Actor"    },
+                    { name: "Suryamayee Mohapatra", slug: "suryamayee-mohapatra", role: "Actress" },
+                    { name: "Riya Dey",            slug: "riya-dey",            role: "Actress"  },
+                    { name: "Pintu Nanda",         slug: "pintu-nanda",         role: "Actor"    },
+                    { name: "Prakash Sahu",        slug: "prakash-sahu",        role: "Director" },
+                  ].map(({ name, slug, role }) => (
+                    <Link
+                      key={slug}
+                      href={`/celebrity/${slug}`}
+                      title={`${name} – Ollywood ${role}`}
+                      className="flex flex-col px-3 py-2.5 rounded-xl border border-[#1f1f1f] bg-[#111] hover:border-orange-500/30 hover:bg-[#161616] transition-all group"
+                    >
+                      <span className="text-xs font-semibold text-gray-300 group-hover:text-orange-400 transition-colors leading-snug">
+                        {name}
+                      </span>
+                      <span className="text-[10px] text-gray-600 mt-0.5">{role}</span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+
+              {/* ══════════════════════════════════════════════════════════
+                  SECTION 8 — OTT STREAMING PLATFORMS
+              ══════════════════════════════════════════════════ */}
+              <section
+                aria-labelledby="ott-heading"
+                className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-6 md:p-8"
+              >
+                <h2
+                  id="ott-heading"
+                  className="font-display text-base font-bold text-white flex items-center gap-2 mb-2"
+                >
+                  <Globe className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                  Watch {year} Odia Movies Online – OTT Platforms
+                </h2>
+                <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+                  After their theatrical run, most {year} Odia movies are available to stream on popular OTT platforms. Here is where you can watch Ollywood films online:
+                </p>
+                <div className="space-y-2 text-sm text-gray-400 leading-relaxed">
+                  {[
+                    {
+                      platform: "ZEE5",
+                      desc: `ZEE5 is one of the largest platforms for Odia content, hosting a wide catalogue of ${year} Ollywood movies with subtitles and HD quality streaming.`,
+                    },
+                    {
+                      platform: "SonyLIV",
+                      desc: `SonyLIV acquires streaming rights for several popular Odia films each year. Check their Odia section for ${year} releases.`,
+                    },
+                    {
+                      platform: "MX Player",
+                      desc: `MX Player offers free ad-supported streaming of many Odia movies. A solid choice for watching ${year} Odia films at no cost.`,
+                    },
+                    {
+                      platform: "Odia-Specific OTT",
+                      desc: `Regional OTT platforms dedicated to Odia content often carry exclusive ${year} Ollywood releases and classic Odia films not available elsewhere.`,
+                    },
+                  ].map(({ platform, desc }) => (
+                    <div key={platform} className="flex gap-3 p-3 rounded-xl bg-[#111] border border-[#1a1a1a]">
+                      <ExternalLink className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-gray-200 font-semibold">{platform}: </span>
+                        {desc}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-600 mt-3">
+                  Availability varies by title and region. Visit individual movie pages on Ollypedia for direct streaming links where available.
+                </p>
+              </section>
+
+              {/* ══════════════════════════════════════════════════════════
+                  SECTION 9 — YEAR COMPARISON (boosts dwell time & links)
+              ══════════════════════════════════════════════════ */}
+              <section
+                aria-labelledby="year-compare-heading"
+                className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-6 md:p-8"
+              >
+                <h2
+                  id="year-compare-heading"
+                  className="font-display text-base font-bold text-white flex items-center gap-2 mb-2"
+                >
+                  <TrendingUp className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                  How Does {year} Compare to Other Ollywood Years?
+                </h2>
+                <p className="text-sm text-gray-400 leading-relaxed mb-4">
+                  The Odia film industry has grown steadily year on year. In {year}, Ollywood released{" "}
+                  <strong className="text-gray-200">{total} films</strong> — spanning action, romance,
+                  drama, comedy, and more. Compare with recent years:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {VALID_YEARS.filter((yr) => yr !== year).slice(0, 8).map((yr) => (
+                    <Link
+                      key={yr}
+                      href={`/movies/year/${yr}`}
+                      title={`Compare ${year} vs ${yr} Odia movies`}
+                      className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-[#222] bg-[#111] text-gray-400 hover:border-orange-500/40 hover:text-orange-400 transition-all"
+                    >
+                      {yr} Odia Movies
                     </Link>
                   ))}
                 </div>

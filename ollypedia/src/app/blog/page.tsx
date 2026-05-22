@@ -17,30 +17,128 @@ export const revalidate = 600;
 
 // ── SEO METADATA ──────────────────────────────────────────────────────────────
 
-export const metadata: Metadata = buildMeta({
-  title: "Ollywood Blog | Odia Cinema News, Reviews & Guides",
-  description:
-    "Explore the latest Ollywood blog posts — in-depth movie reviews, actor profiles, top 10 lists, song guides, and behind-the-scenes coverage of Odia cinema. Updated weekly.",
-  url: "/blog",
-});
+const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  "Box Office":   "Day-wise Odia movie box office collection reports, hit/flop verdicts, and trade analysis for Ollywood films.",
+  "Reviews":      "In-depth Odia movie reviews — honest, spoiler-aware breakdowns of the latest Ollywood releases.",
+  "Actor":        "Actor profiles, filmographies, and career spotlights for Odia cinema stars.",
+  "Songs":        "Top Odia song lists, music guides, and behind-the-scenes coverage from Ollywood.",
+  "News":         "Latest Ollywood news, announcements, and industry updates from Odia cinema.",
+  "Top Lists":    "Curated top 10 lists covering the best of Ollywood — movies, songs, actors, and more.",
+};
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: { page?: string; q?: string; category?: string };
+}): Promise<Metadata> {
+  const page       = parseInt(searchParams.page || "1", 10);
+  const query      = searchParams.q || "";
+  const category   = searchParams.category || "";
+  // We need totalPages for the `next` link — do a lightweight count here.
+  // (This runs at build/revalidation time, so the extra query is fine.)
+  await connectDB();
+  const filter: Record<string, any> = { published: true };
+  if (category) filter.category = category;
+  const total      = await Blog.countDocuments(filter);
+  const totalPages = Math.ceil(total / POSTS_PER_PAGE);
+
+  const pageLabel = page > 1 ? ` — Page ${page}` : "";
+  const catLabel  = category ? ` | ${category}` : "";
+
+  const title = query
+    ? `Search: "${query}" | Ollypedia Blog`
+    : category
+    ? `${category} Articles${pageLabel} | Ollypedia Blog`
+    : `Ollywood Blog${catLabel}${pageLabel} | Odia Cinema News, Reviews & Guides`;
+
+  const description = category && CATEGORY_DESCRIPTIONS[category]
+    ? CATEGORY_DESCRIPTIONS[category]
+    : query
+    ? `Search results for "${query}" on the Ollypedia Blog — Odia cinema news, reviews, and guides.`
+    : "Explore the latest Ollywood blog posts — in-depth movie reviews, actor profiles, top 10 lists, song guides, and behind-the-scenes coverage of Odia cinema. Updated weekly.";
+
+  const canonical = category
+    ? `https://ollypedia.in/blog?category=${encodeURIComponent(category)}${page > 1 ? `&page=${page}` : ""}`
+    : page > 1
+    ? `https://ollypedia.in/blog?page=${page}`
+    : "https://ollypedia.in/blog";
+
+  // ── PREV link ──
+  const prevPage = page > 1
+    ? (page === 2
+        ? (category ? `https://ollypedia.in/blog?category=${encodeURIComponent(category)}` : "https://ollypedia.in/blog")
+        : (category ? `https://ollypedia.in/blog?category=${encodeURIComponent(category)}&page=${page - 1}` : `https://ollypedia.in/blog?page=${page - 1}`))
+    : undefined;
+
+  // ── NEXT link (new) ──
+  const nextPage = page < totalPages
+    ? (category
+        ? `https://ollypedia.in/blog?category=${encodeURIComponent(category)}&page=${page + 1}`
+        : `https://ollypedia.in/blog?page=${page + 1}`)
+    : undefined;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical,
+      ...(prevPage ? { previous: prevPage } : {}),
+      ...(nextPage ? { next: nextPage } : {}),   // ← NEW: helps Google crawl all pages
+    },
+    robots: query ? { index: false, follow: true } : { index: true, follow: true },
+    keywords: [
+      "Ollywood blog", "Odia cinema news", "Odia movie reviews", "Ollywood updates",
+      "Odia film industry", "Ollywood actor profiles", "Odia songs guide",
+      "Odia box office blog", "Ollywood top 10", "Odia cinema 2026",
+      ...(category ? [category, `${category} Odia movies`, `Ollywood ${category.toLowerCase()}`] : []),
+    ],
+    openGraph: {
+      title,
+      description,
+      url:      canonical,
+      siteName: "Ollypedia",
+      type:     "website",
+      locale:   "en_IN",
+      images: [{ url: "https://ollypedia.in/og-blog.jpg", width: 1200, height: 630, alt: "Ollypedia Blog — Odia Cinema News & Reviews" }],
+    },
+    twitter: {
+      card:        "summary_large_image",
+      title,
+      description,
+      site:        "@ollypedia",
+      images:      ["https://ollypedia.in/og-blog.jpg"],
+    },
+  };
+}
 
 // ── JSON-LD SCHEMA ────────────────────────────────────────────────────────────
 
-function BlogSchema() {
-  const schema = {
+function BlogSchema({
+  blogs,
+  mostRecentDate,
+  isHomePage,
+}: {
+  blogs: any[];
+  mostRecentDate: string;
+  isHomePage: boolean;    // ← NEW: only emit WebSite schema on the root /blog page
+}) {
+  const blogSchema = {
     "@context": "https://schema.org",
     "@type": "Blog",
     name: "Ollypedia Blog",
-    description:
-      "News, reviews, and guides about Ollywood — the Odia-language film industry based in Bhubaneswar, Odisha.",
+    description: "News, reviews, and guides about Ollywood — the Odia-language film industry based in Bhubaneswar, Odisha.",
     url: "https://ollypedia.in/blog",
+    dateModified: mostRecentDate,
     publisher: {
       "@type": "Organization",
       name: "Ollypedia",
       url: "https://ollypedia.in",
-      logo: {
-        "@type": "ImageObject",
-        url: "https://ollypedia.in/logo.png",
+      logo: { "@type": "ImageObject", url: "https://ollypedia.in/logo.png" },
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Bhubaneswar",
+        addressRegion: "Odisha",
+        addressCountry: "IN",
       },
     },
     inLanguage: ["en", "or"],
@@ -53,11 +151,50 @@ function BlogSchema() {
     },
   };
 
+  const itemListSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Latest Ollywood Blog Posts",
+    numberOfItems: blogs.length,
+    itemListElement: blogs.slice(0, 10).map((b: any, i: number) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `https://ollypedia.in/blog/${b.slug}`,
+      name: b.title,
+      // NEW: richer item data for Google
+      image: b.coverImage ?? undefined,
+      datePublished: b.createdAt ? new Date(b.createdAt).toISOString() : undefined,
+    })),
+  };
+
+  // ── NEW: WebSite + SearchAction schema (Sitelinks Searchbox eligibility) ──
+  // Only emit on the canonical root blog page — Google ignores duplicates and
+  // it's wasteful to repeat on every paginated/category page.
+  const websiteSchema = isHomePage
+    ? {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "Ollypedia",
+        url: "https://ollypedia.in",
+        potentialAction: {
+          "@type": "SearchAction",
+          target: {
+            "@type": "EntryPoint",
+            urlTemplate: "https://ollypedia.in/blog?q={search_term_string}",
+          },
+          "query-input": "required name=search_term_string",
+        },
+      }
+    : null;
+
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-    />
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }} />
+      {websiteSchema && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
+      )}
+    </>
   );
 }
 
@@ -131,6 +268,27 @@ async function getFeaturedBlogs() {
   return blogs as any[];
 }
 
+async function getPopularTags() {
+  await connectDB();
+  const result = await Blog.aggregate([
+    { $match: { published: true } },
+    { $unwind: "$tags" },
+    { $group: { _id: "$tags", count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 20 },
+  ]);
+  return result.map((r: any) => ({ tag: r._id as string, count: r.count as number }));
+}
+
+async function getTotalViews() {
+  await connectDB();
+  const result = await Blog.aggregate([
+    { $match: { published: true } },
+    { $group: { _id: null, total: { $sum: "$views" } } },
+  ]);
+  return (result[0]?.total as number) || 0;
+}
+
 // ── STAT CARDS ────────────────────────────────────────────────────────────────
 
 async function getBlogStats() {
@@ -153,23 +311,35 @@ export default async function BlogPage({
   const query    = searchParams.q       || "";
   const category = searchParams.category || "";
 
-  const [{ blogs, total, totalPages }, categories, featured, stats] =
+  const [{ blogs, total, totalPages }, categories, featured, stats, popularTags, totalViews] =
     await Promise.all([
       getBlogs({ page, query, category }),
       getCategories(),
       query || category ? Promise.resolve([]) : getFeaturedBlogs(),
       getBlogStats(),
+      getPopularTags(),
+      getTotalViews(),
     ]);
 
-  const isFiltered = !!(query || category);
+  const mostRecentDate = blogs[0]?.createdAt
+    ? new Date(blogs[0].createdAt).toISOString()
+    : new Date().toISOString();
+
+  const isFiltered   = !!(query || category);
+  const isHomePage   = !isFiltered && page === 1;   // ← used for WebSite schema guard
   const showFeatured = !isFiltered && featured.length > 0 && page === 1;
   const regularBlogs = showFeatured
     ? blogs.filter((b) => !featured.find((f) => String(f._id) === String(b._id)))
     : blogs;
 
+  // Related categories — all categories except the one currently active
+  const relatedCategories = category
+    ? categories.filter((c) => c !== category)
+    : [];
+
   return (
     <>
-      <BlogSchema />
+      <BlogSchema blogs={blogs} mostRecentDate={mostRecentDate} isHomePage={isHomePage} />
 
       <main className="min-h-screen bg-[#0a0a0a] text-white">
 
@@ -203,9 +373,30 @@ export default async function BlogPage({
                 </li>
                 <span aria-hidden>/</span>
                 <li itemScope itemType="https://schema.org/ListItem" itemProp="itemListElement">
-                  <span itemProp="name" className="text-orange-400">Blog</span>
-                  <meta itemProp="position" content="2" />
+                  {category ? (
+                    <>
+                      <a href="/blog" itemProp="item" className="hover:text-orange-400 transition-colors">
+                        <span itemProp="name">Blog</span>
+                      </a>
+                      <meta itemProp="position" content="2" />
+                    </>
+                  ) : (
+                    <>
+                      <span itemProp="name" className="text-orange-400">Blog</span>
+                      <meta itemProp="position" content="2" />
+                    </>
+                  )}
                 </li>
+                {/* ── NEW: third breadcrumb crumb for category pages ── */}
+                {category && (
+                  <>
+                    <span aria-hidden>/</span>
+                    <li itemScope itemType="https://schema.org/ListItem" itemProp="itemListElement">
+                      <span itemProp="name" className="text-orange-400">{category}</span>
+                      <meta itemProp="position" content="3" />
+                    </li>
+                  </>
+                )}
               </ol>
             </nav>
 
@@ -234,6 +425,16 @@ export default async function BlogPage({
                     <Star className="w-3.5 h-3.5 text-orange-400" />
                     Weekly Updates
                   </span>
+                  {totalViews > 0 && (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/6 border border-white/10 rounded-full px-3 py-1.5 text-gray-300">
+                      <span className="text-orange-400 text-xs">👁</span>
+                      {totalViews >= 1_000_000
+                        ? `${(totalViews / 1_000_000).toFixed(1)}M`
+                        : totalViews >= 1_000
+                        ? `${(totalViews / 1_000).toFixed(0)}K`
+                        : totalViews}+ Total Reads
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -280,8 +481,8 @@ export default async function BlogPage({
 
           {/* ── SEARCH RESULT CONTEXT ───────────────────────────────────── */}
           {isFiltered && (
-            <div className="mb-6 flex items-center justify-between">
-              <div>
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
                 <p className="text-sm text-gray-400">
                   {total === 0
                     ? "No results found"
@@ -289,13 +490,20 @@ export default async function BlogPage({
                   {query    && <> for <strong className="text-white">"{query}"</strong></>}
                   {category && <> in <strong className="text-orange-400">{category}</strong></>}
                 </p>
+                <a
+                  href="/blog"
+                  className="text-xs text-orange-400 hover:text-orange-300 underline underline-offset-4"
+                >
+                  Clear filters
+                </a>
               </div>
-              <a
-                href="/blog"
-                className="text-xs text-orange-400 hover:text-orange-300 underline underline-offset-4"
-              >
-                Clear filters
-              </a>
+              {/* Category description — keyword-rich copy for category pages */}
+              {category && CATEGORY_DESCRIPTIONS[category] && (
+                <p className="text-xs text-gray-600 leading-relaxed border border-[#1c1c1c]
+                  bg-[#0f0f0f] rounded-xl px-4 py-3">
+                  {CATEGORY_DESCRIPTIONS[category]}
+                </p>
+              )}
             </div>
           )}
 
@@ -359,6 +567,62 @@ export default async function BlogPage({
             </div>
           )}
 
+          {/* ── POPULAR TAGS ─────────────────────────────────────────────── */}
+          {!isFiltered && page === 1 && popularTags.length > 0 && (
+            <nav aria-label="Browse by tag" className="mt-10 pt-8 border-t border-white/6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-1 h-4 bg-orange-500/50 rounded-full" aria-hidden />
+                <h2 className="text-xs font-black uppercase tracking-widest text-gray-500">
+                  Browse by Topic
+                </h2>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {popularTags.map(({ tag, count }) => (
+                  <a
+                    key={tag}
+                    href={`/blog?q=${encodeURIComponent(tag)}`}
+                    className="inline-flex items-center gap-1.5 text-xs text-gray-400
+                      hover:text-orange-400 border border-white/10 hover:border-orange-500/30
+                      bg-white/3 hover:bg-orange-500/5 rounded-full px-3 py-1.5 transition-all"
+                  >
+                    #{tag}
+                    <span className="text-gray-700 text-[10px]">{count}</span>
+                  </a>
+                ))}
+              </div>
+            </nav>
+          )}
+
+          {/* ── RELATED CATEGORIES (NEW) ──────────────────────────────────
+               Shown only on category pages. Keeps users on-site longer,
+               improves internal linking, and boosts AdSense session RPM.  */}
+          {isFiltered && category && relatedCategories.length > 0 && (
+            <nav
+              aria-label="Explore other categories"
+              className="mt-10 pt-8 border-t border-white/6"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-1 h-4 bg-orange-500/50 rounded-full" aria-hidden />
+                <h2 className="text-xs font-black uppercase tracking-widest text-gray-500">
+                  Explore More
+                </h2>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {relatedCategories.map((cat) => (
+                  <a
+                    key={cat}
+                    href={`/blog?category=${encodeURIComponent(cat)}`}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400
+                      hover:text-orange-400 border border-white/10 hover:border-orange-500/30
+                      bg-white/3 hover:bg-orange-500/5 rounded-full px-3 py-1.5 transition-all"
+                  >
+                    {cat} →
+                  </a>
+                ))}
+              </div>
+            </nav>
+          )}
+
           {/* ── PAGINATION ───────────────────────────────────────────────── */}
           {totalPages > 1 && (
             <div className="mt-10">
@@ -404,6 +668,20 @@ export default async function BlogPage({
                       Mishra, and many more.
                     </p>
                   </div>
+
+                  {/* ── NEW: Last Updated timestamp ──
+                       Signals freshness to both users and Google crawlers. Uses
+                       a machine-readable <time> element for schema.org compatibility. */}
+                  <p className="mt-4 text-xs text-gray-600">
+                    Last updated:{" "}
+                    <time dateTime={mostRecentDate}>
+                      {new Date(mostRecentDate).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </time>
+                  </p>
                 </div>
 
                 {/* Right column */}
@@ -426,7 +704,13 @@ export default async function BlogPage({
                   {/* Internal links */}
                   <div className="mt-5 flex flex-wrap gap-2">
                     {[
-                      { label: "Browse Cast", href: "/cast" },
+                      { label: "Box Office",      href: "/box-office" },
+                      { label: "Browse Cast",     href: "/cast" },
+                      { label: "Box Office News", href: "/blog?category=Box+Office" },
+                      { label: "Movie Reviews",   href: "/blog?category=Reviews" },
+                      { label: "Actor Profiles",  href: "/blog?category=Actor" },
+                      { label: "Top Lists",       href: "/blog?category=Top+Lists" },
+                      { label: "Odia Songs",      href: "/blog?category=Songs" },
                     ].map((link) => (
                       <a
                         key={link.href}
