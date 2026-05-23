@@ -171,7 +171,16 @@ async function getMovie(slug: string) {
     ? await Movie.findById(slug).populate("productionId", "name logo").lean()
     : await Movie.findOne({ slug }).populate("productionId", "name logo").lean();
   if (!raw) return null;
-  return JSON.parse(JSON.stringify(raw));
+  const serialized = JSON.parse(JSON.stringify(raw));
+  // Normalize productionId after serialization so name is always accessible
+  if (serialized.productionId && typeof serialized.productionId === "object") {
+    serialized._productionName = serialized.productionId.name || null;
+    serialized._productionLogo = serialized.productionId.logo || null;
+  } else {
+    serialized._productionName = null;
+    serialized._productionLogo = null;
+  }
+  return serialized;
 }
 
 async function getRelated(movie: any) {
@@ -450,7 +459,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
         reviewCount: String(movie.reviews?.length || 1),
       },
     } : {}),
-    ...(movie.productionId?.name ? { productionCompany: { "@type": "Organization", name: movie.productionId.name } } : {}),
+    ...(movie._productionName ? { productionCompany: { "@type": "Organization", name: movie._productionName } } : {}),
   };
 
   const structuredData = [
@@ -567,6 +576,18 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 text-xl sm:text-3xl md:text-4xl lg:text-5xl">
                 {movie.title}
               </h1>
+
+              {/* Production House — branded tag right below the title */}
+              {movie._productionName && (
+                <div className="inline-flex items-center gap-1.5 mt-1 mb-2">
+                  <span className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-widest font-medium">A</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-[3px] border-l-2 border-orange-500 bg-gradient-to-r from-orange-500/10 to-transparent text-orange-300 text-[10px] sm:text-xs font-semibold tracking-wide">
+                    {movie._productionName}
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-widest font-medium">Presentation</span>
+                </div>
+              )}
+
               {year && (
                 <p className="text-zinc-500 text-xs sm:text-sm md:text-base mb-3">
                   ({year}) · Odia Film
@@ -674,8 +695,8 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               <InfoRow icon={DollarSign}   label="Budget"        value={movie.budget} />
               <InfoRow icon={Film}         label="Category"      value={movie.category} />
               <InfoRow icon={Star}         label="Content Rating" value={movie.contentRating} />
-              {movie.productionId?.name && (
-                <InfoRow icon={Film} label="Production" value={movie.productionId.name} />
+              {movie._productionName && (
+                <InfoRow icon={Film} label="Production House" value={movie._productionName} />
               )}
             </div>
 
