@@ -69,21 +69,62 @@ const CREW_ROLE_ORDER: Record<string, number> = Object.fromEntries(
   CREW_ROLES.map((r, i) => [r.toLowerCase(), i])
 );
 
+// Returns true only if the role is PURELY a crew role (not acting).
+// An actor who is also a producer should NOT be classified as crew-only.
 function isCrewRole(role?: string): boolean {
   if (!role) return false;
-  const r = role.toLowerCase();
+  const r = role.toLowerCase().trim();
+  // If the role explicitly says "actor", "lead", "heroine", "hero" — it's a cast role
+  const actingKeywords = ["actor", "actress", "lead", "hero", "heroine", "supporting", "cameo", "special appearance"];
+  if (actingKeywords.some(kw => r.includes(kw))) return false;
   return CREW_ROLES.some((cr) => r.includes(cr.toLowerCase()));
+}
+
+// Splits a multi-role string into individual roles.
+// "Director, Producer & Writer" → ["director", "producer", "writer"]
+function splitRoles(role?: string): string[] {
+  if (!role) return [];
+  return role
+    .toLowerCase()
+    .split(/[,&\/|+]|\band\b/)
+    .map(r => r.trim())
+    .filter(Boolean);
+}
+
+// Returns true only for the main film Director.
+// Handles multi-role strings like "Director & Producer", "Director/Writer" etc.
+// Uses a WHITELIST so any prefixed variant (Action Director, Music Director) is rejected.
+function isPureDirector(role?: string): boolean {
+  if (!role) return false;
+  const DIRECTOR_EXACT = ["director", "film director", "movie director"];
+  return splitRoles(role).some(r => DIRECTOR_EXACT.includes(r));
+}
+
+// Returns true only for the main Producer.
+// Handles multi-role strings and rejects Executive/Co/Line producer variants.
+function isPureProducer(role?: string): boolean {
+  if (!role) return false;
+  const NOT_PRODUCER = ["executive producer", "co-producer", "associate producer",
+    "assistant producer", "line producer", "co producer"];
+  const roles = splitRoles(role);
+  // Reject if any sub-role is a non-main producer variant
+  if (NOT_PRODUCER.some(np => roles.includes(np))) return false;
+  return roles.some(r => r === "producer");
 }
 
 function splitCastCrew(castList: any[]): { crew: any[]; cast: any[] } {
   const crew: any[] = [];
   const cast: any[] = [];
   for (const m of (castList || [])) {
-    if (isCrewRole(m.role) || isCrewRole(m.type)) {
-      crew.push(m);
-    } else {
-      cast.push(m);
-    }
+    const role = (m.role || m.type || "").toLowerCase().trim();
+    const isCrew = isCrewRole(m.role) || isCrewRole(m.type);
+    // Check if this person is ALSO an actor (actor-producer, actor-director etc.)
+    const actingKeywords = ["actor", "actress", "lead", "hero", "heroine", "supporting", "cameo", "special appearance"];
+    const isActor = actingKeywords.some(kw => role.includes(kw));
+
+    if (isCrew) crew.push(m);
+    // Show in cast if: purely an actor, OR an actor who also has a crew role
+    if (!isCrew || isActor) cast.push(m);
   }
   // Sort crew by role priority
   crew.sort((a, b) => {
@@ -96,19 +137,22 @@ function splitCastCrew(castList: any[]): { crew: any[]; cast: any[] } {
   return { crew, cast };
 }
 
+// Gets the pure Director name (not Music Director, Art Director)
 function getDirectorFromCast(castList: any[]): string | undefined {
-  const found = (castList || []).find((m: any) => {
-    const r = (m.role || m.type || "").toLowerCase();
-    return r.includes("director");
-  });
+  const found = (castList || []).find((m: any) => isPureDirector(m.role) || isPureDirector(m.type));
   return found?.name;
 }
 
+// Gets the main Producer name (not Executive Producer, Co-Producer)
 function getProducerFromCast(castList: any[]): string | undefined {
-  const found = (castList || []).find((m: any) => {
-    const r = (m.role || m.type || "").toLowerCase();
-    return r.includes("producer");
+  // First try exact "Producer" match
+  const exact = (castList || []).find((m: any) => {
+    const r = (m.role || m.type || "").toLowerCase().trim();
+    return r === "producer";
   });
+  if (exact) return exact.name;
+  // Then try isPureProducer
+  const found = (castList || []).find((m: any) => isPureProducer(m.role) || isPureProducer(m.type));
   return found?.name;
 }
 
