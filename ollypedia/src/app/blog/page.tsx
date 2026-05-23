@@ -11,7 +11,7 @@ import { buildMeta } from "@/lib/seo";
 import { BlogCard } from "@/components/blog/BlogCard";
 import { BlogSearch } from "@/components/blog/BlogSearch";
 import { BlogPagination } from "@/components/blog/BlogPagination";
-import { Search, BookOpen, TrendingUp, Star } from "lucide-react";
+import { Search, BookOpen, TrendingUp, Star, Eye, Flame } from "lucide-react";
 
 export const revalidate = 600;
 
@@ -289,6 +289,16 @@ async function getTotalViews() {
   return (result[0]?.total as number) || 0;
 }
 
+async function getMostPopularPosts() {
+  await connectDB();
+  const blogs = await Blog.find({ published: true, views: { $gt: 0 } })
+    .select("title slug category coverImage views readTime createdAt")
+    .sort({ views: -1 })
+    .limit(5)
+    .lean();
+  return blogs as any[];
+}
+
 // ── STAT CARDS ────────────────────────────────────────────────────────────────
 
 async function getBlogStats() {
@@ -311,7 +321,7 @@ export default async function BlogPage({
   const query    = searchParams.q       || "";
   const category = searchParams.category || "";
 
-  const [{ blogs, total, totalPages }, categories, featured, stats, popularTags, totalViews] =
+  const [{ blogs, total, totalPages }, categories, featured, stats, popularTags, totalViews, mostPopular] =
     await Promise.all([
       getBlogs({ page, query, category }),
       getCategories(),
@@ -319,6 +329,7 @@ export default async function BlogPage({
       getBlogStats(),
       getPopularTags(),
       getTotalViews(),
+      query || category ? Promise.resolve([]) : getMostPopularPosts(),
     ]);
 
   const mostRecentDate = blogs[0]?.createdAt
@@ -402,13 +413,24 @@ export default async function BlogPage({
 
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <div>
-                {/* H1 with keyword-rich copy */}
+                {/* H1 — dynamic per category/search/page for better keyword targeting */}
                 <h1 className="font-display text-4xl md:text-5xl font-black text-white leading-tight tracking-tight mb-3">
-                  Ollywood <span className="text-orange-400">Blog</span>
+                  {category ? (
+                    <>{category} <span className="text-orange-400">Articles</span></>
+                  ) : query ? (
+                    <>Search <span className="text-orange-400">Results</span></>
+                  ) : (
+                    <>Ollywood <span className="text-orange-400">Blog</span></>
+                  )}
                 </h1>
                 <p className="text-gray-400 text-base md:text-lg max-w-2xl leading-relaxed">
-                  In-depth movie reviews, actor profiles, top lists, song breakdowns and news
-                  from <strong className="text-gray-300 font-medium">Odia cinema</strong> — updated every week.
+                  {category && CATEGORY_DESCRIPTIONS[category]
+                    ? CATEGORY_DESCRIPTIONS[category]
+                    : query
+                    ? `Showing results for "${query}" across all Odia cinema articles.`
+                    : <>In-depth movie reviews, actor profiles, top lists, song breakdowns and news
+                      from <strong className="text-gray-300 font-medium">Odia cinema</strong> — updated every week.</>
+                  }
                 </p>
 
                 {/* Stat pills */}
@@ -427,7 +449,7 @@ export default async function BlogPage({
                   </span>
                   {totalViews > 0 && (
                     <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/6 border border-white/10 rounded-full px-3 py-1.5 text-gray-300">
-                      <span className="text-orange-400 text-xs">👁</span>
+                      <Eye className="w-3.5 h-3.5 text-orange-400" />
                       {totalViews >= 1_000_000
                         ? `${(totalViews / 1_000_000).toFixed(1)}M`
                         : totalViews >= 1_000
@@ -505,6 +527,71 @@ export default async function BlogPage({
                 </p>
               )}
             </div>
+          )}
+
+          {/* ── MOST POPULAR ─────────────────────────────────────────────
+               Sorted by all-time views. Surfaces evergreen content that keeps
+               getting traffic — great for new visitors and Google E-E-A-T.   */}
+          {isHomePage && mostPopular.length > 0 && (
+            <section aria-labelledby="popular-heading" className="mb-12">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-1 h-5 bg-orange-500 rounded-full" aria-hidden />
+                <h2
+                  id="popular-heading"
+                  className="text-xs font-black uppercase tracking-widest text-orange-400 flex items-center gap-1.5"
+                >
+                  <Flame className="w-3.5 h-3.5" />
+                  Most Popular
+                </h2>
+                <span className="text-[10px] text-gray-600 ml-1">— all-time top reads</span>
+              </div>
+              <div className="divide-y divide-[#1a1a1a] border border-[#1c1c1c] rounded-2xl overflow-hidden">
+                {mostPopular.map((b: any, i: number) => (
+                  <a
+                    key={String(b._id)}
+                    href={`/blog/${b.slug}`}
+                    className="group flex items-center gap-3 px-4 py-3.5
+                      hover:bg-white/[0.025] transition-colors"
+                  >
+                    {/* Rank */}
+                    <span className="w-6 text-center text-sm font-black flex-shrink-0
+                      text-gray-700 group-hover:text-orange-500 transition-colors">
+                      {i + 1}
+                    </span>
+                    {/* Thumbnail */}
+                    {b.coverImage ? (
+                      <img src={b.coverImage} alt={b.title} loading="lazy"
+                        className="w-12 h-8 object-cover rounded-lg flex-shrink-0" />
+                    ) : (
+                      <div className="w-12 h-8 bg-[#1a1a1a] rounded-lg flex-shrink-0
+                        flex items-center justify-center text-gray-700 text-xs">📰</div>
+                    )}
+                    {/* Title */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-semibold text-white truncate
+                        group-hover:text-orange-400 transition-colors">
+                        {b.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {b.category && (
+                          <span className="text-[10px] text-orange-400/70">{b.category}</span>
+                        )}
+                        {b.readTime && (
+                          <span className="text-[10px] text-gray-600">{b.readTime} min read</span>
+                        )}
+                      </div>
+                    </div>
+                    {/* View count */}
+                    <div className="flex-shrink-0 flex items-center gap-1 text-[10px] text-gray-600">
+                      <Eye className="w-3 h-3" />
+                      {b.views >= 1000
+                        ? `${(b.views / 1000).toFixed(1)}K`
+                        : b.views}
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </section>
           )}
 
           {/* ── FEATURED POSTS ───────────────────────────────────────────── */}

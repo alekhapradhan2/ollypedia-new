@@ -5,6 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
+import Cast from "@/models/Cast";
 import { buildMeta } from "@/lib/seo";
 import {
   Film, Calendar, ChevronRight, Clapperboard,
@@ -242,7 +243,36 @@ async function getMoviesByYear(year: number) {
   return movies;
 }
 
-// ─── Verdict badge config ──────────────────────────────────────────────────────
+// ─── Fetch top cast members who appear most in that year's movies ──────────────
+async function getTopCastByYear(movies: any[], limit = 12) {
+  // Count how many movies each castId appears in
+  const countMap: Record<string, number> = {};
+  for (const movie of movies) {
+    for (const entry of movie.cast || []) {
+      const id = String(entry.castId);
+      if (id && id.length === 24) countMap[id] = (countMap[id] || 0) + 1;
+    }
+  }
+  // Sort by frequency, take top N
+  const topIds = Object.entries(countMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([id]) => id);
+
+  if (!topIds.length) return [];
+
+  const castMembers = await Cast.find(
+    { _id: { $in: topIds } },
+    "_id name type roles photo"
+  ).lean();
+
+  // Preserve frequency order
+  const ordered = topIds
+    .map(id => castMembers.find((c: any) => String(c._id) === id))
+    .filter(Boolean) as any[];
+
+  return ordered;
+}
 const VERDICT_CONFIG: Record<string, { color: string; icon: React.ElementType }> = {
   Blockbuster: { color: "text-orange-400 bg-orange-500/15 border-orange-500/30", icon: Flame },
   Superhit:    { color: "text-yellow-400 bg-yellow-500/15 border-yellow-500/30", icon: Star  },
@@ -282,6 +312,7 @@ export default async function MoviesByYearPage({
 
   const movies = await getMoviesByYear(year);
   const total  = movies.length;
+  const topCast = await getTopCastByYear(movies);
 
   const verdictCounts: Record<string, number> = {};
   for (const m of movies) {
@@ -710,9 +741,9 @@ export default async function MoviesByYearPage({
                     `Sabyasachi Mishra Movies ${year}`,
                     `Elina Samantray Movies ${year}`,
                     `Ollywood Blockbuster ${year}`,
-                    `ZEE5 Odia Movies ${year}`,
-                    `Odia Movies Watch Online ${year}`,
-                    `Odia Movie OTT ${year}`,
+                    `Aao NXT Odia Movies ${year}`,
+                    `Kanccha Lannka Odia Movies ${year}`,
+                    `Tarang Plus Odia Movies ${year}`,
                     `Odia Films ${year} IMDb`,
                     `${year} Odia Mythological Movies`,
                     `${year} Odia Thriller Movies`,
@@ -807,9 +838,11 @@ export default async function MoviesByYearPage({
                   </p>
                   <p>
                     Major Odia film production houses active in {year} include Ollywood studios and
-                    independent producers who collaborate with OTT platforms like ZEE5, SonyLIV,
-                    MX Player, and Odia-specific streaming services for digital releases following
-                    their theatrical run.
+                    independent producers who collaborate with dedicated Odia OTT platforms —{" "}
+                    <strong className="text-gray-200">Aao NXT</strong>,{" "}
+                    <strong className="text-gray-200">Kanccha Lannka</strong>, and{" "}
+                    <strong className="text-gray-200">Tarang Plus</strong> — for digital releases
+                    following their theatrical run.
                   </p>
                   <p>
                     <strong className="text-gray-200">Ollypedia</strong> is the most comprehensive
@@ -889,7 +922,7 @@ export default async function MoviesByYearPage({
                           name: `Where can I watch Odia movies of ${year} online?`,
                           acceptedAnswer: {
                             "@type": "Answer",
-                            text: `${year} Odia movies are available to stream on platforms like ZEE5, SonyLIV, MX Player, and other OTT services following their theatrical release. Check individual movie pages on Ollypedia for streaming availability.`,
+                            text: `${year} Odia movies are available to stream on Odia OTT platforms including Aao NXT (aaonxt.com), Kanccha Lannka (kancchalannka.com), and Tarang Plus (tarangplus.in) following their theatrical release. Check individual movie pages on Ollypedia for streaming availability.`,
                           },
                         },
                         {
@@ -913,7 +946,7 @@ export default async function MoviesByYearPage({
                           name: `Which OTT platform has the most ${year} Odia movies?`,
                           acceptedAnswer: {
                             "@type": "Answer",
-                            text: `ZEE5 carries the largest catalogue of Odia movies including many ${year} Ollywood releases. SonyLIV, MX Player, and regional Odia OTT platforms also stream ${year} Odia films after their theatrical run.`,
+                            text: `The dedicated Odia OTT platforms for ${year} Ollywood movies are Aao NXT (aaonxt.com), Kanccha Lannka (kancchalannka.com), and Tarang Plus (tarangplus.in). These platforms specialise in Odia content and carry the most complete catalogues of ${year} Odia films.`,
                           },
                         },
                         {
@@ -969,7 +1002,7 @@ export default async function MoviesByYearPage({
                     },
                     {
                       q: `Where can I watch Odia movies of ${year} online?`,
-                      a: `Most ${year} Odia movies are available to stream on ZEE5, SonyLIV, MX Player, and Odia-specific OTT platforms after their theatrical run. Individual movie pages on Ollypedia include streaming links where available.`,
+                      a: `Most ${year} Odia movies are available to stream on dedicated Odia OTT platforms — Aao NXT (aaonxt.com), Kanccha Lannka (kancchalannka.com), and Tarang Plus (tarangplus.in) — after their theatrical run. Individual movie pages on Ollypedia include direct streaming links where available.`,
                     },
                     {
                       q: `Which upcoming Odia movies are releasing in ${year}?`,
@@ -981,7 +1014,7 @@ export default async function MoviesByYearPage({
                     },
                     {
                       q: `Which OTT platform has the most ${year} Odia movies?`,
-                      a: `ZEE5 carries the largest catalogue of Odia movies, including many ${year} Ollywood releases. SonyLIV, MX Player, and regional Odia OTT platforms also stream ${year} Odia films after their theatrical run. Visit individual movie pages on Ollypedia for direct streaming links.`,
+                      a: `The dedicated Odia OTT platforms for ${year} Ollywood movies are Aao NXT (aaonxt.com), Kanccha Lannka (kancchalannka.com), and Tarang Plus (tarangplus.in). These platforms specialise in Odia content and carry the most complete catalogues of ${year} Odia films. Visit individual movie pages on Ollypedia for direct streaming links.`,
                     },
                     {
                       q: `Who are the top Ollywood actors of ${year}?`,
@@ -1090,6 +1123,7 @@ export default async function MoviesByYearPage({
               {/* ══════════════════════════════════════════════════════════
                   SECTION 7 — POPULAR OLLYWOOD ACTORS & ACTRESSES
               ══════════════════════════════════════════════════ */}
+              {topCast.length > 0 && (
               <section
                 aria-labelledby="popular-stars-heading"
                 className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-6 md:p-8"
@@ -1102,37 +1136,28 @@ export default async function MoviesByYearPage({
                   Popular Ollywood Stars in {year}
                 </h2>
                 <p className="text-sm text-gray-500 mb-4 leading-relaxed">
-                  Leading actors and actresses of the Odia film industry who appeared in {year} Ollywood films. Click a star's name to see all their movies on Ollypedia.
+                  Leading cast members who appeared in the most {year} Ollywood films. Click a name to see their full profile and filmography on Ollypedia.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                  {[
-                    { name: "Babushaan Mohanty",   slug: "babushaan-mohanty",   role: "Actor"    },
-                    { name: "Sabyasachi Mishra",   slug: "sabyasachi-mishra",   role: "Actor"    },
-                    { name: "Anubhav Mohanty",     slug: "anubhav-mohanty",     role: "Actor"    },
-                    { name: "Elina Samantray",     slug: "elina-samantray",     role: "Actress"  },
-                    { name: "Sivani Sangita",      slug: "sivani-sangita",      role: "Actress"  },
-                    { name: "Archita Sahu",        slug: "archita-sahu",        role: "Actress"  },
-                    { name: "Sidhant Mohapatra",   slug: "sidhant-mohapatra",   role: "Actor"    },
-                    { name: "Aman Mohanty",        slug: "aman-mohanty",        role: "Actor"    },
-                    { name: "Suryamayee Mohapatra", slug: "suryamayee-mohapatra", role: "Actress" },
-                    { name: "Riya Dey",            slug: "riya-dey",            role: "Actress"  },
-                    { name: "Pintu Nanda",         slug: "pintu-nanda",         role: "Actor"    },
-                    { name: "Prakash Sahu",        slug: "prakash-sahu",        role: "Director" },
-                  ].map(({ name, slug, role }) => (
-                    <Link
-                      key={slug}
-                      href={`/celebrity/${slug}`}
-                      title={`${name} – Ollywood ${role}`}
-                      className="flex flex-col px-3 py-2.5 rounded-xl border border-[#1f1f1f] bg-[#111] hover:border-orange-500/30 hover:bg-[#161616] transition-all group"
-                    >
-                      <span className="text-xs font-semibold text-gray-300 group-hover:text-orange-400 transition-colors leading-snug">
-                        {name}
-                      </span>
-                      <span className="text-[10px] text-gray-600 mt-0.5">{role}</span>
-                    </Link>
-                  ))}
+                  {topCast.map((member: any) => {
+                    const role = member.roles?.[0] || member.type || "Artist";
+                    return (
+                      <Link
+                        key={String(member._id)}
+                        href={`/cast/${String(member._id)}`}
+                        title={`${member.name} – Ollywood ${role}`}
+                        className="flex flex-col px-3 py-2.5 rounded-xl border border-[#1f1f1f] bg-[#111] hover:border-orange-500/30 hover:bg-[#161616] transition-all group"
+                      >
+                        <span className="text-xs font-semibold text-gray-300 group-hover:text-orange-400 transition-colors leading-snug">
+                          {member.name}
+                        </span>
+                        <span className="text-[10px] text-gray-600 mt-0.5">{role}</span>
+                      </Link>
+                    );
+                  })}
                 </div>
               </section>
+              )}
 
               {/* ══════════════════════════════════════════════════════════
                   SECTION 8 — OTT STREAMING PLATFORMS
@@ -1154,33 +1179,39 @@ export default async function MoviesByYearPage({
                 <div className="space-y-2 text-sm text-gray-400 leading-relaxed">
                   {[
                     {
-                      platform: "ZEE5",
-                      desc: `ZEE5 is one of the largest platforms for Odia content, hosting a wide catalogue of ${year} Ollywood movies with subtitles and HD quality streaming.`,
+                      platform: "Aao NXT",
+                      url: "https://aaonxt.com/",
+                      desc: `Aao NXT is a dedicated Odia OTT platform streaming ${year} Ollywood movies, web series, and exclusive Odia content. The go-to destination for Odia digital entertainment.`,
                     },
                     {
-                      platform: "SonyLIV",
-                      desc: `SonyLIV acquires streaming rights for several popular Odia films each year. Check their Odia section for ${year} releases.`,
+                      platform: "Kanccha Lannka",
+                      url: "https://www.kancchalannka.com/",
+                      desc: `Kanccha Lannka is a popular Odia streaming platform featuring ${year} Ollywood releases, classic Odia films, and original Odia content not available elsewhere.`,
                     },
                     {
-                      platform: "MX Player",
-                      desc: `MX Player offers free ad-supported streaming of many Odia movies. A solid choice for watching ${year} Odia films at no cost.`,
+                      platform: "Tarang Plus",
+                      url: "https://tarangplus.in/",
+                      desc: `Tarang Plus is the official OTT platform of Tarang TV, offering ${year} Odia movies, Odia serials, and live TV. One of the most trusted names in Odia digital streaming.`,
                     },
-                    {
-                      platform: "Odia-Specific OTT",
-                      desc: `Regional OTT platforms dedicated to Odia content often carry exclusive ${year} Ollywood releases and classic Odia films not available elsewhere.`,
-                    },
-                  ].map(({ platform, desc }) => (
-                    <div key={platform} className="flex gap-3 p-3 rounded-xl bg-[#111] border border-[#1a1a1a]">
-                      <ExternalLink className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                  ].map(({ platform, url, desc }) => (
+                    <a
+                      key={platform}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`Watch Odia movies on ${platform}`}
+                      className="flex gap-3 p-3 rounded-xl bg-[#111] border border-[#1a1a1a] hover:border-orange-500/30 hover:bg-[#161616] transition-all group"
+                    >
+                      <ExternalLink className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5 group-hover:text-orange-400" />
                       <div>
-                        <span className="text-gray-200 font-semibold">{platform}: </span>
-                        {desc}
+                        <span className="text-gray-200 font-semibold group-hover:text-orange-400 transition-colors">{platform} ↗</span>
+                        <p className="text-gray-500 text-xs mt-0.5">{desc}</p>
                       </div>
-                    </div>
+                    </a>
                   ))}
                 </div>
                 <p className="text-xs text-gray-600 mt-3">
-                  Availability varies by title and region. Visit individual movie pages on Ollypedia for direct streaming links where available.
+                  Availability varies by title. Visit individual movie pages on Ollypedia for direct streaming links where available.
                 </p>
               </section>
 

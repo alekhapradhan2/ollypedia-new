@@ -1,18 +1,21 @@
 // app/sitemap.xml/route.ts
-// Changes vs previous version:
-//  1. Songs category pages re-added — /songs/category/[2026|latest|trending|classics|singers]
-//     These pages now exist (page.tsx with generateStaticParams) so they're safe to include.
-//  2. Movies filter pages (/movies/2026 etc.) still EXCLUDED — pages don't exist yet
-//  3. Blog guide pages (/blog/odia-guides/*) still EXCLUDED — pages don't exist yet
-//  ✅ All other fixes from previous version preserved
+// ── What changed in this version ──────────────────────────────────────────────
+//  1. /box-office page + all /box-office/[slug] pages ADDED — was completely missing
+//  2. Blog category pages added (/blog?category=Box+Office etc.)
+//  3. Box Office blog posts now get priority 0.9 + changefreq "daily" (not 0.7/weekly)
+//  4. Featured blog posts get priority 0.85
+//  5. Box Office movie pages get changefreq "daily" (updated every day)
+//  6. Cache-Control s-maxage reduced to 1800 for more frequent Google re-fetches
+//  ✅ All previous fixes preserved
 
 import { connectDB } from "@/lib/db";
-import Movie from "@/models/Movie";
-import Cast from "@/models/Cast";
-import Blog from "@/models/Blog";
-import { SITE_URL } from "@/lib/seo";
+import Movie         from "@/models/Movie";
+import Cast          from "@/models/Cast";
+import Blog          from "@/models/Blog";
+import { SITE_URL }  from "@/lib/seo";
 
-// ─── Helpers ──────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function xmlEsc(s: string) {
   return String(s || "")
     .replace(/&/g, "&amp;")
@@ -49,27 +52,54 @@ function urlEntry(loc: string, lastmod: string, freq = "monthly", pri = "0.7") {
   </url>`;
 }
 
-// ─── Route ────────────────────────────────────────────────────
+// ─── Route ────────────────────────────────────────────────────────────────────
+
 export async function GET() {
   const today = new Date().toISOString().split("T")[0];
 
+  // ── Static pages ──────────────────────────────────────────────────────────
   const statics: [string, string, string][] = [
-    ["",            "daily",   "1.0"],
-    ["/movies",     "daily",   "0.9"],
-    ["/songs",      "weekly",  "0.8"],
-    ["/cast",       "weekly",  "0.8"],
-    ["/news",       "daily",   "0.8"],
-    ["/blog",       "daily",   "0.8"],
-    ["/about",      "monthly", "0.4"],
-    ["/contact",    "monthly", "0.4"],
-    ["/privacy",    "monthly", "0.3"],
-    ["/disclaimer", "monthly", "0.3"],
-    ["/search",     "monthly", "0.3"],
+    ["",             "daily",   "1.0"],
+    ["/movies",      "daily",   "0.9"],
+    ["/box-office",  "daily",   "0.9"],  // ← NEW: was completely missing
+    ["/songs",       "weekly",  "0.8"],
+    ["/cast",        "weekly",  "0.8"],
+    ["/news",        "daily",   "0.8"],
+    ["/blog",        "daily",   "0.8"],
+    ["/about",       "monthly", "0.4"],
+    ["/contact",     "monthly", "0.4"],
+    ["/privacy",     "monthly", "0.3"],
+    ["/disclaimer",  "monthly", "0.3"],
+    ["/search",      "monthly", "0.3"],
   ];
 
-  // ── Songs category pages ────────────────────────────────────
-  // These pages EXIST via app/songs/category/[category]/page.tsx
-  // generateStaticParams covers: 2026, latest, trending, classics, singers
+  const entries: string[] = statics.map(([p, f, pr]) =>
+    urlEntry(`${SITE_URL}${p}`, today, f, pr)
+  );
+
+  // ── Blog category pages ────────────────────────────────────────────────────
+  // Each is a unique keyword-targeted page. Box Office gets daily crawl priority.
+  const blogCategories: [string, string, string][] = [
+    ["Box Office", "daily",   "0.9"],
+    ["Reviews",    "weekly",  "0.75"],
+    ["Actor",      "weekly",  "0.7"],
+    ["Songs",      "weekly",  "0.7"],
+    ["News",       "daily",   "0.75"],
+    ["Top Lists",  "monthly", "0.7"],
+  ];
+
+  blogCategories.forEach(([cat, freq, pri]) => {
+    entries.push(
+      urlEntry(
+        `${SITE_URL}/blog?category=${encodeURIComponent(cat)}`,
+        today,
+        freq,
+        pri
+      )
+    );
+  });
+
+  // ── Songs category pages ───────────────────────────────────────────────────
   const songCategories: [string, string][] = [
     ["2026",     "0.8"],
     ["latest",   "0.8"],
@@ -78,21 +108,14 @@ export async function GET() {
     ["singers",  "0.7"],
   ];
 
-  const entries: string[] = statics.map(([p, f, pr]) =>
-    urlEntry(`${SITE_URL}${p}`, today, f, pr)
-  );
-
-  // Add song category pages
   songCategories.forEach(([cat, pri]) => {
     entries.push(urlEntry(`${SITE_URL}/songs/category/${cat}`, today, "weekly", pri));
   });
 
-  // ── Movies by year pages ────────────────────────────────────
-  // These pages EXIST via app/movies/year/[year]/page.tsx
+  // ── Movies by year pages ───────────────────────────────────────────────────
   const YEAR_START = 2000;
   const YEAR_END   = new Date().getFullYear();
   for (let yr = YEAR_END; yr >= YEAR_START; yr--) {
-    // Current and last 2 years change often (new releases); older years are stable
     const freq = yr >= YEAR_END - 1 ? "daily"   : yr >= YEAR_END - 4 ? "monthly" : "yearly";
     const pri  = yr >= YEAR_END - 1 ? "0.85"    : yr >= YEAR_END - 4 ? "0.75"    : "0.6";
     entries.push(urlEntry(`${SITE_URL}/movies/year/${yr}`, today, freq, pri));
@@ -101,25 +124,40 @@ export async function GET() {
   try {
     await connectDB();
 
-    // ── Movies + Songs ────────────────────────────────────────
+    // ── Movies + Songs ─────────────────────────────────────────────────────
     const movies = await Movie.find(
       {},
-      "slug _id releaseDate updatedAt createdAt media.songs"
+      "slug _id releaseDate updatedAt createdAt media.songs boxOfficeDays"
     ).lean() as any[];
 
     movies.forEach((m) => {
-      const movieSlug = m.slug || String(m._id);
-      const lastmod   = safeDate(m.updatedAt ?? m.createdAt ?? m.releaseDate);
+      const movieSlug   = m.slug || String(m._id);
+      const lastmod     = safeDate(m.updatedAt ?? m.createdAt ?? m.releaseDate);
+      const hasBoxOffice = m.boxOfficeDays?.length > 0;
 
-      entries.push(urlEntry(`${SITE_URL}/movie/${movieSlug}`, lastmod, "weekly", "0.8"));
+      // Movie detail page — daily if actively tracked for box office
+      entries.push(urlEntry(
+        `${SITE_URL}/movie/${movieSlug}`,
+        lastmod,
+        hasBoxOffice ? "daily"  : "weekly",
+        hasBoxOffice ? "0.85"   : "0.8"
+      ));
+
+      // Box office page per movie — NEW, highest priority after homepage
+      if (hasBoxOffice) {
+        entries.push(urlEntry(
+          `${SITE_URL}/box-office/${movieSlug}`,
+          lastmod,
+          "daily",
+          "0.9"
+        ));
+      }
 
       if (m.media?.songs?.length) {
         m.media.songs.forEach((s: any, i: number) => {
           if (!s?.title?.trim()) return;
-
           const songSlug = s.slug || toSlug(s.title);
           if (!songSlug) return;
-
           entries.push(
             urlEntry(`${SITE_URL}/songs/${movieSlug}/${i}/${songSlug}`, lastmod, "weekly", "0.7")
           );
@@ -127,50 +165,46 @@ export async function GET() {
       }
     });
 
-    // ── Cast ─────────────────────────────────────────────────
-    const casts = await Cast.find(
-      {},
-      "_id slug name updatedAt createdAt"
-    ).lean() as any[];
+    // ── Cast ───────────────────────────────────────────────────────────────
+    const casts = await Cast.find({}, "_id slug name updatedAt createdAt").lean() as any[];
 
     casts.forEach((c) => {
       if (!c.name?.trim()) return;
-
       const castPath = c.slug?.trim() ? c.slug : String(c._id);
       const lastmod  = safeDate(c.updatedAt ?? c.createdAt);
-
       entries.push(urlEntry(`${SITE_URL}/cast/${castPath}`, lastmod, "monthly", "0.7"));
     });
 
-    // ── Blogs ─────────────────────────────────────────────────
+    // ── Blogs ──────────────────────────────────────────────────────────────
+    // Box Office blogs: daily + 0.9  — rank for "[movie] day N collection" searches
+    // Featured blogs:   weekly + 0.85
+    // Others:           weekly + 0.75 (upgraded from flat 0.7)
     const blogs = await Blog.find(
       { published: true },
-      "slug updatedAt createdAt"
+      "slug category featured updatedAt createdAt"
     ).lean() as any[];
 
     blogs.forEach((b) => {
       if (!b.slug?.trim()) return;
-      const lastmod = safeDate(b.updatedAt ?? b.createdAt);
-      entries.push(urlEntry(`${SITE_URL}/blog/${b.slug}`, lastmod, "weekly", "0.7"));
+      const lastmod     = safeDate(b.updatedAt ?? b.createdAt);
+      const isBoxOffice = b.category === "Box Office";
+      const isFeatured  = !!b.featured;
+      const freq        = isBoxOffice ? "daily"  : "weekly";
+      const pri         = isBoxOffice ? "0.9"    : isFeatured ? "0.85" : "0.75";
+      entries.push(urlEntry(`${SITE_URL}/blog/${b.slug}`, lastmod, freq, pri));
     });
 
   } catch (err) {
     console.error("Sitemap generation error:", err);
   }
 
-  // NOTE: The following footer links are NOT in the sitemap because no pages exist yet.
-  // Build these pages first, then add them here:
-  //
-  //  Movies filter pages (need app/movies/[filter]/page.tsx):
-  //    /movies/2026, /movies/2025, /movies/2024
-  //    /movies/upcoming, /movies/latest, /movies/blockbuster
-  //
-  //  Blog guide pages (need app/blog/odia-guides/[slug]/page.tsx):
-  //    /blog/odia-guides/odia-movies
-  //    /blog/odia-guides/history-of-ollywood
-  //    /blog/odia-guides/top-10-odia-movies
-  //    /blog/odia-guides/best-odia-songs
-  //    /blog/odia-guides/odia-actors
+  // ── TODO: add once pages are built ────────────────────────────────────────
+  //  /movies/upcoming, /movies/latest, /movies/blockbuster
+  //  /blog/odia-guides/odia-movies
+  //  /blog/odia-guides/history-of-ollywood
+  //  /blog/odia-guides/top-10-odia-movies
+  //  /blog/odia-guides/best-odia-songs
+  //  /blog/odia-guides/odia-actors
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -179,8 +213,8 @@ ${entries.join("\n")}
 
   return new Response(xml, {
     headers: {
-      "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=600",
+      "Content-Type":  "application/xml; charset=utf-8",
+      "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=600",
     },
   });
 }
