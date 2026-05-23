@@ -1,17 +1,18 @@
 // app/sitemap.xml/route.ts
 // ── What changed in this version ──────────────────────────────────────────────
-//  1. /box-office page + all /box-office/[slug] pages ADDED — was completely missing
-//  2. Blog category pages added (/blog?category=Box+Office etc.)
-//  3. Box Office blog posts now get priority 0.9 + changefreq "daily" (not 0.7/weekly)
-//  4. Featured blog posts get priority 0.85
-//  5. Box Office movie pages get changefreq "daily" (updated every day)
-//  6. Cache-Control s-maxage reduced to 1800 for more frequent Google re-fetches
-//  ✅ All previous fixes preserved
+//  1. Cast URLs fixed to always use _id (route is /cast/[id], never slug)
+//  2. Genre pages added — /movies/genre/[genre] + /movies?genre= (10 genres)
+//  3. /movies/upcoming, /movies/latest, /movies/blockbuster added as statics
+//  4. News articles added from DB (/news/[slug])
+//  5. News model imported
+//  6. TODO items moved to "Evergreen guides" comment (upcoming/latest/blockbuster done)
+//  ✅ All previous fixes preserved (box-office, blog categories, song pages, priorities)
 
 import { connectDB } from "@/lib/db";
 import Movie         from "@/models/Movie";
 import Cast          from "@/models/Cast";
 import Blog          from "@/models/Blog";
+import News          from "@/models/News";
 import { SITE_URL }  from "@/lib/seo";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -59,23 +60,36 @@ export async function GET() {
 
   // ── Static pages ──────────────────────────────────────────────────────────
   const statics: [string, string, string][] = [
-    ["",             "daily",   "1.0"],
-    ["/movies",      "daily",   "0.9"],
-    ["/box-office",  "daily",   "0.9"],  // ← NEW: was completely missing
-    ["/songs",       "weekly",  "0.8"],
-    ["/cast",        "weekly",  "0.8"],
-    ["/news",        "daily",   "0.8"],
-    ["/blog",        "daily",   "0.8"],
-    ["/about",       "monthly", "0.4"],
-    ["/contact",     "monthly", "0.4"],
-    ["/privacy",     "monthly", "0.3"],
-    ["/disclaimer",  "monthly", "0.3"],
-    ["/search",      "monthly", "0.3"],
+    ["",                      "daily",   "1.0"],
+    ["/movies",               "daily",   "0.9"],
+    ["/movies/upcoming",      "daily",   "0.9"],
+    ["/movies/latest",        "daily",   "0.85"],
+    ["/movies/blockbuster",   "weekly",  "0.8"],
+    ["/box-office",           "daily",   "0.9"],
+    ["/songs",                "weekly",  "0.8"],
+    ["/cast",                 "weekly",  "0.8"],
+    ["/news",                 "daily",   "0.8"],
+    ["/blog",                 "daily",   "0.8"],
+    ["/about",                "monthly", "0.4"],
+    ["/contact",              "monthly", "0.4"],
+    ["/privacy",              "monthly", "0.3"],
+    ["/disclaimer",           "monthly", "0.3"],
+    ["/search",               "monthly", "0.3"],
   ];
 
   const entries: string[] = statics.map(([p, f, pr]) =>
     urlEntry(`${SITE_URL}${p}`, today, f, pr)
   );
+
+  // ── Genre pages ────────────────────────────────────────────────────────────
+  const genres = [
+    "Action", "Romance", "Comedy", "Drama", "Family",
+    "Thriller", "Mythological", "Horror", "Social", "Devotional",
+  ];
+  genres.forEach((g) => {
+    entries.push(urlEntry(`${SITE_URL}/movies/genre/${encodeURIComponent(g.toLowerCase())}`, today, "weekly", "0.75"));
+    entries.push(urlEntry(`${SITE_URL}/movies?genre=${encodeURIComponent(g)}`, today, "weekly", "0.75"));
+  });
 
   // ── Blog category pages ────────────────────────────────────────────────────
   // Each is a unique keyword-targeted page. Box Office gets daily crawl priority.
@@ -170,9 +184,9 @@ export async function GET() {
 
     casts.forEach((c) => {
       if (!c.name?.trim()) return;
-      const castPath = c.slug?.trim() ? c.slug : String(c._id);
-      const lastmod  = safeDate(c.updatedAt ?? c.createdAt);
-      entries.push(urlEntry(`${SITE_URL}/cast/${castPath}`, lastmod, "monthly", "0.7"));
+      const lastmod = safeDate(c.updatedAt ?? c.createdAt);
+      // Route is /cast/[id] — always use MongoDB _id, never slug
+      entries.push(urlEntry(`${SITE_URL}/cast/${String(c._id)}`, lastmod, "monthly", "0.7"));
     });
 
     // ── Blogs ──────────────────────────────────────────────────────────────
@@ -194,12 +208,23 @@ export async function GET() {
       entries.push(urlEntry(`${SITE_URL}/blog/${b.slug}`, lastmod, freq, pri));
     });
 
+    // ── News articles ──────────────────────────────────────────────────────
+    const newsItems = await News.find(
+      {},
+      "slug _id updatedAt createdAt"
+    ).lean() as any[];
+
+    newsItems.forEach((n: any) => {
+      const newsSlug = n.slug?.trim() || String(n._id);
+      const lastmod  = safeDate(n.updatedAt ?? n.createdAt);
+      entries.push(urlEntry(`${SITE_URL}/news/${newsSlug}`, lastmod, "weekly", "0.75"));
+    });
+
   } catch (err) {
     console.error("Sitemap generation error:", err);
   }
 
-  // ── TODO: add once pages are built ────────────────────────────────────────
-  //  /movies/upcoming, /movies/latest, /movies/blockbuster
+  // ── Evergreen guide pages (add once created) ──────────────────────────────
   //  /blog/odia-guides/odia-movies
   //  /blog/odia-guides/history-of-ollywood
   //  /blog/odia-guides/top-10-odia-movies
