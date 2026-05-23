@@ -13,7 +13,9 @@ import { YouTubeEmbed }  from "@/components/ui/YouTubeEmbed";
 import { Breadcrumb }    from "@/components/ui/Breadcrumb";
 import { VoteButtons }   from "@/components/ui/VoteButtons";
 import { ReviewForm }    from "@/components/movie/ReviewForm";
-import { MovieCard }     from "@/components/movie/MovieCard";
+import { MovieCard }         from "@/components/movie/MovieCard";
+import { ReleaseCountdown }  from "@/components/movie/ReleaseCountdown";
+import { ShareButtons }      from "@/components/movie/ShareButtons";
 import { StarRating }    from "@/components/ui/StarRating";
 import { SongRowClient } from "@/components/movie/SongRowClient";
 import { BoxOfficeDaysChart } from "@/components/movie/BoxOfficeDaysChart";
@@ -130,10 +132,18 @@ async function getMovie(slug: string) {
 
 async function getRelated(movie: any) {
   await connectDB();
+  const castIds = (movie.cast || []).slice(0, 5).map((c: any) => c.castId).filter(Boolean);
   const raw = await Movie.find(
-    { _id: { $ne: movie._id }, genre: { $in: movie.genre || [] } },
+    {
+      _id: { $ne: movie._id },
+      $or: [
+        { genre: { $in: movie.genre || [] } },
+        ...(castIds.length ? [{ "cast.castId": { $in: castIds } }] : []),
+        ...(movie.director ? [{ director: movie.director }] : []),
+      ],
+    },
     "title slug posterUrl thumbnailUrl releaseDate genre verdict"
-  ).limit(5).lean();
+  ).limit(6).lean();
   return JSON.parse(JSON.stringify(raw));
 }
 
@@ -230,7 +240,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     openGraph: {
       title, description, url: canonical, siteName: "Ollypedia",
       type: "video.movie",
-      images: [{ url: image, width: 1200, height: 630, alt: movie.title }],
+      images: [{ url: movie.bannerUrl || image, width: 1200, height: 630, alt: movie.title }],
     },
     twitter: { card: "summary_large_image", title, description, images: [image] },
   };
@@ -358,8 +368,49 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
   const directorName = getDirectorFromCast(movie.cast || []) || movie.director;
   const producerName = getProducerFromCast(movie.cast || []) || movie.producer;
 
+  // ── Enriched Movie JSON-LD ──────────────────────────────────────────────────
+  const { crew: crewForSchema } = splitCastCrew(movie.cast || []);
+  const actorObjects = (movie.cast || [])
+    .filter((m: any) => !isCrewRole(m.role) && !isCrewRole(m.type))
+    .slice(0, 10)
+    .map((m: any) => ({
+      "@type": "Person",
+      name: m.name,
+      ...(m.castId ? { url: `https://ollypedia.in/cast/${m.castId}` } : {}),
+    }));
+  const dirCrewEntry = crewForSchema.find((c: any) => c.role?.toLowerCase().includes("director"));
+  const directorPersonObj = directorName
+    ? [{ "@type": "Person", name: directorName, ...(dirCrewEntry?.castId ? { url: `https://ollypedia.in/cast/${dirCrewEntry.castId}` } : {}) }]
+    : [];
+
+  const enrichedMovieSchema = {
+    "@context": "https://schema.org",
+    "@type": "Movie",
+    name: movie.title,
+    url: canonical,
+    ...(movie.posterUrl || movie.thumbnailUrl ? { image: movie.posterUrl || movie.thumbnailUrl } : {}),
+    ...(movie.synopsis ? { description: movie.synopsis.slice(0, 300) } : {}),
+    ...(movie.releaseDate ? { datePublished: movie.releaseDate } : {}),
+    inLanguage: movie.language || "Odia",
+    countryOfOrigin: { "@type": "Country", name: "India" },
+    ...(movie.contentRating ? { contentRating: movie.contentRating } : {}),
+    ...(movie.genre?.length ? { genre: movie.genre } : {}),
+    ...(actorObjects.length ? { actor: actorObjects } : {}),
+    ...(directorPersonObj.length ? { director: directorPersonObj } : {}),
+    ...(producerName ? { producer: { "@type": "Person", name: producerName } } : {}),
+    ...(avgRating !== null ? {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: (avgRating as number).toFixed(1),
+        bestRating: "10", worstRating: "1",
+        reviewCount: String(movie.reviews?.length || 1),
+      },
+    } : {}),
+    ...(movie.productionId?.name ? { productionCompany: { "@type": "Organization", name: movie.productionId.name } } : {}),
+  };
+
   const structuredData = [
-    movieJsonLd(movie),
+    enrichedMovieSchema,
     breadcrumbJsonLd([
       { name: "Home",   url: "https://ollypedia.in/" },
       { name: "Movies", url: "https://ollypedia.in/movies" },
@@ -433,6 +484,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   src={movie.posterUrl || movie.thumbnailUrl || "/placeholder-movie.svg"}
                   alt={`${movie.title}${year ? ` (${year})` : ""} Odia movie poster`}
                   fill className="object-cover" priority
+                  sizes="(max-width: 640px) 96px, (max-width: 768px) 144px, 208px"
                 />
               </div>
               {movie.streamingOn && (
@@ -541,6 +593,17 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   {movie.synopsis.length > 220 ? movie.synopsis.slice(0, 220).trimEnd() + "…" : movie.synopsis}
                 </p>
               )}
+
+              {/* Release countdown — live client-side timer for Upcoming movies */}
+              {movie.verdict === "Upcoming" && movie.releaseDate && !movie.releaseTBA && (
+                <ReleaseCountdown releaseDate={movie.releaseDate} title={movie.title} />
+              )}
+
+              {/* Share buttons */}
+              <ShareButtons
+                title={`${movie.title}${year ? ` (${year})` : ""} – Odia Movie`}
+                url={canonical}
+              />
             </div>
           </div>
         </div>
@@ -626,7 +689,12 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   { label: "Movie Reviews",          href: "/blog/category/movie-review" },
                   ...(year ? [{ label: `Odia Movies ${year}`, href: `/movies/year/${year}` }] : []),
                   ...(movie.genre?.[0] ? [{ label: `${movie.genre[0]} Odia Films`, href: `/movies?genre=${encodeURIComponent(movie.genre[0])}` }] : []),
-                  ...(movie.director ? [{ label: `${movie.director} Films`, href: `/movies?director=${encodeURIComponent(movie.director)}` }] : []),
+                  ...(directorName ? [{ label: `${directorName} Films`, href: `/movies?director=${encodeURIComponent(directorName)}` }] : []),
+                  // Dynamic: top 2 cast members
+                  ...((movie.cast || [])
+                    .filter((c: any) => !isCrewRole(c.role) && !isCrewRole(c.type) && c.name && c.castId)
+                    .slice(0, 2)
+                    .map((c: any) => ({ label: `${c.name} Movies`, href: `/cast/${c.castId}` }))),
                 ].map((item) => (
                   <Link key={item.href} href={item.href}
                     className="text-xs text-gray-400 hover:text-orange-400 flex items-center gap-2 py-1.5 transition-colors group border-b border-[#1a1a1a] last:border-0">
@@ -772,8 +840,9 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                                 </td>
                                 {/* Photo + Name */}
                                 <td className="px-4 py-2.5 align-middle">
-                                  <Link href={`/cast/${member.castId}`}
-                                    className="flex items-center gap-2.5 group/link">
+                                  <Link href={member.castId ? `/cast/${member.castId}` : "#"}
+                                    className="flex items-center gap-2.5 group/link"
+                                    aria-disabled={!member.castId}>
                                     <div className="relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0 border border-[#333]">
                                       <Image
                                         src={member.photo || "/placeholder-person.svg"}
@@ -812,8 +881,9 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                               <tr key={i} className="group border-b border-[#1a1a1a] last:border-0 hover:bg-orange-500/3 transition-colors">
                                 {/* Photo + Name */}
                                 <td className="px-4 py-2.5 align-middle">
-                                  <Link href={`/cast/${member.castId}`}
-                                    className="flex items-center gap-2.5 group/link">
+                                  <Link href={member.castId ? `/cast/${member.castId}` : "#"}
+                                    className="flex items-center gap-2.5 group/link"
+                                    aria-disabled={!member.castId}>
                                     <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-[#333]">
                                       <Image
                                         src={member.photo || "/placeholder-person.svg"}
@@ -976,6 +1046,17 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 </div>
               </div>
 
+              {/* Did You Know / Trivia */}
+              {movie.trivia && (
+                <div className="bg-[#111] border border-orange-500/20 rounded-2xl p-6">
+                  <SectionHeading title="Did You Know?" />
+                  <div className="flex gap-3">
+                    <span className="text-2xl flex-shrink-0">💡</span>
+                    <p className="text-sm text-gray-300 leading-relaxed">{movie.trivia}</p>
+                  </div>
+                </div>
+              )}
+
               {/* FAQ accordion */}
               <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-6">
                 <SectionHeading title={`FAQs about ${movie.title}`} />
@@ -1006,7 +1087,15 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                       q: `Is ${movie.title} available on OTT?`,
                       a: movie.streamingOn
                         ? `${movie.title} is available to stream on ${movie.streamingOn}.`
-                        : `OTT streaming availability for ${movie.title} is yet to be confirmed. Check back on Ollypedia for updates.`,
+                        : `OTT streaming availability for ${movie.title} is yet to be confirmed. It may be available on Aao NXT (aaonxt.com), Kanccha Lannka (kancchalannka.com), or Tarang Plus (tarangplus.in). Check back on Ollypedia for updates.`,
+                    },
+                    {
+                      q: `What is the release date of ${movie.title}?`,
+                      a: movie.releaseDate
+                        ? `${movie.title} was released on ${new Date(movie.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.`
+                        : movie.releaseTBA
+                        ? `The release date of ${movie.title} is yet to be announced (TBA). Follow Ollypedia for the latest updates.`
+                        : `Release date information for ${movie.title} is available on Ollypedia.`,
                     },
                   ].map((faq, i) => (
                     <details key={i} className="group border border-[#1a1a1a] rounded-xl overflow-hidden">
