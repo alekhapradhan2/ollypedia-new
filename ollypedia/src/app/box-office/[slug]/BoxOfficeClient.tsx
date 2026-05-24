@@ -5,7 +5,7 @@
 //            Strong SEO cross-links on every section.
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { TrendingUp, Calendar, IndianRupee, BarChart3, ChevronDown, ChevronUp, Film, Music, BookOpen, ExternalLink } from "lucide-react";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api").replace(/\/$/, "");
@@ -57,11 +57,23 @@ interface Movie {
   media?:       { songs?: Song[] };
 }
 
+interface CompetingMovie {
+  _id:          string;
+  title:        string;
+  slug:         string;
+  posterUrl?:   string;
+  releaseDate?: string;
+  verdict?:     string;
+  boxOfficeDays?: { net: number | string }[];
+}
+
 interface Props {
-  movie:        Movie;
-  initialDays:  BoxOfficeDay[];
-  totalNet:     number;
-  totalGross:   number;
+  movie:            Movie;
+  initialDays:      BoxOfficeDay[];
+  totalNet:         number;
+  totalGross:       number;
+  relatedBlogs?:    BlogPost[];
+  competingMovies?: CompetingMovie[];
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -315,11 +327,12 @@ function BoxOfficeChart({ days, maxNet }: { days: BoxOfficeDay[]; maxNet: number
   const svgWidth  = days.length * (barUnit + GAP);
 
   return (
-    <div className="bg-[#111] rounded-xl border border-[#1f1f1f] p-4 overflow-x-auto relative">
+    <div className="w-full overflow-x-auto bg-[#111] rounded-xl border border-[#1f1f1f] p-4 relative">
+      <div style={{ minWidth: svgWidth }}>
       <svg
         width={svgWidth}
         height={CHART_H}
-        style={{ display: "block", minWidth: "100%" }}
+        style={{ display: "block", width: "100%" }}
         aria-label="Day-wise box office bar chart"
       >
         <defs>
@@ -405,6 +418,7 @@ function BoxOfficeChart({ days, maxNet }: { days: BoxOfficeDay[]; maxNet: number
           </g>
         )}
       </svg>
+      </div>
       {days.length > 15 && (
         <p className="text-[10px] text-gray-600 text-center mt-1">← scroll to see all days</p>
       )}
@@ -436,9 +450,8 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 
-export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGross }: Props) {
-  const [showAll, setShowAll]       = useState(false);
-  const [relBlogs, setRelBlogs]     = useState<BlogPost[]>([]);
+export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGross, relatedBlogs = [], competingMovies = [] }: Props) {
+  const [showAll, setShowAll] = useState(false);
   const days        = initialDays;
   const visibleDays = showAll ? days : days.slice(0, 7);
   const maxNet      = Math.max(...days.map((d) => parseN(d.net)), 1);
@@ -446,19 +459,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
   const cast        = (movie.cast || []).slice(0, 6);
   const songs       = movie.media?.songs || [];
   const year        = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
-
-  // Fetch related blogs client-side
-  useEffect(() => {
-    if (!movie.title) return;
-    fetch(`${API_BASE}/blog?limit=6&movie=${encodeURIComponent(movie.title)}`, { cache: "no-store" })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (!d) return;
-        const posts: BlogPost[] = (d.posts || d || []).slice(0, 5);
-        setRelBlogs(posts);
-      })
-      .catch(() => {});
-  }, [movie.title]);
+  // relatedBlogs now comes from the server — no API call needed
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -492,6 +493,8 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                 <img src={movie.posterUrl} alt={movie.title}
                   className="w-24 h-32 object-cover rounded-lg shadow-2xl"
                   style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.8)" }}
+                  loading="eager"
+                  fetchPriority="high"
                   onError={(e) => (e.currentTarget.style.display = "none")} />
               </div>
             )}
@@ -537,6 +540,15 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 hover:border-purple-500/50 rounded-full text-xs font-semibold text-purple-400 transition-all">
                   📝 Reviews &amp; Blogs
                 </Link>
+                {/* WhatsApp share — primary sharing platform in Odisha */}
+                {totalNet > 0 && (
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`${movie.title} Box Office Collection: ${fmtINR(totalNet)} net in ${days.length} days 🎬\n\nFull day-wise data: https://ollypedia.in/box-office/${movie.slug}`)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600/10 hover:bg-green-600/20 border border-green-600/25 hover:border-green-600/50 rounded-full text-xs font-semibold text-green-400 transition-all">
+                    📲 Share on WhatsApp
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -567,7 +579,8 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
 
           {/* ── LEFT: Main content ── */}
-          <div className="space-y-8">
+          {/* min-w-0 is critical — prevents grid child from overflowing its column */}
+          <div className="space-y-8 min-w-0 overflow-hidden">
 
             {days.length === 0 && (
               <div className="text-center py-20 text-gray-500">
@@ -692,18 +705,29 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                           </tr>
                         </thead>
                         <tbody>
-                          {visibleDays.map((d, i) => (
-                            <tr key={d.day} className="border-b border-[#1a1a1a] hover:bg-orange-500/5 transition-colors"
-                              style={{ background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.012)" }}>
-                              <td className="px-5 py-3.5 font-bold text-orange-400">Day {d.day}</td>
-                              <td className="px-5 py-3.5 text-gray-400 text-xs">{d.date || "—"}</td>
-                              <td className="px-5 py-3.5 font-semibold text-white">{fmtINR(d.net)}</td>
-                              <td className="px-5 py-3.5 font-semibold text-sky-300">{fmtINR(d.gross)}</td>
-                              {days.some(x => x.screens)   && <td className="px-5 py-3.5 text-gray-400 text-xs">{d.screens || "—"}</td>}
-                              {days.some(x => x.occupancy) && <td className="px-5 py-3.5 text-gray-400 text-xs">{d.occupancy || "—"}</td>}
-                              {days.some(x => x.note)      && <td className="px-5 py-3.5 text-gray-500 text-xs max-w-xs">{d.note || "—"}</td>}
-                            </tr>
-                          ))}
+                          {days.map((d, i) => {
+                            const isHidden = !showAll && i >= 7;
+                            return (
+                              <tr key={d.day}
+                                className="border-b border-[#1a1a1a] hover:bg-orange-500/5 transition-colors"
+                                style={{
+                                  background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.012)",
+                                  display: isHidden ? "none" : undefined,
+                                }}>
+                                <td className="px-5 py-3.5 font-bold text-orange-400">Day {d.day}</td>
+                                <td className="px-5 py-3.5 text-gray-400 text-xs">
+                                  {d.date
+                                    ? <time dateTime={d.date}>{fmtDate(d.date)}</time>
+                                    : "—"}
+                                </td>
+                                <td className="px-5 py-3.5 font-semibold text-white">{fmtINR(d.net)}</td>
+                                <td className="px-5 py-3.5 font-semibold text-sky-300">{fmtINR(d.gross)}</td>
+                                {days.some(x => x.screens)   && <td className="px-5 py-3.5 text-gray-400 text-xs">{d.screens || "—"}</td>}
+                                {days.some(x => x.occupancy) && <td className="px-5 py-3.5 text-gray-400 text-xs">{d.occupancy || "—"}</td>}
+                                {days.some(x => x.note)      && <td className="px-5 py-3.5 text-gray-500 text-xs max-w-xs">{d.note || "—"}</td>}
+                              </tr>
+                            );
+                          })}
                         </tbody>
                         <tfoot>
                           <tr className="border-t-2 border-[#2a2a2a] bg-orange-500/5">
@@ -744,7 +768,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                       <h3 className="text-sm font-bold text-orange-300 mb-2">{movie.title} Opening Day Collection</h3>
                       <p className="text-sm text-gray-300 leading-relaxed">
                         {movie.title} opened to {fmtINR(days[0].net)} net ({fmtINR(days[0].gross)} gross) on its first day in Odia cinemas
-                        {days[0].date ? ` on ${fmtDate(days[0].date)}` : ""}.
+                        {days[0].date ? <> on <time dateTime={days[0].date}>{fmtDate(days[0].date)}</time></> : ""}.
                         {days[0].screens   ? ` The film ran across ${days[0].screens} screens` : ""}
                         {days[0].occupancy ? ` with ${days[0].occupancy} occupancy` : ""}.
                         {days[0].note ? ` ${days[0].note}` : ""}
@@ -774,7 +798,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                     <p className="text-sm text-gray-300 leading-relaxed">
                       After {days.length} day{days.length !== 1 ? "s" : ""} in theatres,{" "}
                       <strong className="text-white">{movie.title}</strong>{" "}
-                      {movie.releaseDate ? `(released ${fmtDate(movie.releaseDate)}) ` : ""}
+                      {movie.releaseDate ? <>(released <time dateTime={movie.releaseDate}>{fmtDate(movie.releaseDate)}</time>) </> : ""}
                       has earned a total of <strong className="text-orange-400">{fmtINR(totalNet)} net</strong> and{" "}
                       <strong className="text-sky-300">{fmtINR(totalGross)} gross</strong> at the worldwide box office.
                       {movie.budget ? ` The film was produced on a budget of ${movie.budget}.` : ""}
@@ -821,15 +845,94 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                   )}
                 </section>
 
+                {/* ── Week-wise Collection Grid ── */}
+                {days.length >= 7 && (() => {
+                  const w1 = days.slice(0,  7).reduce((s, d) => s + parseN(d.net), 0);
+                  const w2 = days.slice(7, 14).reduce((s, d) => s + parseN(d.net), 0);
+                  const w3 = days.slice(14, 21).reduce((s, d) => s + parseN(d.net), 0);
+                  const w4 = days.slice(21, 28).reduce((s, d) => s + parseN(d.net), 0);
+                  const weeks = [
+                    { label: "1st Week",  range: "Day 1–7",   net: w1, show: days.length >= 7  },
+                    { label: "2nd Week",  range: "Day 8–14",  net: w2, show: days.length >= 14 },
+                    { label: "3rd Week",  range: "Day 15–21", net: w3, show: days.length >= 21 },
+                    { label: "4th Week",  range: "Day 22–28", net: w4, show: days.length >= 28 },
+                  ].filter(w => w.show);
+                  return (
+                    <section>
+                      <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-orange-400" />
+                        {movie.title} Week-wise Box Office Collection
+                      </h2>
+                      <div className={`grid gap-3 ${weeks.length >= 3 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2"}`}>
+                        {weeks.map(w => (
+                          <div key={w.label} className="bg-[#111] border border-[#1f1f1f] rounded-xl p-4 text-center">
+                            <p className="text-[10px] font-black text-orange-400 uppercase tracking-wider">{w.label}</p>
+                            <p className="text-[9px] text-gray-600 mb-2">{w.range}</p>
+                            <p className="text-lg font-black text-white">{fmtINR(w.net)}</p>
+                            <p className="text-[9px] text-gray-600 mt-0.5">net</p>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Crawlable keyword text for week-wise searches */}
+                      <p className="text-[11px] text-gray-700 mt-3 leading-relaxed">
+                        {movie.title} week-wise net: {weeks.map((w, i) => (
+                          <span key={w.label}>{w.label} ({w.range}) — {fmtINR(w.net)}{i < weeks.length - 1 ? " · " : ""}</span>
+                        ))}. Total: {fmtINR(totalNet)} net.
+                      </p>
+                    </section>
+                  );
+                })()}
+
+                {/* ── Collection Milestones ── */}
+                {totalNet > 0 && (() => {
+                  const cr = 1_00_00_000;
+                  const lk = 1_00_000;
+                  const thresholds = [10*lk, 25*lk, 50*lk, 75*lk, 1*cr, 2*cr, 3*cr, 5*cr, 10*cr].filter(t => t <= totalNet);
+                  if (thresholds.length < 2) return null;
+                  const milestones: { label: string; day: number }[] = [];
+                  for (const t of thresholds) {
+                    let running = 0;
+                    for (const d of days) {
+                      running += parseN(d.net);
+                      if (running >= t) { milestones.push({ label: fmtINR(t), day: d.day }); break; }
+                    }
+                  }
+                  if (!milestones.length) return null;
+                  return (
+                    <section>
+                      <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-orange-400" />
+                        {movie.title} Box Office Milestones
+                      </h2>
+                      <div className="flex flex-wrap gap-2">
+                        {milestones.map(m => (
+                          <div key={m.label} className="flex items-center gap-2 bg-[#111] border border-orange-500/15 rounded-lg px-3 py-2.5">
+                            <span className="text-base">🏆</span>
+                            <div>
+                              <p className="text-xs font-black text-white leading-none">{m.label}</p>
+                              <p className="text-[10px] text-gray-600 mt-0.5">crossed on Day {m.day}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[11px] text-gray-700 mt-3">
+                        {movie.title} crossed {milestones.map((m, i) => (
+                          <span key={m.label}>{m.label} on Day {m.day}{i < milestones.length - 1 ? ", " : "."}</span>
+                        ))}
+                      </p>
+                    </section>
+                  );
+                })()}
+
                 {/* ── Related Blog Posts inline (mobile-friendly, shows before FAQ) ── */}
-                {relBlogs.length > 0 && (
+                {relatedBlogs.length > 0 && (
                   <section>
                     <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
                       <BookOpen className="w-5 h-5 text-purple-400" />
                       {movie.title} — Articles &amp; Reviews
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {relBlogs.map(b => (
+                      {relatedBlogs.map((b: BlogPost) => (
                         <Link key={b._id} href={`/blog/${b.slug}`}
                           className="flex items-start gap-3 p-3 bg-[#111] border border-[#1f1f1f] hover:border-purple-500/30 rounded-xl transition-all group">
                           {b.coverImage ? (
@@ -892,7 +995,52 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                   </section>
                 )}
 
-                {/* ── FAQ — 8 questions, keyword-rich ── */}
+                {/* ── Other Odia Movies Releasing Around Same Time ── */}
+                {competingMovies.length > 0 && (
+                  <section>
+                    <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
+                      <Film className="w-5 h-5 text-orange-400" />
+                      Other Odia Movies — Box Office {year || ""}
+                    </h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {competingMovies.map((m) => {
+                        const mNet = (m.boxOfficeDays || []).reduce(
+                          (s: number, d: any) => s + parseN(d.net), 0
+                        );
+                        return (
+                          <Link key={m._id} href={`/box-office/${m.slug}`}
+                            className="group bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl overflow-hidden transition-all">
+                            {m.posterUrl ? (
+                              <img src={m.posterUrl} alt={m.title}
+                                className="w-full aspect-[2/3] object-cover group-hover:opacity-90 transition-opacity" />
+                            ) : (
+                              <div className="w-full aspect-[2/3] bg-[#1a1a1a] flex items-center justify-center text-3xl text-gray-700">🎬</div>
+                            )}
+                            <div className="p-2.5">
+                              <p className="text-[11px] font-bold text-white group-hover:text-orange-400 transition-colors leading-snug line-clamp-2">{m.title}</p>
+                              {mNet > 0 && <p className="text-[10px] text-orange-400 font-bold mt-1">{fmtINR(mNet)}</p>}
+                              {m.verdict && <p className="text-[9px] text-gray-600 mt-0.5">{m.verdict}</p>}
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                    {/* Crawlable text — targets "Odia movies [year]" searches */}
+                    <p className="text-[11px] text-gray-700 mt-3">
+                      Other Odia (Ollywood) films releasing around the same time as {movie.title}:{" "}
+                      {competingMovies.map((m, i) => (
+                        <span key={m._id}>
+                          <Link href={`/box-office/${m.slug}`} className="text-gray-600 hover:text-orange-400 transition-colors">
+                            {m.title}
+                          </Link>
+                          {i < competingMovies.length - 1 ? ", " : "."}
+                        </span>
+                      ))}
+                    </p>
+                  </section>
+                )}
+
+                {/* ── FAQ ── */}
                 <section>
                   <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
                     <span className="text-orange-400">❓</span>
@@ -985,8 +1133,8 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
             {/* Quick explore links */}
             <QuickLinksSidebar movie={movie} />
 
-            {/* Related blogs (lazy loaded) */}
-            <RelatedBlogsSidebar blogs={relBlogs} movieTitle={movie.title} />
+            {/* Related blogs — server-fetched, always populated */}
+            <RelatedBlogsSidebar blogs={relatedBlogs} movieTitle={movie.title} />
 
             {/* Songs */}
             {songs.length > 0 && (

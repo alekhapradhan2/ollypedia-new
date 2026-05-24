@@ -9,7 +9,7 @@ import Movie              from "@/models/Movie";
 import Blog               from "@/models/Blog";
 import BoxOfficeClient    from "./BoxOfficeClient";
 
-export const revalidate    = 60;          // ← was 1800, now 60s for fresh data
+export const revalidate    = 3600;        // 1hr — BO data updates once/day; 60s was hammering DB
 export const dynamicParams = true;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -95,10 +95,10 @@ function getMisspellings(title: string): string[] {
 
 export async function generateStaticParams() {
   await connectDB();
+  // Fetch ALL box-office movies, not just 30 — pages beyond 30 were ISR cold-starts
   const movies = await (Movie as any)
     .find({ "boxOfficeDays.0": { $exists: true } }, "slug title")
     .sort({ updatedAt: -1 })
-    .limit(30)
     .lean();
   return movies.map((m: any) => ({
     slug: m.slug || String(m.title || "").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
@@ -133,6 +133,26 @@ async function getRelatedBlogs(movieTitle: string, limit = 6) {
     .limit(limit)
     .lean();
   return JSON.parse(JSON.stringify(blogs));
+}
+
+// Fetch movies releasing around the same date — "other Odia movies this week" section
+async function getCompetingMovies(currentSlug: string, releaseDate?: string, limit = 4) {
+  await connectDB();
+  if (!releaseDate) return [];
+  const d     = new Date(releaseDate);
+  const from  = new Date(d.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days before
+  const to    = new Date(d.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days after
+  const movies = await (Movie as any)
+    .find({
+      slug:        { $ne: currentSlug },
+      releaseDate: { $gte: from.toISOString().split("T")[0], $lte: to.toISOString().split("T")[0] },
+      "boxOfficeDays.0": { $exists: true },
+    })
+    .select("title slug posterUrl releaseDate verdict boxOfficeDays")
+    .sort({ releaseDate: 1 })
+    .limit(limit)
+    .lean();
+  return JSON.parse(JSON.stringify(movies));
 }
 
 // ─── Metadata ────────────────────────────────────────────────────────────────
@@ -243,6 +263,14 @@ export async function generateMetadata({
     year ? `odia box office ${year}` : "",
     year ? `best odia movie ${year}` : "",
 
+    // ── Cast-based keywords — actor name + "new movie collection" = top search type ──
+    ...(movie.cast || []).slice(0, 4).flatMap((c: any) => [
+      `${c.name} new movie`,
+      `${c.name} new movie collection`,
+      `${c.name} movie ${year || ""}`.trim(),
+      `${c.name} odia movie`,
+    ]),
+
     // ── Genre-based ──────────────────────────────────────────────────────
     ...(movie.genre || []).map((g: string) => `${g} odia film box office`),
     ...(movie.genre || []).map((g: string) => `${g} ollywood movie`),
@@ -263,6 +291,8 @@ export async function generateMetadata({
       url:           canonical,
       siteName:      "Ollypedia",
       type:          "article",
+      locale:        "en_IN",
+      publishedTime: movie.createdAt ? new Date(movie.createdAt).toISOString() : undefined,
       modifiedTime:  movie.updatedAt ? new Date(movie.updatedAt).toISOString() : undefined,
       images: [{ url: image, width: 1200, height: 630, alt: `${movie.title} Box Office Collection` }],
     },
@@ -270,6 +300,7 @@ export async function generateMetadata({
       card:        "summary_large_image",
       title,
       description,
+      site:        "@ollypedia",
       images:      [image],
     },
   };
@@ -293,8 +324,10 @@ export default async function BoxOfficePage({
   const year       = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
   const songs      = movie.media?.songs || [];
 
-  // ★ Fetch related blogs for JSON-LD inter-linking
-  const relatedBlogs = await getRelatedBlogs(movie.title, 6);
+  const [relatedBlogs, competingMovies] = await Promise.all([
+    getRelatedBlogs(movie.title, 6),
+    getCompetingMovies(slug, movie.releaseDate, 4),
+  ]);
 
   // ── Article JSON-LD ──────────────────────────────────────────────────────────
   const articleLd = {
@@ -315,13 +348,23 @@ export default async function BoxOfficePage({
       "@type": "@id",
       "@id":   `https://ollypedia.in/box-office/${slug}`,
     },
-    // ★ Link box-office page → movie entity
+    // ★ Link box-office page → movie entity with cast for Knowledge Panel
     "about": {
       "@type":       "Movie",
       "name":        movie.title,
       "url":         `https://ollypedia.in/movie/${movie.slug}`,
       "dateCreated": movie.releaseDate || undefined,
+      // sameAs links to IMDB/Wikipedia allow Google to match this to a known entity
+      // Add the real IMDB/Wikipedia URL if available in your movie data
+      ...(movie.imdbUrl    && { "sameAs": [movie.imdbUrl] }),
+      ...(movie.wikipediaUrl && { "sameAs": [movie.wikipediaUrl] }),
       ...(movie.director && { "director": { "@type": "Person", "name": movie.director } }),
+      ...(movie.cast?.length > 0 && {
+        "actor": movie.cast.slice(0, 5).map((c: any) => ({
+          "@type": "Person",
+          "name":  c.name,
+        })),
+      }),
       ...(songs.length > 0 && {
         "musicBy": songs[0]?.musicDirector
           ? { "@type": "Person", "name": songs[0].musicDirector }
@@ -340,6 +383,30 @@ export default async function BoxOfficePage({
       })),
     ],
   };
+
+  // ── Dataset JSON-LD — day-wise table as structured data ─────────────────────
+  // Google can render this as a data table in search results for collection queries
+  const datasetLd = days.length > 0 ? {
+    "@context":   "https://schema.org",
+    "@type":      "Dataset",
+    "name":       `${movie.title} Day-wise Box Office Collection`,
+    "description": `Complete day-wise net and gross box office collection of ${movie.title} at the Odia (Ollywood) box office.`,
+    "url":        `https://ollypedia.in/box-office/${slug}`,
+    "creator":    { "@type": "Organization", "name": "Ollypedia" },
+    "dateModified": movie.updatedAt ? new Date(movie.updatedAt).toISOString() : undefined,
+    "variableMeasured": ["Net Collection (INR)", "Gross Collection (INR)", "Day"],
+    "distribution": {
+      "@type":        "DataDownload",
+      "encodingFormat": "text/html",
+      "contentUrl":   `https://ollypedia.in/box-office/${slug}`,
+    },
+  } : null;
+
+  // ── Compute week totals for FAQ ───────────────────────────────────────────────
+  const week1Total  = days.slice(0,  7).reduce((s: number, d: any) => s + parseNum(d.net), 0);
+  const week2Total  = days.slice(7, 14).reduce((s: number, d: any) => s + parseNum(d.net), 0);
+  const week3Total  = days.slice(14, 21).reduce((s: number, d: any) => s + parseNum(d.net), 0);
+  const month1Total = days.slice(0, 30).reduce((s: number, d: any) => s + parseNum(d.net), 0);
 
   // ── FAQ JSON-LD ──────────────────────────────────────────────────────────────
   const faqLd = days.length > 0 ? {
@@ -367,7 +434,31 @@ export default async function BoxOfficePage({
         "name":  `What is ${movie.title} first week collection?`,
         "acceptedAnswer": {
           "@type": "Answer",
-          "text":  `${movie.title} earned ${fmtINR(days.slice(0,7).reduce((s: number, d: any) => s + parseNum(d.net), 0))} net in its first week.`,
+          "text":  `${movie.title} earned ${fmtINR(week1Total)} net in its first week (Day 1–7) at the Odia box office.`,
+        },
+      }] : []),
+      ...(days.length >= 14 ? [{
+        "@type": "Question",
+        "name":  `What is ${movie.title} second week collection?`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text":  `${movie.title} collected ${fmtINR(week2Total)} net in its second week (Day 8–14). The two-week total stands at ${fmtINR(week1Total + week2Total)} net.`,
+        },
+      }] : []),
+      ...(days.length >= 21 ? [{
+        "@type": "Question",
+        "name":  `What is ${movie.title} third week collection?`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text":  `${movie.title} earned ${fmtINR(week3Total)} net in its third week (Day 15–21). Three-week total: ${fmtINR(week1Total + week2Total + week3Total)} net.`,
+        },
+      }] : []),
+      ...(days.length >= 30 ? [{
+        "@type": "Question",
+        "name":  `What is ${movie.title} total 30-day box office collection?`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text":  `${movie.title} collected a total of ${fmtINR(month1Total)} net in its first 30 days of theatrical run at the Odia (Ollywood) box office.`,
         },
       }] : []),
       {
@@ -400,6 +491,21 @@ export default async function BoxOfficePage({
     ],
   };
 
+  // ── VideoObject JSON-LD — trailer video rich result ──────────────────────────
+  const trailerYtId = movie.media?.trailer?.ytId || movie.trailerYtId || null;
+  const videoLd = trailerYtId ? {
+    "@context":     "https://schema.org",
+    "@type":        "VideoObject",
+    "name":         `${movie.title} Official Trailer`,
+    "description":  `Watch the official trailer of ${movie.title}, an Odia film${movie.director ? ` directed by ${movie.director}` : ""}.`,
+    "thumbnailUrl": `https://img.youtube.com/vi/${trailerYtId}/maxresdefault.jpg`,
+    "uploadDate":   movie.releaseDate ? new Date(movie.releaseDate).toISOString() : new Date().toISOString(),
+    "contentUrl":   `https://www.youtube.com/watch?v=${trailerYtId}`,
+    "embedUrl":     `https://www.youtube.com/embed/${trailerYtId}`,
+    "publisher":    { "@type": "Organization", "name": "Ollypedia" },
+    "inLanguage":   "or",
+  } : null;
+
   // ── Blog ItemList JSON-LD — helps Google see blog links from this page ──────
   const blogItemListLd = relatedBlogs.length > 0 ? {
     "@context": "https://schema.org",
@@ -420,6 +526,12 @@ export default async function BoxOfficePage({
       {faqLd && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
       )}
+      {datasetLd && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(datasetLd) }} />
+      )}
+      {videoLd && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(videoLd) }} />
+      )}
       {blogItemListLd && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogItemListLd) }} />
       )}
@@ -428,6 +540,8 @@ export default async function BoxOfficePage({
         initialDays={days}
         totalNet={totalNet}
         totalGross={totalGross}
+        relatedBlogs={relatedBlogs}
+        competingMovies={competingMovies}
       />
     </>
   );
