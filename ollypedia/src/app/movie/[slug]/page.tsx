@@ -738,6 +738,34 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               </div>
             )}
 
+            {/* OTT compact sidebar card */}
+            {movie.streamingOn && (
+              <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-5">
+                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <Play className="w-3.5 h-3.5 text-orange-500" /> Streaming
+                </h2>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-orange-500/10 border border-orange-500/20 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                    {({ "Aao NXT":"🎬","Tarang Plus":"📺","Kanccha Lannka":"🎥","SonyLIV":"🔴","Disney+ Hotstar":"⭐","Netflix":"🎞","Amazon Prime":"📦","ZEE5":"🟣","MX Player":"▶️","YouTube":"🔴" } as Record<string,string>)[movie.streamingOn] ?? "🌐"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white truncate">{movie.streamingOn}</p>
+                    <p className="text-[10px] text-gray-500">Available now</p>
+                  </div>
+                </div>
+                {movie.streamingUrl && (
+                  <a href={movie.streamingUrl} target="_blank" rel="noopener noreferrer"
+                    className="mt-3 flex items-center justify-center gap-1.5 text-xs font-bold
+                      text-orange-400 hover:text-orange-300 bg-orange-500/8 hover:bg-orange-500/14
+                      border border-orange-500/20 rounded-xl py-2.5 transition-all group">
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    Watch Now
+                    <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </a>
+                )}
+              </div>
+            )}
+
             {/* Vote buttons */}
             <VoteButtons movieId={String(movie._id)}
               initialYes={movie.interestedYes || 0} initialNo={movie.interestedNo || 0} />
@@ -866,20 +894,68 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
 
             {/* ── Where to Watch ── */}
             {movie.streamingOn && (
-              <section aria-label={`Where to watch ${movie.title}`}>
+              <section aria-label={`Where to watch ${movie.title} online`}>
                 <SectionHeading icon={Play} title="Where to Watch" />
-                <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-5 flex items-center gap-4">
-                  <div className="w-10 h-10 bg-emerald-500/10 border border-emerald-500/20 rounded-xl
-                    flex items-center justify-center flex-shrink-0 text-xl">🎬</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-white">{movie.streamingOn}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Now streaming on {movie.streamingOn}</p>
-                  </div>
-                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full
-                    bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex-shrink-0">
-                    OTT
-                  </span>
-                </div>
+                {(() => {
+                  // Per-platform brand colours for a polished look
+                  const BRAND: Record<string, { bg: string; border: string; text: string; badge: string }> = {
+                    "Aao NXT":         { bg:"bg-blue-500/10",    border:"border-blue-500/25",    text:"text-blue-300",    badge:"bg-blue-500/15 border-blue-500/30 text-blue-400" },
+                    "Tarang Plus":     { bg:"bg-orange-500/10",  border:"border-orange-500/25",  text:"text-orange-300",  badge:"bg-orange-500/15 border-orange-500/30 text-orange-400" },
+                    "Kanccha Lannka":  { bg:"bg-red-500/10",     border:"border-red-500/25",     text:"text-red-300",     badge:"bg-red-500/15 border-red-500/30 text-red-400" },
+                    "SonyLIV":         { bg:"bg-pink-500/10",    border:"border-pink-500/25",    text:"text-pink-300",    badge:"bg-pink-500/15 border-pink-500/30 text-pink-400" },
+                    "Disney+ Hotstar": { bg:"bg-indigo-500/10",  border:"border-indigo-500/25",  text:"text-indigo-300",  badge:"bg-indigo-500/15 border-indigo-500/30 text-indigo-400" },
+                    "Netflix":         { bg:"bg-red-600/10",     border:"border-red-600/25",     text:"text-red-300",     badge:"bg-red-600/15 border-red-600/30 text-red-400" },
+                    "Amazon Prime":    { bg:"bg-cyan-500/10",    border:"border-cyan-500/25",    text:"text-cyan-300",    badge:"bg-cyan-500/15 border-cyan-500/30 text-cyan-400" },
+                    "ZEE5":            { bg:"bg-purple-500/10",  border:"border-purple-500/25",  text:"text-purple-300",  badge:"bg-purple-500/15 border-purple-500/30 text-purple-400" },
+                    "MX Player":       { bg:"bg-yellow-500/10",  border:"border-yellow-500/25",  text:"text-yellow-300",  badge:"bg-yellow-500/15 border-yellow-500/30 text-yellow-400" },
+                    "YouTube":         { bg:"bg-red-500/10",     border:"border-red-500/25",     text:"text-red-300",     badge:"bg-red-500/15 border-red-500/30 text-red-400" },
+                  };
+                  const LOGO: Record<string, string> = {
+                    "Aao NXT":"🎬","Tarang Plus":"📺","Kanccha Lannka":"🎥",
+                    "SonyLIV":"🔴","Disney+ Hotstar":"⭐","Netflix":"🎞",
+                    "Amazon Prime":"📦","ZEE5":"🟣","MX Player":"▶️","YouTube":"🔴",
+                  };
+                  const brand = BRAND[movie.streamingOn] ?? {
+                    bg:"bg-emerald-500/10", border:"border-emerald-500/25",
+                    text:"text-emerald-300", badge:"bg-emerald-500/15 border-emerald-500/30 text-emerald-400",
+                  };
+                  const logo  = LOGO[movie.streamingOn] ?? "🌐";
+                  return (
+                    <div className={`${brand.bg} border ${brand.border} rounded-2xl p-5`}>
+                      <div className="flex items-center gap-4">
+                        {/* Icon */}
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0
+                          text-3xl border ${brand.border} bg-black/20`}>
+                          {logo}
+                        </div>
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5 font-semibold">Now Streaming On</p>
+                          <p className={`text-lg font-black ${brand.text} leading-tight`}>{movie.streamingOn}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {movie.title} is available to watch online on {movie.streamingOn}
+                          </p>
+                        </div>
+                        {/* OTT badge */}
+                        <span className={`hidden sm:flex text-[10px] font-black px-2.5 py-1 rounded-full
+                          border ${brand.badge} flex-shrink-0`}>
+                          OTT
+                        </span>
+                      </div>
+                      {/* CTA button */}
+                      {movie.streamingUrl && (
+                        <a href={movie.streamingUrl} target="_blank" rel="noopener noreferrer"
+                          className={`mt-4 flex items-center justify-center gap-2 w-full py-3 rounded-xl
+                            border ${brand.border} ${brand.bg} hover:brightness-125 transition-all
+                            text-sm font-bold ${brand.text} group`}>
+                          <Play className="w-4 h-4 fill-current" />
+                          Watch on {movie.streamingOn}
+                          <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                        </a>
+                      )}
+                    </div>
+                  );
+                })()}
               </section>
             )}
 
@@ -1151,7 +1227,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                     {
                       q: `Is ${movie.title} available on OTT?`,
                       a: movie.streamingOn
-                        ? `${movie.title} is available to stream on ${movie.streamingOn}.`
+                        ? `${movie.title} is available to stream on ${movie.streamingOn}.${movie.streamingUrl ? ` Watch it at ${movie.streamingUrl}` : ""}`
                         : `OTT streaming availability for ${movie.title} is yet to be confirmed. It may be available on Aao NXT (aaonxt.com), Kanccha Lannka (kancchalannka.com), or Tarang Plus (tarangplus.in). Check back on Ollypedia for updates.`,
                     },
                     {
