@@ -158,9 +158,7 @@ function getProducerFromCast(castList: any[]): string | undefined {
 
 // ─── Static params ─────────────────────────────────────────────────────────
 export async function generateStaticParams() {
-  await connectDB();
-  const movies = await Movie.find({}, "slug _id").sort({ releaseDate: -1 }).limit(200).lean();
-  return movies.map((m: any) => ({ slug: m.slug || String(m._id) }));
+  return [];
 }
 
 // ─── Data helpers ─────────────────────────────────────────────────────────
@@ -249,19 +247,127 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!movie) return { robots: { index: false, follow: false } };
   if (!movie.title?.trim()) return { robots: { index: false, follow: false } };
 
-  // Prefer cast-list data for director/producer, fall back to movie fields
-  const directorName  = getDirectorFromCast(movie.cast || []) || movie.director;
-  const producerName  = getProducerFromCast(movie.cast || []) || movie.producer;
-
   const year      = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
   const yearStr   = year ? ` (${year})` : "";
-  const title     = `${movie.title}${yearStr} – Cast, Songs & Review | Ollypedia`;
+
+  // OTT helpers for title/description
+  const ottDate     = movie.ottReleaseDate || "";
+  const isTBA       = ottDate === "TBA";
+  const isOttLive   = !isTBA && (!ottDate || new Date(ottDate) <= new Date());
+  const isOttComing = !isTBA && !!ottDate && new Date(ottDate) > new Date();
+  const ottFmtDate  = (ottDate && ottDate !== "TBA") ? new Date(ottDate).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"}) : "";
+
+  // Dynamic title: append OTT info when available
+  const ottTitleSuffix = movie.streamingOn
+    ? isOttLive
+      ? ` | Now on ${movie.streamingOn}`
+      : isOttComing
+      ? ` | OTT ${ottFmtDate}`
+      : isTBA
+      ? ` | OTT Release Soon`
+      : ""
+    : "";
+  const title = `${movie.title}${yearStr} – Cast, Songs & Review${ottTitleSuffix} | Ollypedia`;
+
+  // Dynamic description: weave in OTT info
+  const ottDescPart = movie.streamingOn
+    ? isOttLive
+      ? ` Now streaming on ${movie.streamingOn}.`
+      : isOttComing
+      ? ` OTT release on ${movie.streamingOn} from ${ottFmtDate}.`
+      : isTBA
+      ? ` OTT release on ${movie.streamingOn} — date to be announced.`
+      : ""
+    : "";
   const description = (
-    movie.synopsis?.slice(0, 155) ||
-    `Complete information about the Odia film ${movie.title}${yearStr} — cast, songs, trailer, box office collection and reviews on Ollypedia.`
-  );
+    movie.synopsis
+      ? movie.synopsis.slice(0, 130) + ottDescPart
+      : `Complete info about Odia film ${movie.title}${yearStr}${ottDescPart} Cast, songs, trailer, box office & reviews on Ollypedia.`
+  ).slice(0, 160);
+
   const image     = movie.posterUrl || movie.thumbnailUrl || "https://ollypedia.in/default.jpg";
   const canonical = `https://ollypedia.in/movie/${movie.slug || movie._id}`;
+
+  // ── OTT keyword matrix ──────────────────────────────────────────────────────
+  const ottKw: string[] = movie.streamingOn ? [
+    // Generic OTT search patterns
+    `${movie.title} ott`,
+    `${movie.title} ott release`,
+    `${movie.title} ott release date`,
+    `${movie.title} ott platform`,
+    `${movie.title} watch online`,
+    `${movie.title} streaming`,
+    `${movie.title} streaming platform`,
+    `${movie.title} where to watch`,
+    `${movie.title} online watch`,
+    `${movie.title} watch free`,
+    `${movie.title} digital release`,
+    `${movie.title} digital release date`,
+    `${movie.title} web release`,
+    `${movie.title} web release date`,
+    `${movie.title} available online`,
+    `${movie.title} download`,
+    `${movie.title} full movie`,
+    `${movie.title} full movie online`,
+    `${movie.title} full movie watch online`,
+    // Platform-specific
+    `${movie.title} ${movie.streamingOn}`,
+    `${movie.title} ${movie.streamingOn} release date`,
+    `${movie.title} ${movie.streamingOn} watch`,
+    `watch ${movie.title} on ${movie.streamingOn}`,
+    `${movie.title} on ${movie.streamingOn}`,
+    // With year
+    year ? `${movie.title} ${year} ott` : "",
+    year ? `${movie.title} ${year} ott release date` : "",
+    year ? `${movie.title} ${year} watch online` : "",
+    year ? `${movie.title} ${year} ${movie.streamingOn}` : "",
+    year ? `${movie.title} ${year} streaming` : "",
+    year ? `${movie.title} ${year} digital release` : "",
+    // Odia-specific OTT queries
+    `${movie.title} odia movie ott`,
+    `${movie.title} odia film ott`,
+    `${movie.title} odia movie watch online`,
+    `${movie.title} odia movie streaming`,
+    `${movie.title} odia movie digital release`,
+    `${movie.title} odia full movie`,
+    `${movie.title} odia full movie online`,
+    // Status-specific keywords
+    ...(isOttLive ? [
+      `${movie.title} now streaming`,
+      `${movie.title} now available online`,
+      `watch ${movie.title} online now`,
+      `${movie.title} ${movie.streamingOn} available`,
+    ] : []),
+    ...(isOttComing ? [
+      `${movie.title} ott release ${ottFmtDate}`,
+      `when is ${movie.title} on ott`,
+      `${movie.title} ott date`,
+    ] : []),
+    ...(isTBA ? [
+      `${movie.title} ott date tba`,
+      `when will ${movie.title} release on ott`,
+      `${movie.title} ott announced`,
+    ] : []),
+    // Odia OTT platform generics (helps rank for category searches)
+    `aao nxt odia movies`, `tarang plus odia movies`, `kanccha lannka movies`,
+    `odia movie ott release ${year || ""}`.trim(),
+    `ollywood ott release ${year || ""}`.trim(),
+    `odia film streaming platform`,
+  ].filter(Boolean) as string[] : [
+    // No platform yet — rank for "where to watch" queries anyway
+    `${movie.title} ott`,
+    `${movie.title} watch online`,
+    `${movie.title} streaming`,
+    `${movie.title} ott release date`,
+    `${movie.title} where to watch`,
+    `${movie.title} digital release date`,
+    `odia movie ott release`,
+    `ollywood ott`,
+  ];
+
+  // ── Core keyword matrix ─────────────────────────────────────────────────────
+  const directorName = getDirectorFromCast(movie.cast || []) || movie.director;
+  const producerName = getProducerFromCast(movie.cast || []) || movie.producer;
 
   const keywords = [
     movie.title,
@@ -273,16 +379,28 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     `${movie.title} cast`,
     `${movie.title} trailer`,
     `${movie.title} box office`,
+    `${movie.title} box office collection`,
+    `${movie.title} collection`,
     year ? `${movie.title} ${year}` : null,
     year ? `${movie.title} odia movie ${year}` : null,
+    year ? `${movie.title} ${year} release` : null,
+    directorName ? `${movie.title} directed by ${directorName}` : null,
     directorName ? `${directorName} movie` : null,
     directorName ? `${directorName} odia film` : null,
+    directorName ? `${directorName} new movie` : null,
     producerName ? `${producerName} production` : null,
-    "Odia movie", "Ollywood", "Odia film", "Odia cinema",
+    producerName ? `${producerName} odia film` : null,
+    "Odia movie", "Ollywood", "Odia film", "Odia cinema", "Ollywood movies",
     year ? `Odia movie ${year}` : null,
-    ...(movie.genre || []).map((g: string) => `${g} Odia film`),
-    ...(movie.cast  || []).slice(0, 3).map((c: any) => c.name).filter(Boolean),
+    year ? `Ollywood ${year}` : null,
+    `${movie.title} rating`,
+    `${movie.title} hit or flop`,
+    movie.verdict ? `${movie.title} ${movie.verdict.toLowerCase()}` : null,
+    ...(movie.genre || []).flatMap((g: string) => [`${g} Odia film`, `${g} Ollywood movie`, `Odia ${g} film ${year || ""}`.trim()]),
+    ...(movie.cast || []).slice(0, 5).map((c: any) => c.name).filter(Boolean).flatMap((n: string) => [n, `${n} odia movie`, `${n} new movie`]),
     ...getMisspellings(movie.title),
+    // OTT keyword matrix
+    ...ottKw,
   ].filter(Boolean) as string[];
 
   return {
@@ -327,6 +445,39 @@ function buildFaqJsonLd(movie: any, year: string | number, avgRating: number | n
       question: `Who is the director of ${movie.title}?`,
       answer: `${movie.title} was directed by ${directorName}${producerName ? ` and produced by ${producerName}` : ""}${year ? ` (${year})` : ""}.`,
     }] : []),
+    // OTT FAQ — critical for search visibility
+    {
+      question: `Is ${movie.title} available on OTT?`,
+      answer: movie.streamingOn
+        ? (() => {
+            const od = movie.ottReleaseDate || "";
+            const tba = od === "TBA";
+            const live = !tba && (!od || new Date(od) <= new Date());
+            const coming = !tba && !!od && new Date(od) > new Date();
+            const fmtD = od && od !== "TBA" ? new Date(od).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"}) : "";
+            if (live) return `Yes, ${movie.title} is currently streaming on ${movie.streamingOn}${movie.streamingUrl ? ` at ${movie.streamingUrl}` : ""}. You can watch it online now.`;
+            if (coming) return `${movie.title} will be available on ${movie.streamingOn} from ${fmtD}. It has not yet released on OTT.`;
+            if (tba) return `${movie.title} is confirmed for OTT release on ${movie.streamingOn}. The exact date has not been announced yet.`;
+            return `${movie.title} is available to stream on ${movie.streamingOn}.`;
+          })()
+        : `The OTT release date and platform for ${movie.title} have not been officially announced. It may release on Aao NXT, Tarang Plus, or Kanccha Lannka. Follow Ollypedia for updates.`,
+    },
+    {
+      question: `When is the OTT release date of ${movie.title}?`,
+      answer: movie.streamingOn
+        ? (() => {
+            const od = movie.ottReleaseDate || "";
+            const tba = od === "TBA";
+            const live = !tba && (!od || new Date(od) <= new Date());
+            const coming = !tba && !!od && new Date(od) > new Date();
+            const fmtD = od && od !== "TBA" ? new Date(od).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"}) : "";
+            if (live) return `${movie.title} has already released on OTT${od && od !== "TBA" ? ` on ${fmtD}` : ""}. It is now streaming on ${movie.streamingOn}.`;
+            if (coming) return `The OTT release date of ${movie.title} is ${fmtD}. It will stream on ${movie.streamingOn}.`;
+            if (tba) return `The OTT release date of ${movie.title} on ${movie.streamingOn} is to be announced (TBA).`;
+            return `${movie.title} is streaming on ${movie.streamingOn}.`;
+          })()
+        : `The OTT release date of ${movie.title} has not been announced yet.`,
+    },
   ];
   return {
     "@context": "https://schema.org",
@@ -459,7 +610,26 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
         reviewCount: String(movie.reviews?.length || 1),
       },
     } : {}),
-    ...(movie._productionName ? { productionCompany: { "@type": "Organization", name: movie._productionName } } : {}),
+...(movie._productionName ? { productionCompany: { "@type": "Organization", name: movie._productionName } } : {}),
+    // WatchAction — tells Google where/when this movie can be watched
+    ...(movie.streamingOn && movie.streamingUrl && (() => {
+      const od = movie.ottReleaseDate || "";
+      return od !== "TBA" && (!od || new Date(od) <= new Date());
+    })() ? {
+      potentialAction: {
+        "@type": "WatchAction",
+        target: movie.streamingUrl,
+        "actionAccessibilityRequirement": {
+          "@type": "ActionAccessSpecification",
+          "category": "subscription",
+          "availabilityStarts": movie.ottReleaseDate && movie.ottReleaseDate !== "TBA"
+            ? new Date(movie.ottReleaseDate).toISOString()
+            : new Date().toISOString(),
+          "eligibleRegion": { "@type": "Country", name: "IN" },
+          "requiresSubscription": { "@type": "MediaSubscription", name: movie.streamingOn },
+        },
+      },
+    } : {}),
   };
 
   const structuredData = [
@@ -540,11 +710,6 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   sizes="(max-width: 640px) 96px, (max-width: 768px) 144px, 208px"
                 />
               </div>
-              {movie.streamingOn && (
-                <p className="mt-2 text-center text-[10px] text-gray-400 bg-[#1a1a1a] border border-[#2a2a2a] rounded-full px-2 py-0.5 truncate">
-                  🎬 {movie.streamingOn}
-                </p>
-              )}
             </div>
 
             {/* Title + meta — takes remaining width */}
@@ -738,32 +903,97 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               </div>
             )}
 
-            {/* OTT compact sidebar card */}
+            {/* ── OTT / Streaming sidebar card ── */}
             {movie.streamingOn && (
-              <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-5">
-                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <Play className="w-3.5 h-3.5 text-orange-500" /> Streaming
-                </h2>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-orange-500/10 border border-orange-500/20 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
-                    {({ "Aao NXT":"🎬","Tarang Plus":"📺","Kanccha Lannka":"🎥","SonyLIV":"🔴","Disney+ Hotstar":"⭐","Netflix":"🎞","Amazon Prime":"📦","ZEE5":"🟣","MX Player":"▶️","YouTube":"🔴" } as Record<string,string>)[movie.streamingOn] ?? "🌐"}
+              (() => {
+                const LOGO: Record<string,string> = {
+                  "Aao NXT":"🎬","Tarang Plus":"📺","Kanccha Lannka":"🎥",
+                  "SonyLIV":"🔴","Disney+ Hotstar":"⭐","Netflix":"🎞",
+                  "Amazon Prime":"📦","ZEE5":"🟣","MX Player":"▶️","YouTube":"🔴",
+                };
+                const logo    = LOGO[movie.streamingOn] ?? "🌐";
+                const ottDate = movie.ottReleaseDate || "";
+                const isTBA   = ottDate === "TBA";
+                const isComing  = !isTBA && !!ottDate && new Date(ottDate) > new Date();
+                const isAvailable = !isTBA && (!ottDate || new Date(ottDate) <= new Date());
+
+                const status = isTBA
+                  ? {
+                      label: "Coming Soon",
+                      sub:   "OTT date to be announced",
+                      dot:   "bg-amber-400",
+                      badge: "bg-amber-500/15 border-amber-500/30 text-amber-400",
+                      card:  "border-amber-500/20",
+                      pulse: false,
+                    }
+                  : isComing
+                  ? {
+                      label: `Coming ${ new Date(ottDate).toLocaleDateString("en-IN",{ day:"numeric", month:"short", year:"numeric" }) }`,
+                      sub:   `${Math.ceil((new Date(ottDate).getTime()-Date.now())/86400000)} days to go`,
+                      dot:   "bg-blue-400",
+                      badge: "bg-blue-500/15 border-blue-500/30 text-blue-400",
+                      card:  "border-blue-500/20",
+                      pulse: false,
+                    }
+                  : {
+                      label: "Available Now",
+                      sub:   "Watch online anytime",
+                      dot:   "bg-emerald-400",
+                      badge: "bg-emerald-500/15 border-emerald-500/30 text-emerald-400",
+                      card:  "border-emerald-500/20",
+                      pulse: true,
+                    };
+
+                return (
+                  <div className={`bg-[#111] border ${status.card} rounded-2xl p-5`}>
+                    <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                      <Play className="w-3.5 h-3.5 text-orange-500" /> Streaming
+                    </h2>
+
+                    {/* Platform row */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                        {logo}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-black text-white truncate">{movie.streamingOn}</p>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider">OTT Platform</p>
+                      </div>
+                    </div>
+
+                    {/* Status badge */}
+                    <div className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 border ${status.badge} mb-3`}>
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${status.dot}${status.pulse ? " animate-pulse" : ""}`} />
+                      <div className="min-w-0">
+                        <p className="text-xs font-black text-white leading-tight">{status.label}</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">{status.sub}</p>
+                      </div>
+                    </div>
+
+                    {/* Watch Now CTA — only when streaming URL is set and movie is live */}
+                    {movie.streamingUrl && isAvailable && (
+                      <a href={movie.streamingUrl} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl
+                          text-xs font-bold text-emerald-400 hover:text-emerald-300
+                          bg-emerald-500/8 hover:bg-emerald-500/15 border border-emerald-500/20
+                          transition-all group">
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        Watch on {movie.streamingOn}
+                        <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                      </a>
+                    )}
+
+                    {/* Coming / TBA — no CTA, just a soft nudge */}
+                    {(isTBA || isComing) && (
+                      <p className="text-center text-[10px] text-gray-600 mt-1 leading-relaxed">
+                        {isTBA
+                          ? "Follow Ollypedia for the latest OTT updates"
+                          : "Set a reminder — drops soon!"}
+                      </p>
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-white truncate">{movie.streamingOn}</p>
-                    <p className="text-[10px] text-gray-500">Available now</p>
-                  </div>
-                </div>
-                {movie.streamingUrl && (
-                  <a href={movie.streamingUrl} target="_blank" rel="noopener noreferrer"
-                    className="mt-3 flex items-center justify-center gap-1.5 text-xs font-bold
-                      text-orange-400 hover:text-orange-300 bg-orange-500/8 hover:bg-orange-500/14
-                      border border-orange-500/20 rounded-xl py-2.5 transition-all group">
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    Watch Now
-                    <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                  </a>
-                )}
-              </div>
+                );
+              })()
             )}
 
             {/* Vote buttons */}
@@ -897,62 +1127,98 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               <section aria-label={`Where to watch ${movie.title} online`}>
                 <SectionHeading icon={Play} title="Where to Watch" />
                 {(() => {
-                  // Per-platform brand colours for a polished look
-                  const BRAND: Record<string, { bg: string; border: string; text: string; badge: string }> = {
-                    "Aao NXT":         { bg:"bg-blue-500/10",    border:"border-blue-500/25",    text:"text-blue-300",    badge:"bg-blue-500/15 border-blue-500/30 text-blue-400" },
-                    "Tarang Plus":     { bg:"bg-orange-500/10",  border:"border-orange-500/25",  text:"text-orange-300",  badge:"bg-orange-500/15 border-orange-500/30 text-orange-400" },
-                    "Kanccha Lannka":  { bg:"bg-red-500/10",     border:"border-red-500/25",     text:"text-red-300",     badge:"bg-red-500/15 border-red-500/30 text-red-400" },
-                    "SonyLIV":         { bg:"bg-pink-500/10",    border:"border-pink-500/25",    text:"text-pink-300",    badge:"bg-pink-500/15 border-pink-500/30 text-pink-400" },
-                    "Disney+ Hotstar": { bg:"bg-indigo-500/10",  border:"border-indigo-500/25",  text:"text-indigo-300",  badge:"bg-indigo-500/15 border-indigo-500/30 text-indigo-400" },
-                    "Netflix":         { bg:"bg-red-600/10",     border:"border-red-600/25",     text:"text-red-300",     badge:"bg-red-600/15 border-red-600/30 text-red-400" },
-                    "Amazon Prime":    { bg:"bg-cyan-500/10",    border:"border-cyan-500/25",    text:"text-cyan-300",    badge:"bg-cyan-500/15 border-cyan-500/30 text-cyan-400" },
-                    "ZEE5":            { bg:"bg-purple-500/10",  border:"border-purple-500/25",  text:"text-purple-300",  badge:"bg-purple-500/15 border-purple-500/30 text-purple-400" },
-                    "MX Player":       { bg:"bg-yellow-500/10",  border:"border-yellow-500/25",  text:"text-yellow-300",  badge:"bg-yellow-500/15 border-yellow-500/30 text-yellow-400" },
-                    "YouTube":         { bg:"bg-red-500/10",     border:"border-red-500/25",     text:"text-red-300",     badge:"bg-red-500/15 border-red-500/30 text-red-400" },
+                  const BRAND: Record<string,{bg:string;border:string;text:string;btn:string}> = {
+                    "Aao NXT":        {bg:"bg-blue-500/10",    border:"border-blue-500/25",    text:"text-blue-300",    btn:"text-blue-400 bg-blue-500/8 hover:bg-blue-500/15 border-blue-500/20"},
+                    "Tarang Plus":    {bg:"bg-orange-500/10",  border:"border-orange-500/25",  text:"text-orange-300",  btn:"text-orange-400 bg-orange-500/8 hover:bg-orange-500/15 border-orange-500/20"},
+                    "Kanccha Lannka": {bg:"bg-red-500/10",     border:"border-red-500/25",     text:"text-red-300",     btn:"text-red-400 bg-red-500/8 hover:bg-red-500/15 border-red-500/20"},
+                    "SonyLIV":        {bg:"bg-pink-500/10",    border:"border-pink-500/25",    text:"text-pink-300",    btn:"text-pink-400 bg-pink-500/8 hover:bg-pink-500/15 border-pink-500/20"},
+                    "Disney+ Hotstar":{bg:"bg-indigo-500/10",  border:"border-indigo-500/25",  text:"text-indigo-300",  btn:"text-indigo-400 bg-indigo-500/8 hover:bg-indigo-500/15 border-indigo-500/20"},
+                    "Netflix":        {bg:"bg-red-600/10",     border:"border-red-600/25",     text:"text-red-300",     btn:"text-red-400 bg-red-600/8 hover:bg-red-600/15 border-red-600/20"},
+                    "Amazon Prime":   {bg:"bg-cyan-500/10",    border:"border-cyan-500/25",    text:"text-cyan-300",    btn:"text-cyan-400 bg-cyan-500/8 hover:bg-cyan-500/15 border-cyan-500/20"},
+                    "ZEE5":           {bg:"bg-purple-500/10",  border:"border-purple-500/25",  text:"text-purple-300",  btn:"text-purple-400 bg-purple-500/8 hover:bg-purple-500/15 border-purple-500/20"},
+                    "MX Player":      {bg:"bg-yellow-500/10",  border:"border-yellow-500/25",  text:"text-yellow-300",  btn:"text-yellow-400 bg-yellow-500/8 hover:bg-yellow-500/15 border-yellow-500/20"},
+                    "YouTube":        {bg:"bg-red-500/10",     border:"border-red-500/25",     text:"text-red-300",     btn:"text-red-400 bg-red-500/8 hover:bg-red-500/15 border-red-500/20"},
                   };
-                  const LOGO: Record<string, string> = {
-                    "Aao NXT":"🎬","Tarang Plus":"📺","Kanccha Lannka":"🎥",
-                    "SonyLIV":"🔴","Disney+ Hotstar":"⭐","Netflix":"🎞",
-                    "Amazon Prime":"📦","ZEE5":"🟣","MX Player":"▶️","YouTube":"🔴",
+                  const LOGO: Record<string,string> = {
+                    "Aao NXT":"🎬","Tarang Plus":"📺","Kanccha Lannka":"🎥","SonyLIV":"🔴",
+                    "Disney+ Hotstar":"⭐","Netflix":"🎞","Amazon Prime":"📦","ZEE5":"🟣","MX Player":"▶️","YouTube":"🔴",
                   };
-                  const brand = BRAND[movie.streamingOn] ?? {
-                    bg:"bg-emerald-500/10", border:"border-emerald-500/25",
-                    text:"text-emerald-300", badge:"bg-emerald-500/15 border-emerald-500/30 text-emerald-400",
-                  };
+                  const brand = BRAND[movie.streamingOn] ?? {bg:"bg-emerald-500/10",border:"border-emerald-500/25",text:"text-emerald-300",btn:"text-emerald-400 bg-emerald-500/8 hover:bg-emerald-500/15 border-emerald-500/20"};
                   const logo  = LOGO[movie.streamingOn] ?? "🌐";
+
+                  const ottDate    = movie.ottReleaseDate || "";
+                  const isTBA      = ottDate === "TBA";
+                  const isComing   = !isTBA && !!ottDate && new Date(ottDate) > new Date();
+                  const isAvailable= !isTBA && (!ottDate || new Date(ottDate) <= new Date());
+                  const daysLeft   = isComing ? Math.ceil((new Date(ottDate).getTime()-Date.now())/86400000) : 0;
+
                   return (
-                    <div className={`${brand.bg} border ${brand.border} rounded-2xl p-5`}>
-                      <div className="flex items-center gap-4">
-                        {/* Icon */}
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0
-                          text-3xl border ${brand.border} bg-black/20`}>
+                    <div className={`${brand.bg} border ${brand.border} rounded-2xl overflow-hidden`}>
+                      {/* Header bar */}
+                      <div className="flex items-center gap-4 p-5 pb-4">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 text-3xl border ${brand.border} bg-black/20`}>
                           {logo}
                         </div>
-                        {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5 font-semibold">Now Streaming On</p>
-                          <p className={`text-lg font-black ${brand.text} leading-tight`}>{movie.streamingOn}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {movie.title} is available to watch online on {movie.streamingOn}
+                          <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5 font-semibold">Streaming On</p>
+                          <p className={`text-xl font-black ${brand.text} leading-tight`}>{movie.streamingOn}</p>
+                        </div>
+                        {/* Status pill top-right */}
+                        {isAvailable && (
+                          <span className="hidden sm:flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex-shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> LIVE
+                          </span>
+                        )}
+                        {isTBA && (
+                          <span className="hidden sm:flex text-[10px] font-black px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 flex-shrink-0">
+                            COMING SOON
+                          </span>
+                        )}
+                        {isComing && (
+                          <span className="hidden sm:flex text-[10px] font-black px-3 py-1.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 flex-shrink-0">
+                            IN {daysLeft}D
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Info strip */}
+                      <div className={`px-5 pb-4 border-t ${brand.border} pt-3 flex flex-wrap gap-4`}>
+                        <div>
+                          <p className="text-[9px] text-gray-600 uppercase tracking-widest mb-0.5">OTT Status</p>
+                          <p className="text-xs font-bold text-white">
+                            {isAvailable ? "Available Now" : isTBA ? "To Be Announced" : `Coming ${ new Date(ottDate).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) }`}
                           </p>
                         </div>
-                        {/* OTT badge */}
-                        <span className={`hidden sm:flex text-[10px] font-black px-2.5 py-1 rounded-full
-                          border ${brand.badge} flex-shrink-0`}>
-                          OTT
-                        </span>
+                        {ottDate && ottDate !== "TBA" && (
+                          <div>
+                            <p className="text-[9px] text-gray-600 uppercase tracking-widest mb-0.5">OTT Release Date</p>
+                            <p className="text-xs font-bold text-white">{new Date(ottDate).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"})}</p>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-[9px] text-gray-600 uppercase tracking-widest mb-0.5">Platform</p>
+                          <p className={`text-xs font-bold ${brand.text}`}>{movie.streamingOn}</p>
+                        </div>
                       </div>
-                      {/* CTA button */}
-                      {movie.streamingUrl && (
-                        <a href={movie.streamingUrl} target="_blank" rel="noopener noreferrer"
-                          className={`mt-4 flex items-center justify-center gap-2 w-full py-3 rounded-xl
-                            border ${brand.border} ${brand.bg} hover:brightness-125 transition-all
-                            text-sm font-bold ${brand.text} group`}>
-                          <Play className="w-4 h-4 fill-current" />
-                          Watch on {movie.streamingOn}
-                          <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-                        </a>
-                      )}
+
+                      {/* CTA or countdown */}
+                      <div className="px-5 pb-5">
+                        {movie.streamingUrl && isAvailable ? (
+                          <a href={movie.streamingUrl} target="_blank" rel="noopener noreferrer"
+                            className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl
+                              border text-sm font-black transition-all group ${brand.btn}`}>
+                            <Play className="w-4 h-4 fill-current" />
+                            Watch on {movie.streamingOn}
+                            <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                          </a>
+                        ) : (isTBA || isComing) ? (
+                          <div className="text-center py-2 text-xs text-gray-600">
+                            {isTBA
+                              ? "📢 OTT release date not yet announced. Follow Ollypedia for updates."
+                              : `⏳ Streaming begins in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}. Check back on Ollypedia.`}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   );
                 })()}
@@ -1156,6 +1422,22 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                       {movie.cast.length > 4 ? ` and ${movie.cast.length - 4} others` : ""}.
                     </p>
                   )}
+                  {/* OTT paragraph — rich prose for search rankings */}
+                  {movie.streamingOn && (
+                    <p>
+                      {(() => {
+                        const od = movie.ottReleaseDate || "";
+                        const tba = od === "TBA";
+                        const live = !tba && (!od || new Date(od) <= new Date());
+                        const coming = !tba && !!od && new Date(od) > new Date();
+                        const fmtD = od && od !== "TBA" ? new Date(od).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"}) : "";
+                        if (live) return <><strong className="text-white">{movie.title}</strong> is now available to <strong className="text-white">watch online on {movie.streamingOn}</strong>. Fans can stream the full movie on {movie.streamingOn}{movie.streamingUrl ? <> — <a href={movie.streamingUrl} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline">watch it here</a></> : ""}. This is one of the most searched Odia movies on OTT platforms in {year || "recent years"}.</>;
+                        if (coming) return <><strong className="text-white">{movie.title}</strong> is set to release on <strong className="text-white">{movie.streamingOn}</strong> on <strong className="text-white">{fmtD}</strong>. Fans searching for the OTT release date of {movie.title} can bookmark Ollypedia for the latest updates on its digital streaming availability.</>;
+                        if (tba) return <><strong className="text-white">{movie.title}</strong> is confirmed for <strong className="text-white">OTT release on {movie.streamingOn}</strong>. The exact digital release date has not been announced yet. Ollypedia will update this page as soon as the OTT release date for {movie.title} is confirmed.</>;
+                        return null;
+                      })()}
+                    </p>
+                  )}
                 </div>
 
                 {/* Topic tag links */}
@@ -1184,6 +1466,18 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                     className="text-xs text-orange-400/80 hover:text-orange-400 bg-orange-500/8 border border-orange-500/15 px-2.5 py-1 rounded-full transition-colors">
                     📊 Box Office
                   </Link>
+                  {movie.streamingOn && (
+                    <Link href="/movies?filter=ott"
+                      className="text-xs text-emerald-400/80 hover:text-emerald-400 bg-emerald-500/8 border border-emerald-500/15 px-2.5 py-1 rounded-full transition-colors">
+                      📺 Odia Movies on OTT
+                    </Link>
+                  )}
+                  {movie.streamingOn && movie.streamingUrl && (
+                    <a href={movie.streamingUrl} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-blue-400/80 hover:text-blue-400 bg-blue-500/8 border border-blue-500/15 px-2.5 py-1 rounded-full transition-colors">
+                      ▶ Watch on {movie.streamingOn}
+                    </a>
+                  )}
                 </div>
               </div>
 
@@ -1225,18 +1519,57 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                       a: `${movie.title} was directed by ${directorName}${producerName ? `, produced by ${producerName}` : ""}${year ? ` and released in ${year}` : ""}.`,
                     }] : []),
                     {
-                      q: `Is ${movie.title} available on OTT?`,
-                      a: movie.streamingOn
-                        ? `${movie.title} is available to stream on ${movie.streamingOn}.${movie.streamingUrl ? ` Watch it at ${movie.streamingUrl}` : ""}`
-                        : `OTT streaming availability for ${movie.title} is yet to be confirmed. It may be available on Aao NXT (aaonxt.com), Kanccha Lannka (kancchalannka.com), or Tarang Plus (tarangplus.in). Check back on Ollypedia for updates.`,
-                    },
-                    {
                       q: `What is the release date of ${movie.title}?`,
                       a: movie.releaseDate
                         ? `${movie.title} was released on ${new Date(movie.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.`
                         : movie.releaseTBA
                         ? `The release date of ${movie.title} is yet to be announced (TBA). Follow Ollypedia for the latest updates.`
                         : `Release date information for ${movie.title} is available on Ollypedia.`,
+                    },
+                    // ── OTT FAQs block ──────────────────────────────────────
+                    {
+                      q: `Is ${movie.title} available on OTT?`,
+                      a: movie.streamingOn
+                        ? (() => {
+                            const od = movie.ottReleaseDate || "";
+                            const tba = od === "TBA";
+                            const live = !tba && (!od || new Date(od) <= new Date());
+                            const coming = !tba && !!od && new Date(od) > new Date();
+                            const fmtD = od && od !== "TBA" ? new Date(od).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"}) : "";
+                            if (live) return `Yes, ${movie.title} is available on OTT. You can watch ${movie.title} online on ${movie.streamingOn}${movie.streamingUrl ? ` at ${movie.streamingUrl}` : ""}. The film is currently streaming and available to watch anytime.`;
+                            if (coming) return `Yes, ${movie.title} will be available on ${movie.streamingOn} from ${fmtD}. Mark your calendar for the OTT release of ${movie.title} on ${movie.streamingOn}.`;
+                            if (tba) return `${movie.title} has been confirmed for OTT release on ${movie.streamingOn}. The exact OTT release date of ${movie.title} is yet to be announced. Follow Ollypedia for updates on ${movie.title} OTT release date.`;
+                            return `${movie.title} is available on ${movie.streamingOn}. Check the platform directly for availability.`;
+                          })()
+                        : `OTT release details for ${movie.title} have not been officially announced yet. It may release on Aao NXT (aaonxt.com), Tarang Plus (tarangplus.in), or Kanccha Lannka (kancchalannka.com). Follow Ollypedia for the latest ${movie.title} OTT release date updates.`,
+                    },
+                    {
+                      q: `When is ${movie.title} OTT release date?`,
+                      a: movie.streamingOn
+                        ? (() => {
+                            const od = movie.ottReleaseDate || "";
+                            const tba = od === "TBA";
+                            const live = !tba && (!od || new Date(od) <= new Date());
+                            const coming = !tba && !!od && new Date(od) > new Date();
+                            const fmtD = od && od !== "TBA" ? new Date(od).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"}) : "";
+                            if (live) return `${movie.title} has already released on OTT. It is currently streaming on ${movie.streamingOn}${od && od !== "TBA" ? `, which went live on ${fmtD}` : ""}. You can watch it now online.`;
+                            if (coming) return `The OTT release date of ${movie.title} is ${fmtD}. It will be available to stream on ${movie.streamingOn} from ${fmtD}.`;
+                            if (tba) return `The OTT release date of ${movie.title} on ${movie.streamingOn} is yet to be officially announced (TBA). Ollypedia will update this page as soon as the ${movie.title} OTT date is confirmed.`;
+                            return `${movie.title} is available on ${movie.streamingOn}. The exact OTT date information is on Ollypedia.`;
+                          })()
+                        : `The OTT release date of ${movie.title} has not been announced yet. The film may stream on platforms like Aao NXT, Tarang Plus, or Kanccha Lannka. Follow Ollypedia for ${movie.title} OTT release date news.`,
+                    },
+                    {
+                      q: `On which platform can I watch ${movie.title} online?`,
+                      a: movie.streamingOn
+                        ? `You can watch ${movie.title} online on ${movie.streamingOn}${movie.streamingUrl ? ` (${movie.streamingUrl})` : ""}. ${movie.streamingOn} is the official OTT platform for ${movie.title} in India.`
+                        : `The official OTT platform for ${movie.title} has not been announced yet. Odia movies typically stream on platforms like Aao NXT, Tarang Plus, Kanccha Lannka, SonyLIV, or ZEE5. Check back on Ollypedia for updates.`,
+                    },
+                    {
+                      q: `Can I watch ${movie.title} for free online?`,
+                      a: movie.streamingOn
+                        ? `${movie.title} is available on ${movie.streamingOn}. Please check ${movie.streamingOn}'s subscription plans — some platforms offer a free trial or ad-supported viewing. Visit ${movie.streamingUrl || `the ${movie.streamingOn} platform`} to check current availability and pricing.`
+                        : `${movie.title} has not been officially released on any free OTT platform. Watching from unofficial or pirated sources is illegal. Support Odia cinema by watching from official platforms.`,
                     },
                   ].map((faq, i) => (
                     <details key={i} className="group border border-[#1a1a1a] rounded-xl overflow-hidden">
