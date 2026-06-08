@@ -535,6 +535,27 @@ export default async function BoxOfficePage({
       {blogItemListLd && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogItemListLd) }} />
       )}
+
+      {/* ★ SERVER-RENDERED TEXT — Google indexes this, users don't see it */}
+      <div style={{ position:"absolute", left:"-9999px", width:1, height:1, overflow:"hidden" }}
+           aria-hidden="true">
+        <h1>{movie.title} Box Office Collection — Total {fmtINR(totalNet)} Net</h1>
+        <p>{movie.title} has collected {fmtINR(totalNet)} net and {fmtINR(totalGross)} gross
+           in {lastDay} days at the Odia (Ollywood) box office.</p>
+        <table>
+          <caption>{movie.title} Day-wise Box Office Collection</caption>
+          <thead><tr><th>Day</th><th>Net Collection</th><th>Gross Collection</th></tr></thead>
+          <tbody>
+            {days.map((d: any) => (
+              <tr key={d.day}>
+                <td>Day {d.day}</td>
+                <td>{fmtINR(d.net)}</td>
+                <td>{fmtINR(d.gross)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <BoxOfficeClient
         movie={movie}
         initialDays={days}

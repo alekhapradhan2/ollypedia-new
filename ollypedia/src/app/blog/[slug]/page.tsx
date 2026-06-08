@@ -102,12 +102,16 @@ export async function generateMetadata({
   const blog = await getBlog(params.slug);
   if (!blog) return { robots: { index: false, follow: false } };
 
-  const title       = `${blog.title} | Ollypedia`;
-  const description = (
-    blog.excerpt ||
-    blog.content?.replace(/<[^>]+>/g, "").slice(0, 155) ||
-    `Read ${blog.title} on Ollypedia – Odia cinema news and reviews.`
-  );
+// FIXED — uses seoTitle from BoxOfficePanel, falls back gracefully
+const title = blog.seoTitle || `${blog.title} | Ollypedia`;
+
+// FIXED — uses seoDesc from BoxOfficePanel, falls back gracefully  
+const description = (
+  blog.seoDesc ||
+  blog.excerpt ||
+  blog.content?.replace(/<[^>]+>/g, "").slice(0, 155) ||
+  `Read ${blog.title} on Ollypedia...`
+);
   const image     = blog.coverImage || "https://ollypedia.in/default.jpg";
   const canonical = `https://ollypedia.in/blog/${blog.slug}`;
 
