@@ -345,7 +345,7 @@ export default async function MoviesPage({
                 </div>
                 <div>
                   <h2 id="upcoming-heading" className="font-display text-lg font-bold text-white">
-                    Upcoming Odia Movies 2025
+                    Upcoming Odia Movies 2026
                   </h2>
                   <p className="text-xs text-gray-500 mt-0.5">Confirmed & announced Ollywood releases</p>
                 </div>
