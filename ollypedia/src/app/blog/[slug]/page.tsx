@@ -472,18 +472,64 @@ export default async function BlogPage({ params }: { params: { slug: string } })
   const songs: any[] = movie?.media?.songs || [];
 
   // ─── FAQ items for JSON-LD ───────────────────────────────────
+  // Box Office blogs get specific answers with real figures from seoDesc
+  // All other blogs get general Ollypedia questions
+  const isBoxOffice = blog.category === "Box Office";
+
+  // Extract net/gross from seoDesc if available (set by BoxOfficePanel)
+  const netMatch   = blog.seoDesc?.match(/collected? ([₹\d.]+ (?:Cr|L|Lakh|Crore)) net/i);
+  const grossMatch = blog.seoDesc?.match(/([₹\d.]+ (?:Cr|L|Lakh|Crore)) gross/i);
+  const netFig     = netMatch?.[1]  || null;
+  const grossFig   = grossMatch?.[1] || null;
+
+  // Extract day number from blog title e.g. "Day 24"
+  const dayMatch = blog.title?.match(/Day (\d+)/i);
+  const dayNum   = dayMatch?.[1] || null;
+
   const faqItems = blog.movieTitle
-    ? [
-        { q: `What is ${blog.movieTitle} Odia movie about?`,          a: blog.excerpt || `${blog.movieTitle} is an Odia (Ollywood) film covered on Ollypedia.` },
-        { q: `Is ${blog.movieTitle} worth watching?`,                  a: `Read the full review and audience ratings for ${blog.movieTitle} on this Ollypedia article.` },
-        { q: `Who is in the cast of ${blog.movieTitle}?`,             a: `Full cast and crew of ${blog.movieTitle} are listed on the movie page on Ollypedia.` },
-        { q: `What is ${blog.movieTitle} box office collection?`,      a: `Day-wise box office collection of ${blog.movieTitle} is tracked on Ollypedia's box office page.` },
-        { q: `Where can I watch songs from ${blog.movieTitle}?`,       a: `All songs from ${blog.movieTitle} with YouTube videos are on Ollypedia.` },
-      ]
+    ? isBoxOffice
+      ? [
+          {
+            q: `What is the total box office collection of ${blog.movieTitle}?`,
+            a: netFig && grossFig
+              ? `${blog.movieTitle} has collected ${netFig} net and ${grossFig} gross at the Odia box office${dayNum ? ` in ${dayNum} days` : ""}. Full day-wise breakdown is available on Ollypedia.`
+              : `${blog.movieTitle} box office collection data is tracked daily on Ollypedia with net and gross figures for every day of its theatrical run.`,
+          },
+          {
+            q: `How much did ${blog.movieTitle} collect${dayNum ? ` on Day ${dayNum}` : ""}?`,
+            a: netFig
+              ? `${blog.movieTitle}${dayNum ? ` Day ${dayNum}` : ""} net collection is ${netFig}${grossFig ? ` and gross collection is ${grossFig}` : ""} at the Odia (Ollywood) box office.`
+              : `${blog.movieTitle} day-wise collection is updated daily on Ollypedia. Check the full box office report for the latest figures.`,
+          },
+          {
+            q: `Who directed ${blog.movieTitle}?`,
+            a: movie?.director
+              ? `${blog.movieTitle} is directed by ${movie.director}. It is an Odia language film released under the Ollywood banner.`
+              : `${blog.movieTitle} is an Odia (Ollywood) film. Full cast and crew details are available on the movie page on Ollypedia.`,
+          },
+          {
+            q: `Who are the lead actors in ${blog.movieTitle}?`,
+            a: movie?.cast?.length > 0
+              ? `${blog.movieTitle} stars ${movie.cast.slice(0, 3).map((c: any) => typeof c === "string" ? c : c.name).filter(Boolean).join(", ")}. Full cast details are on the Ollypedia movie page.`
+              : `Full cast and crew of ${blog.movieTitle} are listed on the movie page on Ollypedia.`,
+          },
+          {
+            q: `Is ${blog.movieTitle} a hit at the Odia box office?`,
+            a: netFig
+              ? `${blog.movieTitle} has collected ${netFig} net at the Odia box office${dayNum ? ` in ${dayNum} days` : ""}. Ollypedia updates collection figures daily based on industry trade estimates.`
+              : `${blog.movieTitle} box office performance is tracked on Ollypedia. Check the latest collection report for updated figures.`,
+          },
+        ]
+      : [
+          { q: `What is ${blog.movieTitle} Odia movie about?`,     a: blog.excerpt || `${blog.movieTitle} is an Odia (Ollywood) film covered on Ollypedia.` },
+          { q: `Is ${blog.movieTitle} worth watching?`,             a: `Read the full review and audience ratings for ${blog.movieTitle} on this Ollypedia article.` },
+          { q: `Who is in the cast of ${blog.movieTitle}?`,         a: movie?.cast?.length > 0 ? `${blog.movieTitle} stars ${movie.cast.slice(0, 3).map((c: any) => typeof c === "string" ? c : c.name).filter(Boolean).join(", ")}. Full cast is on the Ollypedia movie page.` : `Full cast and crew of ${blog.movieTitle} are listed on the movie page on Ollypedia.` },
+          { q: `Where can I watch songs from ${blog.movieTitle}?`,  a: `All songs from ${blog.movieTitle} with YouTube videos are on Ollypedia's songs section.` },
+        ]
     : [
-        { q: "What is Ollypedia?",                                     a: "Ollypedia is Odisha's complete Odia cinema encyclopedia — movies, actors, songs, box office and news." },
-        { q: "What kind of articles does Ollypedia publish?",          a: "Movie reviews, top 10 lists, actor spotlights, box office reports and Ollywood entertainment news." },
-        { q: "How can I find reviews for a specific Odia movie?",      a: "Search for the movie on Ollypedia's blog or visit the movie's dedicated page for ratings and articles." },
+        { q: "What is Ollypedia?",                               a: "Ollypedia is Odisha's complete Odia cinema encyclopedia — movies, actors, songs, box office and news." },
+        { q: "What kind of articles does Ollypedia publish?",    a: "Movie reviews, top 10 lists, actor spotlights, box office reports and Ollywood entertainment news." },
+        { q: "How can I find reviews for a specific Odia movie?",a: "Search for the movie on Ollypedia's blog or visit the movie's dedicated page for ratings and articles." },
       ];
 
   // word count for content depth signal
