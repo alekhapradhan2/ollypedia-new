@@ -1001,39 +1001,42 @@ export default function BlogDetailClient({
               </div>
             </div>
 
-            {/* FAQ */}
-            <div className="bp-sidebar-box">
-              <div className="bp-sidebar-hd">
-                {post.movieTitle ? `FAQ — ${post.movieTitle}` : "Frequently Asked Questions"}
+            {/* FAQ — hidden for Box Office blogs because BoxOfficePanel already
+                 generates a full FAQ section inside the blog HTML content.
+                 Showing both = two visible FAQ sections + duplicate FAQPage
+                 schema = Google indexing error. */}
+            {post.category !== "Box Office" && (
+              <div className="bp-sidebar-box">
+                <div className="bp-sidebar-hd">
+                  {post.movieTitle ? `FAQ — ${post.movieTitle}` : "Frequently Asked Questions"}
+                </div>
+                <div style={{ padding: "10px 14px" }}>
+                  {post.movieTitle ? (
+                    <>
+                      <FaqItem q={`What is ${post.movieTitle} Odia movie about?`}
+                        a={post.excerpt || (post.content?.slice(0, 220).replace(/\n/g, " ").trim() + "…") || `${post.movieTitle} is an Odia film.`} />
+                      <FaqItem q={`Is ${post.movieTitle} worth watching?`}
+                        a={`Based on user reviews on Ollypedia, you can decide if ${post.movieTitle} is worth watching.`} />
+                      <FaqItem q={`Who is in the cast of ${post.movieTitle}?`}
+                        a={`Full cast and crew of ${post.movieTitle} are listed on the movie page on Ollypedia.`} />
+                      <FaqItem q={`Where can I watch ${post.movieTitle} songs?`}
+                        a={`All songs from ${post.movieTitle} including YouTube videos and lyrics are on Ollypedia.`} />
+                      <FaqItem q={`Where can I find more articles about ${post.movieTitle}?`}
+                        a={`Ollypedia publishes reviews, cast spotlights and box office reports for ${post.movieTitle}.`} />
+                    </>
+                  ) : (
+                    <>
+                      <FaqItem q="What is Ollypedia?"
+                        a="Ollypedia is Odisha’s complete Odia cinema encyclopedia — movies, actors, songs, box office and news." />
+                      <FaqItem q="What kind of articles does Ollypedia publish?"
+                        a="Movie reviews, top 10 lists, actor spotlights, box office reports and Ollywood entertainment news." />
+                      <FaqItem q="How can I find reviews for a specific Odia movie?"
+                        a="Search for the movie on Ollypedia’s blog or visit the movie’s dedicated page for ratings and articles." />
+                    </>
+                  )}
+                </div>
               </div>
-              <div style={{ padding: "10px 14px" }}>
-                {post.movieTitle ? (
-                  <>
-                    <FaqItem q={`What is ${post.movieTitle} Odia movie about?`}
-                      a={post.excerpt || (post.content?.slice(0, 220).replace(/\n/g, " ").trim() + "…") || `${post.movieTitle} is an Odia film.`} />
-                    <FaqItem q={`Is ${post.movieTitle} worth watching?`}
-                      a={`Based on user reviews on Ollypedia, you can decide if ${post.movieTitle} is worth watching.`} />
-                    <FaqItem q={`Who is in the cast of ${post.movieTitle}?`}
-                      a={`Full cast and crew of ${post.movieTitle} are listed on the movie page on Ollypedia.`} />
-                    <FaqItem q={`What is ${post.movieTitle} box office collection?`}
-                      a={`Day-wise box office collection of ${post.movieTitle} is tracked on Ollypedia's box office page.`} />
-                    <FaqItem q={`Where can I watch ${post.movieTitle} songs?`}
-                      a={`All songs from ${post.movieTitle} including YouTube videos and lyrics are on Ollypedia.`} />
-                    <FaqItem q={`Where can I find more articles about ${post.movieTitle}?`}
-                      a={`Ollypedia publishes reviews, cast spotlights and box office reports for ${post.movieTitle}.`} />
-                  </>
-                ) : (
-                  <>
-                    <FaqItem q="What is Ollypedia?"
-                      a="Ollypedia is Odisha's complete Odia cinema encyclopedia — movies, actors, songs, box office and news." />
-                    <FaqItem q="What kind of articles does Ollypedia publish?"
-                      a="Movie reviews, top 10 lists, actor spotlights, box office reports and Ollywood entertainment news." />
-                    <FaqItem q="How can I find reviews for a specific Odia movie?"
-                      a="Search for the movie on Ollypedia's blog or visit the movie's dedicated page for ratings and articles." />
-                  </>
-                )}
-              </div>
-            </div>
+            )}
 
             {/* Reviews & Ratings */}
             <div className="bp-sidebar-box">
