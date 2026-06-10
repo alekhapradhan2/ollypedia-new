@@ -78,9 +78,24 @@ interface Props {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+/**
+ * parseN — converts any currency string to raw rupees (integer).
+ *   "₹7.00 L"  → 700000
+ *   "7L"       → 700000
+ *   "0.1 Cr"   → 1000000
+ *   "3.36Cr"   → 33600000
+ *   "700000"   → 700000   (bare integer ≥ 1000 trusted as rupees)
+ *   "7"        → 0        (bare tiny number with no unit = corrupted)
+ */
 function parseN(val: unknown): number {
-  const n = parseFloat(String(val || "0").replace(/[^0-9.]/g, ""));
-  return isNaN(n) ? 0 : n;
+  if (val === null || val === undefined || val === "") return 0;
+  const s = String(val).replace(/[₹,\s]/g, "").toLowerCase();
+  const n = parseFloat(s);
+  if (isNaN(n)) return 0;
+  if (s.includes("cr") || s.includes("crore")) return Math.round(n * 1_00_00_000);
+  if (s.includes("l") || s.includes("lakh"))   return Math.round(n * 1_00_000);
+  if (n >= 1000) return Math.round(n);
+  return 0;
 }
 
 function fmtINR(val: unknown): string {

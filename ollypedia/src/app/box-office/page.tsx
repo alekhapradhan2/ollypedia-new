@@ -43,9 +43,24 @@ export const metadata: Metadata = {
 
 /* ─── Helpers ─────────────────────────────────────────────── */
 
+/**
+ * parseNum — converts any currency string to raw rupees (integer).
+ *   "₹7.00 L"  → 700000
+ *   "7L"       → 700000
+ *   "0.1 Cr"   → 1000000
+ *   "3.36Cr"   → 33600000
+ *   "700000"   → 700000   (bare integer ≥ 1000 trusted as rupees)
+ *   "7"        → 0        (bare tiny number with no unit = corrupted)
+ */
 function parseNum(s: unknown): number {
-  const v = parseFloat(String(s || "").replace(/[^0-9.]/g, ""));
-  return isNaN(v) ? 0 : v;
+  if (s === null || s === undefined || s === "") return 0;
+  const str = String(s).replace(/[₹,\s]/g, "").toLowerCase();
+  const n = parseFloat(str);
+  if (isNaN(n)) return 0;
+  if (str.includes("cr") || str.includes("crore")) return Math.round(n * 1_00_00_000);
+  if (str.includes("l") || str.includes("lakh"))   return Math.round(n * 1_00_000);
+  if (n >= 1000) return Math.round(n);
+  return 0;
 }
 
 function fmtINR(n: number): string {

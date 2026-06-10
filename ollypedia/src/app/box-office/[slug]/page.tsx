@@ -14,17 +14,34 @@ export const dynamicParams = true;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+/**
+ * parseNum — converts any currency string to raw rupees (integer).
+ * Handles BOTH storage formats:
+ *   Old: "1400000", "900000"  (raw integer strings from previous admin panel)
+ *   New: "₹7.00 L", "₹1.00 Cr", "7L", "0.5Cr", "3.36Cr"  (formatted strings)
+ * Rules:
+ *   "₹7.00 L"  → 700000
+ *   "₹1.00 Cr" → 10000000
+ *   "1400000"  → 1400000  (bare integer ≥ 1000 trusted as rupees)
+ *   "7"        → 0        (bare tiny number with no unit = corrupted/ignore)
+ */
+function parseNum(s: unknown): number {
+  if (s === null || s === undefined || s === "") return 0;
+  const str = String(s).replace(/[₹,\s]/g, "").toLowerCase();
+  const n = parseFloat(str);
+  if (isNaN(n)) return 0;
+  if (str.includes("cr") || str.includes("crore")) return Math.round(n * 1_00_00_000);
+  if (str.includes("l") || str.includes("lakh"))   return Math.round(n * 1_00_000);
+  if (n >= 1000) return Math.round(n); // bare integer already in rupees
+  return 0; // bare tiny number with no unit — skip
+}
+
 function fmtINR(val: unknown): string {
-  const n = parseFloat(String(val || "").replace(/[^0-9.]/g, ""));
-  if (isNaN(n) || n === 0) return String(val || "TBA");
+  const n = parseNum(val);
+  if (!n) return String(val || "TBA");
   if (n >= 1_00_00_000) return `₹${(n / 1_00_00_000).toFixed(2)} Cr`;
   if (n >= 1_00_000)    return `₹${(n / 1_00_000).toFixed(2)} L`;
   return `₹${n.toLocaleString("en-IN")}`;
-}
-
-function parseNum(s: unknown): number {
-  const v = parseFloat(String(s || "").replace(/[^0-9.]/g, ""));
-  return isNaN(v) ? 0 : v;
 }
 
 // Misspelling generator for movie title — helps capture common typos in search
