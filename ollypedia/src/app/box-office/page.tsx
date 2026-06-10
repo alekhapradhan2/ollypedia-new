@@ -350,8 +350,12 @@ export default async function BoxOfficePage() {
             <p className="text-gray-500 text-xs mt-1.5">
               Day-wise net &amp; gross for all Odia (Ollywood) movies — latest releases first.
             </p>
-            <p className="text-[10px] text-gray-700 mt-1">
-              Last updated: <time dateTime={lastUpdated}>{fmtDate(lastUpdated)}</time>
+            <p className="text-[11px] text-gray-500 mt-2 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
+              Updated on{" "}
+              <time dateTime={lastUpdated} className="text-gray-400 font-medium">
+                {fmtDate(lastUpdated)}
+              </time>
             </p>
           </div>
         </div>
@@ -374,6 +378,20 @@ export default async function BoxOfficePage() {
               ))}
             </div>
           )}
+
+          {/* ── Data Disclaimer ── */}
+          <div className="flex gap-3 p-4 bg-amber-500/8 border border-amber-500/25 rounded-xl">
+            <span className="text-amber-400 text-base flex-shrink-0 mt-0.5">⚠️</span>
+            <div>
+              <p className="text-xs font-bold text-amber-400 mb-1">Please Note</p>
+              <p className="text-xs text-amber-300/80 leading-relaxed">
+                The Box Office Data are compiled from various sources and by our own research.
+                These data can be approximate or may have a huge difference from producer figures.{" "}
+                <strong className="text-amber-300">Ollypedia</strong> does not make any claims about the
+                authenticity of the data. This is box office collection data reported as new data arrives.
+              </p>
+            </div>
+          </div>
 
           {/* ── 2026 Verdict Breakdown ── */}
           {enriched.length > 0 && (() => {

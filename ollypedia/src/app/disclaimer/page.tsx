@@ -22,6 +22,19 @@ export default function DisclaimerPage() {
           <p>Box office figures, release dates, cast details, and other movie-related information are sourced from publicly available data and may not always be 100% accurate. We encourage users who notice errors to contact us. User-submitted reviews represent individual opinions only.</p>
         </section>
         <section>
+          <h2>Box Office Data</h2>
+          <div className="flex gap-3 p-4 bg-amber-500/8 border border-amber-500/20 rounded-xl not-prose mt-3 mb-3">
+            <span className="text-amber-400 text-base flex-shrink-0">⚠️</span>
+            <p className="text-sm text-amber-300/80 leading-relaxed">
+              The Box Office Data are compiled from various sources and by our own research. These data can be
+              approximate or may have a huge difference from producer figures.{" "}
+              <strong className="text-amber-300">Ollypedia</strong> does not make any claims about the
+              authenticity of the data. This is box office collection data reported as new data arrives.
+            </p>
+          </div>
+          <p>All box office figures published on Ollypedia are collected from publicly available industry sources and our independent research. Figures represent estimates and may vary from official producer-disclosed numbers. Ollypedia updates data as new information becomes available.</p>
+        </section>
+        <section>
           <h2>Copyright &amp; Intellectual Property</h2>
           <p>All movie posters, images, trailers, and songs featured on this website are the property of their respective copyright holders. Ollypedia uses such content under fair use for commentary, criticism, and education. If you are a copyright owner and believe your content is used inappropriately, please contact us at hello@ollypedia.in.</p>
         </section>
@@ -39,7 +52,7 @@ export default function DisclaimerPage() {
         </section>
         <section>
           <h2>Contact</h2>
-          <p>For any questions regarding this disclaimer, please <a href="/contact">contact us</a> or email hello@ollypedia.in.</p>
+          <p>For any questions regarding this disclaimer, please <a href="/contact">contact us</a> or email alekhpradhan3305@gmail.com</p>
         </section>
       </div>
     </div>

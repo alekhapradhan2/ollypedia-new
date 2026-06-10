@@ -578,6 +578,7 @@ export default async function BoxOfficePage({
         initialDays={days}
         totalNet={totalNet}
         totalGross={totalGross}
+        updatedAt={movie.updatedAt}
         relatedBlogs={relatedBlogs}
         competingMovies={competingMovies}
       />

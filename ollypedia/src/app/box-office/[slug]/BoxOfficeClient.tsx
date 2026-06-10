@@ -72,6 +72,7 @@ interface Props {
   initialDays:      BoxOfficeDay[];
   totalNet:         number;
   totalGross:       number;
+  updatedAt?:       string;
   relatedBlogs?:    BlogPost[];
   competingMovies?: CompetingMovie[];
 }
@@ -137,6 +138,25 @@ function buildPerformanceSummary(movie: Movie, days: BoxOfficeDay[], totalNet: n
     para += ` Produced on a budget of ${movie.budget}, the film's box office journey is being closely tracked by Ollywood enthusiasts.`;
   }
   return para;
+}
+
+// ─── Data Disclaimer Note ────────────────────────────────────────────────────
+
+function BoxOfficeDisclaimer() {
+  return (
+    <div className="flex gap-3 p-4 bg-amber-500/8 border border-amber-500/25 rounded-xl">
+      <span className="text-amber-400 text-base flex-shrink-0 mt-0.5">⚠️</span>
+      <div>
+        <p className="text-xs font-bold text-amber-400 mb-1">Please Note</p>
+        <p className="text-xs text-amber-300/80 leading-relaxed">
+          The Box Office Data are compiled from various sources and by our own research.
+          These data can be approximate or may have a huge difference from producer figures.{" "}
+          <strong className="text-amber-300">Ollypedia</strong> does not make any claims about the
+          authenticity of the data. This is box office collection data reported as new data arrives.
+        </p>
+      </div>
+    </div>
+  );
 }
 
 // ─── Sidebar: All Days Mini Table ────────────────────────────────────────────
@@ -465,7 +485,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 
-export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGross, relatedBlogs = [], competingMovies = [] }: Props) {
+export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGross, updatedAt, relatedBlogs = [], competingMovies = [] }: Props) {
   const [showAll, setShowAll] = useState(false);
   const days        = initialDays;
   const visibleDays = showAll ? days : days.slice(0, 7);
@@ -533,6 +553,17 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                   <span key={g} className="px-2 py-0.5 bg-orange-500/10 rounded-md text-xs text-orange-300">{g}</span>
                 ))}
               </div>
+              {updatedAt && (
+                <p className="text-[11px] text-gray-500 mb-3 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
+                  <span>
+                    Updated on{" "}
+                    <time dateTime={new Date(updatedAt).toISOString()} className="text-gray-400 font-medium">
+                      {new Date(updatedAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                    </time>
+                  </span>
+                </p>
+              )}
               {movie.verdict && movie.verdict !== "Upcoming" && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/6 border border-white/10 text-gray-300 mb-4">
                   {movie.verdict}
@@ -587,6 +618,11 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
             </div>
           ))}
         </div>
+      </div>
+
+      {/* ── Data Disclaimer ── */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+        <BoxOfficeDisclaimer />
       </div>
 
       {/* ── Two-column layout: main content + sidebar ── */}
@@ -705,7 +741,9 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                     <Calendar className="w-5 h-5 text-orange-400" />
                     {movie.title} Day-wise Box Office Collection
                   </h2>
-                  <div className="rounded-xl border border-[#1f1f1f] overflow-hidden">
+                  <div className="space-y-4">
+                    <BoxOfficeDisclaimer />
+                    <div className="rounded-xl border border-[#1f1f1f] overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
@@ -768,7 +806,8 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                         </button>
                       </div>
                     )}
-                  </div>
+                    </div>{/* end rounded-xl border */}
+                  </div>{/* end space-y-4 */}
                 </section>
 
                 {/* ── SEO Rich Content ── */}
