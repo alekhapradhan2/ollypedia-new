@@ -46,6 +46,30 @@ function fmtDate(iso?: string): string {
   });
 }
 
+const OTT_LOGOS: Record<string, string> = {
+  "Aao NXT":         "https://play-lh.googleusercontent.com/iGq3yKArlFTqbamZ0b9at4mKGCPB6vrCbffZc9JC7GEI3uPKIX82J0tnwHhMo0c7fyQ",
+  "Tarang Plus":     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS_iUWV_PnE0BrkBKN0YcWGgUBBP1Q_vz13Cg&s",
+  "YouTube":         "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg",
+  "SonyLIV":         "https://upload.wikimedia.org/wikipedia/commons/3/3f/SonyLIV_logo.png",
+  "Netflix":         "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",
+  "Amazon Prime":    "https://upload.wikimedia.org/wikipedia/commons/1/11/Amazon_Prime_Video_logo.svg",
+  "Disney+ Hotstar": "https://upload.wikimedia.org/wikipedia/commons/1/1e/Disney%2B_Hotstar_logo.svg",
+  "ZEE5":            "https://upload.wikimedia.org/wikipedia/commons/9/9c/ZEE5_Logo.svg",
+  "MX Player":       "https://upload.wikimedia.org/wikipedia/commons/5/52/MX_Player_Logo.svg",
+  "Kanccha Lannka":  "https://www.kancchalannka.com/favicon.ico",
+};
+function getOttLogo(platform: string): string | null {
+  if (!platform) return null;
+  return OTT_LOGOS[platform.trim()] || OTT_LOGOS[platform.toLowerCase().trim()] || null;
+}
+function OttLogoImg({ platform, size = "md" }: { platform: string; size?: "sm" | "md" | "lg" }) {
+  const logo = getOttLogo(platform);
+  const cls = size === "sm" ? "w-4 h-4" : size === "lg" ? "w-10 h-10" : "w-6 h-6";
+  if (!logo) return <span className="text-lg">🌐</span>;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={logo} alt={platform} className={`${cls} rounded object-contain flex-shrink-0`} />;
+}
+
 const VERDICT_STYLE: Record<string, { bg: string; text: string; border: string }> = {
   Blockbuster: { bg: "bg-green-500/15",   text: "text-green-400",   border: "border-green-500/30" },
   "Super Hit": { bg: "bg-emerald-500/15", text: "text-emerald-400", border: "border-emerald-500/30" },
@@ -365,6 +389,69 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     `ollywood ott`,
   ];
 
+  // ── Download keyword matrix ──────────────────────────────────────────────────
+  const dlKw: string[] = [
+    // Primary download queries
+    `download ${movie.title}`,
+    `${movie.title} download`,
+    `${movie.title} movie download`,
+    `${movie.title} full movie download`,
+    `${movie.title} odia movie download`,
+    `${movie.title} odia film download`,
+    `${movie.title} download online`,
+    `${movie.title} download free`,
+    `${movie.title} free download`,
+    `${movie.title} download hd`,
+    `${movie.title} hd download`,
+    `${movie.title} 1080p download`,
+    `${movie.title} 720p download`,
+    `${movie.title} 480p download`,
+    `${movie.title} 4k download`,
+    `${movie.title} full hd download`,
+    // Full movie variants
+    `${movie.title} full movie`,
+    `${movie.title} full movie download`,
+    `${movie.title} full movie free download`,
+    `${movie.title} full movie hd download`,
+    `${movie.title} full movie online`,
+    `${movie.title} full movie watch online free`,
+    `${movie.title} full movie in odia`,
+    `watch ${movie.title} full movie online`,
+    `${movie.title} odia full movie download`,
+    // Torrent / piracy intent (ranks page instead of piracy sites)
+    `${movie.title} torrent`,
+    `${movie.title} torrent download`,
+    `${movie.title} filmyzilla`,
+    `${movie.title} filmywap`,
+    `${movie.title} tamilrockers`,
+    `${movie.title} bolly4u`,
+    `${movie.title} mp4moviez`,
+    `${movie.title} 9xmovies`,
+    `${movie.title} movierulz`,
+    `${movie.title} ibomma`,
+    `${movie.title} jalshamoviez`,
+    `${movie.title} kuttymovies`,
+    // Year variants
+    year ? `download ${movie.title} ${year}` : "",
+    year ? `${movie.title} ${year} download` : "",
+    year ? `${movie.title} ${year} full movie download` : "",
+    year ? `${movie.title} ${year} hd download` : "",
+    year ? `${movie.title} odia movie ${year} download` : "",
+    // Watch online variants
+    `${movie.title} watch online`,
+    `watch ${movie.title} online`,
+    `${movie.title} watch online free`,
+    `${movie.title} watch online hd`,
+    `${movie.title} online movie`,
+    `${movie.title} online play`,
+    `stream ${movie.title} online`,
+    // Generic Ollywood download queries
+    "odia movie download", "odia full movie download",
+    "ollywood movie download", "odia hd movie download",
+    year ? `odia movie download ${year}` : "",
+    year ? `ollywood movie download ${year}` : "",
+  ].filter(Boolean) as string[];
+
   // ── Core keyword matrix ─────────────────────────────────────────────────────
   const directorName = getDirectorFromCast(movie.cast || []) || movie.director;
   const producerName = getProducerFromCast(movie.cast || []) || movie.producer;
@@ -401,6 +488,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     ...getMisspellings(movie.title),
     // OTT keyword matrix
     ...ottKw,
+    // Download keyword matrix
+    ...dlKw,
   ].filter(Boolean) as string[];
 
   return {
@@ -477,6 +566,29 @@ function buildFaqJsonLd(movie: any, year: string | number, avgRating: number | n
             return `${movie.title} is streaming on ${movie.streamingOn}.`;
           })()
         : `The OTT release date of ${movie.title} has not been announced yet.`,
+    },
+    // ── Download FAQs — targets high-volume download search queries ──────────
+    {
+      question: `How to download ${movie.title} full movie?`,
+      answer: movie.streamingOn
+        ? `${movie.title} is officially available on ${movie.streamingOn}${movie.streamingUrl ? ` (${movie.streamingUrl})` : ""}. You can legally download it offline via the platform's official app. Downloading from piracy sites like Filmyzilla or Tamilrockers is illegal under the Indian Copyright Act.`
+        : `${movie.title} is not yet available on any official OTT platform. Once released digitally, it can be downloaded via the official app. Downloading from piracy websites is illegal and punishable by law.`,
+    },
+    {
+      question: `Is ${movie.title} available for free download?`,
+      answer: `Free downloads of ${movie.title} from piracy websites are illegal under Indian copyright law and punishable with imprisonment up to 3 years. We recommend watching ${movie.title} only on official platforms${movie.streamingOn ? ` like ${movie.streamingOn}` : " like Aao NXT, Tarang Plus, or Kanccha Lannka"} to support the Odia film industry.`,
+    },
+    {
+      question: `Where can I download ${movie.title} in HD?`,
+      answer: movie.streamingOn && movie.streamingUrl
+        ? `Download ${movie.title} in HD legally via the official ${movie.streamingOn} app at ${movie.streamingUrl}. It supports HD offline downloads for subscribers.`
+        : `${movie.title} HD download will be available on an official OTT platform once its digital rights are released. Piracy sites offering HD downloads are illegal and unsafe. Check Ollypedia for the latest ${movie.title} download updates.`,
+    },
+    {
+      question: `${movie.title} full movie download in Odia — is it available?`,
+      answer: movie.streamingOn
+        ? `Yes, ${movie.title} full movie in original Odia audio is officially available on ${movie.streamingOn}. Download it offline legally through the ${movie.streamingOn} app. Ollypedia advises against piracy to help support Odia cinema.`
+        : `${movie.title} full Odia movie download is not officially available yet. It may release on Odia OTT platforms like Aao NXT or Tarang Plus. Follow Ollypedia for ${movie.title} OTT and download release updates.`,
     },
   ];
   return {
@@ -829,11 +941,36 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 <ReleaseCountdown releaseDate={movie.releaseDate} title={movie.title} />
               )}
 
-              {/* Share buttons */}
-              <ShareButtons
-                title={`${movie.title}${year ? ` (${year})` : ""} – Odia Movie`}
-                url={canonical}
-              />
+              {/* Share buttons + OTT Watch button */}
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <ShareButtons
+                  title={`${movie.title}${year ? ` (${year})` : ""} – Odia Movie`}
+                  url={canonical}
+                />
+                {movie.streamingOn && movie.streamingUrl && (
+                  <a
+                    href={movie.streamingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
+                      bg-orange-500 hover:bg-orange-400 active:bg-orange-600
+                      text-black transition-colors duration-150 shadow-md shadow-orange-900/40
+                      border border-orange-400/30"
+                  >
+                    <OttLogoImg platform={movie.streamingOn} size="sm" />
+                    Watch on {movie.streamingOn}
+                  </a>
+                )}
+                {movie.streamingOn && !movie.streamingUrl && (
+                  <span
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
+                      bg-[#111] border border-orange-500/25 text-orange-400 cursor-default"
+                  >
+                    <OttLogoImg platform={movie.streamingOn} size="sm" />
+                    Coming soon on {movie.streamingOn}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -906,12 +1043,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
             {/* ── OTT / Streaming sidebar card ── */}
             {movie.streamingOn && (
               (() => {
-                const LOGO: Record<string,string> = {
-                  "Aao NXT":"🎬","Tarang Plus":"📺","Kanccha Lannka":"🎥",
-                  "SonyLIV":"🔴","Disney+ Hotstar":"⭐","Netflix":"🎞",
-                  "Amazon Prime":"📦","ZEE5":"🟣","MX Player":"▶️","YouTube":"🔴",
-                };
-                const logo    = LOGO[movie.streamingOn] ?? "🌐";
+                const logo    = null; // using OttLogoImg component
                 const ottDate = movie.ottReleaseDate || "";
                 const isTBA   = ottDate === "TBA";
                 const isComing  = !isTBA && !!ottDate && new Date(ottDate) > new Date();
@@ -952,8 +1084,8 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
 
                     {/* Platform row */}
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl flex items-center justify-center text-xl flex-shrink-0">
-                        {logo}
+                      <div className="w-10 h-10 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl flex items-center justify-center flex-shrink-0">
+                        <OttLogoImg platform={movie.streamingOn} size="md" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-black text-white truncate">{movie.streamingOn}</p>
@@ -977,7 +1109,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                           text-xs font-bold text-emerald-400 hover:text-emerald-300
                           bg-emerald-500/8 hover:bg-emerald-500/15 border border-emerald-500/20
                           transition-all group">
-                        <Play className="w-3.5 h-3.5 fill-current" />
+                        <OttLogoImg platform={movie.streamingOn} size="sm" />
                         Watch on {movie.streamingOn}
                         <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                       </a>
@@ -1106,6 +1238,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                           {g}
                         </Link>
                       ))}
+
                     </div>
                   )}
                 </div>
@@ -1139,12 +1272,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                     "MX Player":      {bg:"bg-yellow-500/10",  border:"border-yellow-500/25",  text:"text-yellow-300",  btn:"text-yellow-400 bg-yellow-500/8 hover:bg-yellow-500/15 border-yellow-500/20"},
                     "YouTube":        {bg:"bg-red-500/10",     border:"border-red-500/25",     text:"text-red-300",     btn:"text-red-400 bg-red-500/8 hover:bg-red-500/15 border-red-500/20"},
                   };
-                  const LOGO: Record<string,string> = {
-                    "Aao NXT":"🎬","Tarang Plus":"📺","Kanccha Lannka":"🎥","SonyLIV":"🔴",
-                    "Disney+ Hotstar":"⭐","Netflix":"🎞","Amazon Prime":"📦","ZEE5":"🟣","MX Player":"▶️","YouTube":"🔴",
-                  };
                   const brand = BRAND[movie.streamingOn] ?? {bg:"bg-emerald-500/10",border:"border-emerald-500/25",text:"text-emerald-300",btn:"text-emerald-400 bg-emerald-500/8 hover:bg-emerald-500/15 border-emerald-500/20"};
-                  const logo  = LOGO[movie.streamingOn] ?? "🌐";
 
                   const ottDate    = movie.ottReleaseDate || "";
                   const isTBA      = ottDate === "TBA";
@@ -1156,8 +1284,8 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                     <div className={`${brand.bg} border ${brand.border} rounded-2xl overflow-hidden`}>
                       {/* Header bar */}
                       <div className="flex items-center gap-4 p-5 pb-4">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 text-3xl border ${brand.border} bg-black/20`}>
-                          {logo}
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 border ${brand.border} bg-black/20`}>
+                          <OttLogoImg platform={movie.streamingOn} size="lg" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5 font-semibold">Streaming On</p>
@@ -1207,7 +1335,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                           <a href={movie.streamingUrl} target="_blank" rel="noopener noreferrer"
                             className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl
                               border text-sm font-black transition-all group ${brand.btn}`}>
-                            <Play className="w-4 h-4 fill-current" />
+                            <OttLogoImg platform={movie.streamingOn} size="sm" />
                             Watch on {movie.streamingOn}
                             <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                           </a>
@@ -1570,6 +1698,43 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                       a: movie.streamingOn
                         ? `${movie.title} is available on ${movie.streamingOn}. Please check ${movie.streamingOn}'s subscription plans — some platforms offer a free trial or ad-supported viewing. Visit ${movie.streamingUrl || `the ${movie.streamingOn} platform`} to check current availability and pricing.`
                         : `${movie.title} has not been officially released on any free OTT platform. Watching from unofficial or pirated sources is illegal. Support Odia cinema by watching from official platforms.`,
+                    },
+                    // ── Download FAQs block ──────────────────────────────────
+                    {
+                      q: `How to download ${movie.title} full movie?`,
+                      a: movie.streamingOn
+                        ? `${movie.title} is officially available on ${movie.streamingOn}${movie.streamingUrl ? ` (${movie.streamingUrl})` : ""}. You can watch or download the movie through the platform's official app. Downloading from piracy websites like Filmyzilla, Filmywap, or Tamilrockers is illegal and punishable under Indian copyright law.`
+                        : `${movie.title} is not yet available on any official OTT platform for download. Please avoid piracy websites. Once officially released on OTT, you will be able to download it through the platform's official app. Follow Ollypedia for updates.`,
+                    },
+                    {
+                      q: `Is ${movie.title} available for free download?`,
+                      a: `Free illegal downloads of ${movie.title} from piracy websites are a violation of copyright law. We strongly recommend watching ${movie.title} only through legal and official platforms${movie.streamingOn ? ` like ${movie.streamingOn}` : " like Aao NXT, Tarang Plus, or Kanccha Lannka"}. Supporting official releases helps Odia cinema grow.`,
+                    },
+                    {
+                      q: `Where can I download ${movie.title} in HD?`,
+                      a: movie.streamingOn && movie.streamingUrl
+                        ? `You can download ${movie.title} in HD legally through the official ${movie.streamingOn} app at ${movie.streamingUrl}. The app supports HD offline downloads for subscribed users.`
+                        : `${movie.title} HD download is available only through official OTT platforms once the movie's digital rights are released. Platforms like Aao NXT and Tarang Plus support HD offline downloads. Avoid illegal HD download sites — they may contain malware and are punishable under law.`,
+                    },
+                    {
+                      q: `Can I download ${movie.title} on mobile?`,
+                      a: movie.streamingOn
+                        ? `Yes, you can download ${movie.title} on your Android or iOS mobile through the official ${movie.streamingOn} app. Install the app, subscribe to the plan, and use the offline download option to watch the movie without internet.`
+                        : `Once ${movie.title} releases on an OTT platform, you will be able to download it on mobile via the platform's official app. Follow Ollypedia for the latest ${movie.title} download availability updates.`,
+                    },
+                    {
+                      q: `What is the file size of ${movie.title} movie download?`,
+                      a: `The file size of ${movie.title} depends on the video quality: 480p is roughly 300–500 MB, 720p HD is around 700 MB–1.2 GB, and 1080p Full HD can be 1.5–3 GB. These sizes are for official platform downloads${movie.streamingOn ? ` such as ${movie.streamingOn}` : ""}. File sizes on piracy sites are unreliable and may contain harmful files.`,
+                    },
+                    {
+                      q: `Is downloading ${movie.title} from Filmyzilla or Tamilrockers legal?`,
+                      a: `No, downloading ${movie.title} from piracy websites like Filmyzilla, Filmywap, Tamilrockers, 9xMovies, ibomma, or similar sites is completely illegal under the Indian Copyright Act. It is punishable with up to 3 years of imprisonment and a fine up to ₹3 lakh. Please support Odia cinema by watching ${movie.title} through official platforms.`,
+                    },
+                    {
+                      q: `${movie.title} full movie download in Odia — is it available?`,
+                      a: movie.streamingOn
+                        ? `Yes, ${movie.title} full movie in Odia is officially available on ${movie.streamingOn}. You can stream or download the full Odia audio version via the ${movie.streamingOn} app. Ollypedia recommends watching from official sources to support the Odia film industry.`
+                        : `${movie.title} full movie in Odia is not yet available for official download. Once it releases on an Odia OTT platform, you will be able to download the full movie in the original Odia audio. Stay tuned to Ollypedia for updates.`,
                     },
                   ].map((faq, i) => (
                     <details key={i} className="group border border-[#1a1a1a] rounded-xl overflow-hidden">
