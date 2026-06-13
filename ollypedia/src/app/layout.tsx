@@ -3,6 +3,7 @@ import "../styles/globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Toaster } from "react-hot-toast";
+import VisitorTracker from "@/components/VisitorTracker";
 import { SITE_NAME, SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -30,14 +31,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
-          <head>
-  <script
-  async
-  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5823659147566885"
-  crossOrigin="anonymous"
-></script>
+      <head>
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5823659147566885"
+          crossOrigin="anonymous"
+        ></script>
       </head>
       <body className="grain min-h-screen flex flex-col bg-[#0a0a0a]">
+        <VisitorTracker />  {/* ← tracks every page visit silently */}
         <Navbar />
         <main className="flex-1">{children}</main>
         <Footer />
