@@ -1,8 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    unoptimized: true, // ✅ ADD THIS LINE (VERY IMPORTANT)
+  experimental: {
+    instrumentationHook: true, // remove if you're on Next.js 15+
+  },
 
+  images: {
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "**" },
       { protocol: "http", hostname: "**" },
@@ -13,7 +16,6 @@ const nextConfig = {
       "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // ✅ keep this
   eslint: {
     ignoreDuringBuilds: true,
   },
