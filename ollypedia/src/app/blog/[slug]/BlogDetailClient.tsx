@@ -291,9 +291,13 @@ ${faqItems.map(({ q, a }) => `<details><summary>${q}</summary><p>${a}</p></detai
 
 // ─── Sanitize mixed HTML ───────────────────────────────────────────────────────
 function sanitizeMixedHtml(html: string): string {
+  // Strip HTML comments first — long comment text between </section> tags was being
+  // incorrectly wrapped in <p> tags by the splitter below, breaking FAQ/Also Read sections.
+  const stripped = html.replace(/<!--[\s\S]*?-->/g, "");
+
   const blockClose = /<\/(?:h[1-6]|p|ul|ol|li|table|div|section|article|blockquote|details|summary)>/i;
   const blockOpen  = /^<(?:h[1-6]|p|ul|ol|table|div|section|article|blockquote|details|summary|\/article)/i;
-  const parts = html.split(/((?:<\/(?:h[1-6]|p|ul|ol|li|table|div|section|article|blockquote|details|summary)>))/gi);
+  const parts = stripped.split(/((?:<\/(?:h[1-6]|p|ul|ol|li|table|div|section|article|blockquote|details|summary)>))/gi);
   return parts.map((part, i) => {
     if (blockClose.test(part) || blockOpen.test(part)) return part;
     const prevPart = parts[i - 1] || "";
@@ -1317,7 +1321,7 @@ const CSS = `
 .bp-article-html summary::after{content:'＋';color:var(--gold);font-size:1.1rem;flex-shrink:0;}
 .bp-article-html details[open] summary::after{content:'−';}
 .bp-article-html details p{margin:0;padding:0 18px 16px;font-size:.88rem;color:rgba(255,255,255,.6);line-height:1.8;}
-.bp-article-html .faq-section{display:none!important;}
+/* .faq-section display:none removed — Box Office blogs render FAQ+AlsoRead inside .bp-article-html */
 .bp-article-html .bo-prose{margin-bottom:2em;}
 
 .bp-pullquote{margin:2em 0;padding:20px 24px;border-left:3px solid var(--gold);background:rgba(201,151,58,.06);border-radius:0 6px 6px 0;font-family:'DM Serif Display',serif;font-style:italic;font-size:1.08rem;color:rgba(255,255,255,.7);line-height:1.7;}
