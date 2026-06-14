@@ -1451,4 +1451,4 @@ const CSS = `
 .bp-404-t{font-family:'Playfair Display',serif;font-size:1.5rem;color:rgba(255,255,255,.4);}
 .bp-404-btn{padding:10px 24px;background:var(--gold);border:none;border-radius:2px;color:#000;font-family:inherit;font-weight:700;font-size:.82rem;cursor:pointer;transition:background .15s;}
 .bp-404-btn:hover{background:var(--gold2);}
-`;
+`;   
