@@ -21,12 +21,19 @@ const MOVIE_YEARS: number[] = Array.from(
   (_, i) => _currentYear - i,
 );
 
+// Box Office tracks from 2018 onwards
+const BO_OLDEST_YEAR = 2018;
+const BOX_OFFICE_YEARS: number[] = Array.from(
+  { length: _currentYear - BO_OLDEST_YEAR + 1 },
+  (_, i) => _currentYear - i,
+);
+
 const NAV_LINKS = [
-  { label: "Movies",     href: "/movies",     hasDropdown: true },
-  { label: "Songs",      href: "/songs",      hasDropdown: false },
-  { label: "Cast",       href: "/cast",       hasDropdown: false },
-  { label: "Box Office", href: "/box-office", hasDropdown: false },
-  { label: "Blog",       href: "/blog",       hasDropdown: false },
+  { label: "Movies",     href: "/movies",     hasDropdown: "movies"     as const },
+  { label: "Songs",      href: "/songs",      hasDropdown: false        as const },
+  { label: "Cast",       href: "/cast",       hasDropdown: false        as const },
+  { label: "Box Office", href: "/box-office", hasDropdown: "boxoffice"  as const },
+  { label: "Blog",       href: "/blog",       hasDropdown: false        as const },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -449,6 +456,97 @@ function MoviesYearDropdown({ onClose }: { onClose: () => void }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Box Office Year Mega Dropdown
+// ─────────────────────────────────────────────────────────────────────────────
+
+function BoxOfficeYearDropdown({ onClose }: { onClose: () => void }) {
+  const currentYear = new Date().getFullYear();
+
+  return (
+    <div
+      className="absolute top-[calc(100%+8px)] left-0 w-[320px] bg-[#0d0d0d] border border-white/10 rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.8)] overflow-hidden z-50"
+      onMouseLeave={onClose}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2.5 px-4 py-3.5 border-b border-white/[0.07] bg-orange-500/5">
+        <div className="w-7 h-7 bg-orange-500/20 rounded-lg flex items-center justify-center">
+          <TrendingUp className="w-3.5 h-3.5 text-orange-400" />
+        </div>
+        <div>
+          <p className="text-xs font-bold text-white tracking-wide">Box Office by Year</p>
+          <p className="text-[10px] text-gray-500 mt-0.5">Odia film collections, year-wise</p>
+        </div>
+      </div>
+
+      {/* Year grid */}
+      <div className="p-3">
+        <div className="grid grid-cols-3 gap-1.5">
+          {BOX_OFFICE_YEARS.map((yr) => {
+            const isCurrent = yr === currentYear;
+            return (
+              <Link
+                key={yr}
+                href={yr === currentYear ? "/box-office" : `/box-office?year=${yr}`}
+                onClick={onClose}
+                className={clsx(
+                  "group relative flex flex-col items-center justify-center py-3 px-2 rounded-xl transition-all duration-150 text-center overflow-hidden",
+                  isCurrent
+                    ? "bg-orange-500/20 border border-orange-500/40 hover:bg-orange-500/30"
+                    : "bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] hover:border-orange-500/25",
+                )}
+              >
+                {isCurrent && (
+                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse" />
+                )}
+                <span className={clsx(
+                  "text-sm font-bold transition-colors",
+                  isCurrent ? "text-orange-400" : "text-gray-300 group-hover:text-orange-400",
+                )}>
+                  {yr}
+                </span>
+                {isCurrent && (
+                  <span className="text-[9px] text-orange-500/80 font-semibold mt-0.5 uppercase tracking-wider">Latest</span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* All-time + full list links */}
+        <div className="mt-2 pt-2 border-t border-white/[0.06] space-y-1.5">
+          <a
+            href="/box-office#all-time"
+            onClick={onClose}
+            className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-yellow-500/5 hover:bg-yellow-500/10 border border-yellow-500/15 hover:border-yellow-500/30 transition-all group"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm">👑</span>
+              <span className="text-xs font-semibold text-yellow-400 group-hover:text-yellow-300 transition-colors">
+                All-Time Top Grossers
+              </span>
+            </div>
+            <ChevronRight className="w-3.5 h-3.5 text-yellow-600 group-hover:text-yellow-400 group-hover:translate-x-0.5 transition-all" />
+          </a>
+          <Link
+            href="/box-office"
+            onClick={onClose}
+            className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl bg-white/[0.03] hover:bg-orange-500/10 border border-white/[0.06] hover:border-orange-500/30 transition-all group"
+          >
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-3.5 h-3.5 text-orange-500" />
+              <span className="text-xs font-semibold text-gray-300 group-hover:text-orange-400 transition-colors">
+                All Box Office Data
+              </span>
+            </div>
+            <ChevronRight className="w-3.5 h-3.5 text-gray-600 group-hover:text-orange-400 group-hover:translate-x-0.5 transition-all" />
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Navbar
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -463,14 +561,18 @@ export function Navbar() {
   const [loading,          setLoading]          = useState(false);
   const [activeIndex,      setActiveIndex]      = useState(-1);
   const [moviesDropOpen,   setMoviesDropOpen]   = useState(false);
+  const [boDropOpen,       setBoDropOpen]       = useState(false);
   const [mobileYearsOpen,  setMobileYearsOpen]  = useState(false);
+  const [mobileBoOpen,     setMobileBoOpen]     = useState(false);
 
   const inputRef       = useRef<HTMLInputElement>(null);
   const containerRef   = useRef<HTMLDivElement>(null);
   const moviesNavRef   = useRef<HTMLDivElement>(null);
+  const boNavRef       = useRef<HTMLDivElement>(null);
   const debounceRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef       = useRef<AbortController | null>(null);
   const closeTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const boCloseTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Fetch /api/search ─────────────────────────────────────────────────────
   const runSearch = useCallback((q: string) => {
@@ -532,6 +634,16 @@ export function Navbar() {
 
   function handleMoviesMouseLeave() {
     closeTimerRef.current = setTimeout(() => setMoviesDropOpen(false), 120);
+  }
+
+  // ── Box Office dropdown hover handlers ────────────────────────────────────
+  function handleBoMouseEnter() {
+    if (boCloseTimer.current) clearTimeout(boCloseTimer.current);
+    setBoDropOpen(true);
+  }
+
+  function handleBoMouseLeave() {
+    boCloseTimer.current = setTimeout(() => setBoDropOpen(false), 120);
   }
 
   // ── Keyboard ──────────────────────────────────────────────────────────────
@@ -607,42 +719,80 @@ export function Navbar() {
 
           {/* ── Desktop Nav ───────────────────────────────────────────────── */}
           <nav className="hidden md:flex items-center gap-0.5" aria-label="Main navigation">
-            {NAV_LINKS.map((link) =>
-              link.hasDropdown ? (
-                // Movies link with year dropdown
-                <div
-                  key={link.href}
-                  ref={moviesNavRef}
-                  className="relative"
-                  onMouseEnter={handleMoviesMouseEnter}
-                  onMouseLeave={handleMoviesMouseLeave}
-                >
-                  <Link
-                    href={link.href}
-                    aria-current={pathname?.startsWith(link.href) ? "page" : undefined}
-                    aria-haspopup="true"
-                    aria-expanded={moviesDropOpen}
-                    className={clsx(
-                      "flex items-center gap-1 px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150",
-                      pathname?.startsWith(link.href)
-                        ? "text-orange-400 bg-orange-500/10"
-                        : "text-gray-400 hover:text-white hover:bg-white/5",
-                    )}
+            {NAV_LINKS.map((link) => {
+              if (link.hasDropdown === "movies") {
+                return (
+                  <div
+                    key={link.href}
+                    ref={moviesNavRef}
+                    className="relative"
+                    onMouseEnter={handleMoviesMouseEnter}
+                    onMouseLeave={handleMoviesMouseLeave}
                   >
-                    {link.label}
-                    <ChevronRight
+                    <Link
+                      href={link.href}
+                      aria-current={pathname?.startsWith(link.href) ? "page" : undefined}
+                      aria-haspopup="true"
+                      aria-expanded={moviesDropOpen}
                       className={clsx(
-                        "w-3 h-3 transition-transform duration-200",
-                        moviesDropOpen ? "rotate-90 text-orange-400" : "rotate-0",
+                        "flex items-center gap-1 px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+                        pathname?.startsWith(link.href)
+                          ? "text-orange-400 bg-orange-500/10"
+                          : "text-gray-400 hover:text-white hover:bg-white/5",
                       )}
-                    />
-                  </Link>
+                    >
+                      {link.label}
+                      <ChevronRight
+                        className={clsx(
+                          "w-3 h-3 transition-transform duration-200",
+                          moviesDropOpen ? "rotate-90 text-orange-400" : "rotate-0",
+                        )}
+                      />
+                    </Link>
+                    {moviesDropOpen && (
+                      <MoviesYearDropdown onClose={() => setMoviesDropOpen(false)} />
+                    )}
+                  </div>
+                );
+              }
 
-                  {moviesDropOpen && (
-                    <MoviesYearDropdown onClose={() => setMoviesDropOpen(false)} />
-                  )}
-                </div>
-              ) : (
+              if (link.hasDropdown === "boxoffice") {
+                return (
+                  <div
+                    key={link.href}
+                    ref={boNavRef}
+                    className="relative"
+                    onMouseEnter={handleBoMouseEnter}
+                    onMouseLeave={handleBoMouseLeave}
+                  >
+                    <Link
+                      href={link.href}
+                      aria-current={pathname?.startsWith(link.href) ? "page" : undefined}
+                      aria-haspopup="true"
+                      aria-expanded={boDropOpen}
+                      className={clsx(
+                        "flex items-center gap-1 px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+                        pathname?.startsWith(link.href)
+                          ? "text-orange-400 bg-orange-500/10"
+                          : "text-gray-400 hover:text-white hover:bg-white/5",
+                      )}
+                    >
+                      {link.label}
+                      <ChevronRight
+                        className={clsx(
+                          "w-3 h-3 transition-transform duration-200",
+                          boDropOpen ? "rotate-90 text-orange-400" : "rotate-0",
+                        )}
+                      />
+                    </Link>
+                    {boDropOpen && (
+                      <BoxOfficeYearDropdown onClose={() => setBoDropOpen(false)} />
+                    )}
+                  </div>
+                );
+              }
+
+              return (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -656,8 +806,8 @@ export function Navbar() {
                 >
                   {link.label}
                 </Link>
-              )
-            )}
+              );
+            })}
           </nav>
 
           {/* ── Right: search + hamburger ─────────────────────────────────── */}
@@ -789,56 +939,121 @@ export function Navbar() {
             </div>
 
             {/* Nav links */}
-            {NAV_LINKS.map((link) =>
-              link.hasDropdown ? (
-                <div key={link.href}>
-                  {/* Movies accordion toggle */}
-                  <button
-                    onClick={() => setMobileYearsOpen((v) => !v)}
-                    className={clsx(
-                      "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium mb-0.5 transition-colors",
-                      pathname?.startsWith(link.href)
-                        ? "text-orange-400 bg-orange-500/10"
-                        : "text-gray-400 hover:text-white hover:bg-white/5",
-                    )}
-                  >
-                    <span>{link.label}</span>
-                    <ChevronRight className={clsx(
-                      "w-4 h-4 transition-transform duration-200",
-                      mobileYearsOpen ? "rotate-90 text-orange-400" : "",
-                    )} />
-                  </button>
-
-                  {/* Expandable year grid */}
-                  {mobileYearsOpen && (
-                    <div className="mb-2 mx-2 p-3 bg-white/[0.03] border border-white/[0.07] rounded-xl">
-                      <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-2 px-1">
-                        Browse by Year
-                      </p>
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {MOVIE_YEARS.map((yr) => (
-                          <Link
-                            key={yr}
-                            href={`/movies/year/${yr}`}
-                            onClick={() => { setMenuOpen(false); setMobileYearsOpen(false); }}
-                            className="flex items-center justify-center py-2 rounded-lg bg-white/[0.04] border border-white/[0.07] hover:bg-orange-500/15 hover:border-orange-500/30 text-xs font-semibold text-gray-400 hover:text-orange-400 transition-all"
-                          >
-                            {yr}
-                          </Link>
-                        ))}
+            {NAV_LINKS.map((link) => {
+              if (link.hasDropdown === "movies") {
+                return (
+                  <div key={link.href}>
+                    <button
+                      onClick={() => setMobileYearsOpen((v) => !v)}
+                      className={clsx(
+                        "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium mb-0.5 transition-colors",
+                        pathname?.startsWith(link.href)
+                          ? "text-orange-400 bg-orange-500/10"
+                          : "text-gray-400 hover:text-white hover:bg-white/5",
+                      )}
+                    >
+                      <span>{link.label}</span>
+                      <ChevronRight className={clsx(
+                        "w-4 h-4 transition-transform duration-200",
+                        mobileYearsOpen ? "rotate-90 text-orange-400" : "",
+                      )} />
+                    </button>
+                    {mobileYearsOpen && (
+                      <div className="mb-2 mx-2 p-3 bg-white/[0.03] border border-white/[0.07] rounded-xl">
+                        <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-2 px-1">
+                          Browse by Year
+                        </p>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {MOVIE_YEARS.map((yr) => (
+                            <Link
+                              key={yr}
+                              href={`/movies/year/${yr}`}
+                              onClick={() => { setMenuOpen(false); setMobileYearsOpen(false); }}
+                              className="flex items-center justify-center py-2 rounded-lg bg-white/[0.04] border border-white/[0.07] hover:bg-orange-500/15 hover:border-orange-500/30 text-xs font-semibold text-gray-400 hover:text-orange-400 transition-all"
+                            >
+                              {yr}
+                            </Link>
+                          ))}
+                        </div>
+                        <Link
+                          href="/movies"
+                          onClick={() => { setMenuOpen(false); setMobileYearsOpen(false); }}
+                          className="flex items-center justify-center gap-1.5 mt-2 py-2 rounded-lg bg-orange-500/10 border border-orange-500/20 text-xs font-semibold text-orange-400 hover:bg-orange-500/20 transition-all"
+                        >
+                          <Film className="w-3 h-3" />
+                          All Movies
+                        </Link>
                       </div>
-                      <Link
-                        href="/movies"
-                        onClick={() => { setMenuOpen(false); setMobileYearsOpen(false); }}
-                        className="flex items-center justify-center gap-1.5 mt-2 py-2 rounded-lg bg-orange-500/10 border border-orange-500/20 text-xs font-semibold text-orange-400 hover:bg-orange-500/20 transition-all"
-                      >
-                        <Film className="w-3 h-3" />
-                        All Movies
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              ) : (
+                    )}
+                  </div>
+                );
+              }
+
+              if (link.hasDropdown === "boxoffice") {
+                return (
+                  <div key={link.href}>
+                    <button
+                      onClick={() => setMobileBoOpen((v) => !v)}
+                      className={clsx(
+                        "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium mb-0.5 transition-colors",
+                        pathname?.startsWith(link.href)
+                          ? "text-orange-400 bg-orange-500/10"
+                          : "text-gray-400 hover:text-white hover:bg-white/5",
+                      )}
+                    >
+                      <span>{link.label}</span>
+                      <ChevronRight className={clsx(
+                        "w-4 h-4 transition-transform duration-200",
+                        mobileBoOpen ? "rotate-90 text-orange-400" : "",
+                      )} />
+                    </button>
+                    {mobileBoOpen && (
+                      <div className="mb-2 mx-2 p-3 bg-white/[0.03] border border-white/[0.07] rounded-xl">
+                        <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-2 px-1">
+                          Box Office by Year
+                        </p>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {BOX_OFFICE_YEARS.map((yr) => (
+                            <Link
+                              key={yr}
+                              href={yr === _currentYear ? "/box-office" : `/box-office?year=${yr}`}
+                              onClick={() => { setMenuOpen(false); setMobileBoOpen(false); }}
+                              className={clsx(
+                                "flex items-center justify-center py-2 rounded-lg border text-xs font-semibold transition-all",
+                                yr === _currentYear
+                                  ? "bg-orange-500/15 border-orange-500/30 text-orange-400"
+                                  : "bg-white/[0.04] border-white/[0.07] text-gray-400 hover:bg-orange-500/15 hover:border-orange-500/30 hover:text-orange-400",
+                              )}
+                            >
+                              {yr}
+                            </Link>
+                          ))}
+                        </div>
+                        {/* All-time + full list */}
+                        <div className="mt-2 space-y-1.5">
+                          <a
+                            href="/box-office#all-time"
+                            onClick={() => { setMenuOpen(false); setMobileBoOpen(false); }}
+                            className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-yellow-500/8 border border-yellow-500/20 text-xs font-semibold text-yellow-400 hover:bg-yellow-500/15 transition-all"
+                          >
+                            👑 All-Time Top Grossers
+                          </a>
+                          <Link
+                            href="/box-office"
+                            onClick={() => { setMenuOpen(false); setMobileBoOpen(false); }}
+                            className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-orange-500/10 border border-orange-500/20 text-xs font-semibold text-orange-400 hover:bg-orange-500/20 transition-all"
+                          >
+                            <TrendingUp className="w-3 h-3" />
+                            All Box Office Data
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -853,8 +1068,8 @@ export function Navbar() {
                 >
                   {link.label}
                 </Link>
-              )
-            )}
+              );
+            })}
           </div>
         )}
       </div>

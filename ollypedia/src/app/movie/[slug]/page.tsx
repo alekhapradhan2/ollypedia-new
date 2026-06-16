@@ -330,10 +330,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     `${movie.title} web release`,
     `${movie.title} web release date`,
     `${movie.title} available online`,
-    `${movie.title} download`,
-    `${movie.title} full movie`,
     `${movie.title} full movie online`,
-    `${movie.title} full movie watch online`,
     // Platform-specific
     `${movie.title} ${movie.streamingOn}`,
     `${movie.title} ${movie.streamingOn} release date`,
@@ -353,8 +350,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     `${movie.title} odia movie watch online`,
     `${movie.title} odia movie streaming`,
     `${movie.title} odia movie digital release`,
-    `${movie.title} odia full movie`,
-    `${movie.title} odia full movie online`,
     // Status-specific keywords
     ...(isOttLive ? [
       `${movie.title} now streaming`,
@@ -388,69 +383,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     `odia movie ott release`,
     `ollywood ott`,
   ];
-
-  // ── Download keyword matrix ──────────────────────────────────────────────────
-  const dlKw: string[] = [
-    // Primary download queries
-    `download ${movie.title}`,
-    `${movie.title} download`,
-    `${movie.title} movie download`,
-    `${movie.title} full movie download`,
-    `${movie.title} odia movie download`,
-    `${movie.title} odia film download`,
-    `${movie.title} download online`,
-    `${movie.title} download free`,
-    `${movie.title} free download`,
-    `${movie.title} download hd`,
-    `${movie.title} hd download`,
-    `${movie.title} 1080p download`,
-    `${movie.title} 720p download`,
-    `${movie.title} 480p download`,
-    `${movie.title} 4k download`,
-    `${movie.title} full hd download`,
-    // Full movie variants
-    `${movie.title} full movie`,
-    `${movie.title} full movie download`,
-    `${movie.title} full movie free download`,
-    `${movie.title} full movie hd download`,
-    `${movie.title} full movie online`,
-    `${movie.title} full movie watch online free`,
-    `${movie.title} full movie in odia`,
-    `watch ${movie.title} full movie online`,
-    `${movie.title} odia full movie download`,
-    // Torrent / piracy intent (ranks page instead of piracy sites)
-    `${movie.title} torrent`,
-    `${movie.title} torrent download`,
-    `${movie.title} filmyzilla`,
-    `${movie.title} filmywap`,
-    `${movie.title} tamilrockers`,
-    `${movie.title} bolly4u`,
-    `${movie.title} mp4moviez`,
-    `${movie.title} 9xmovies`,
-    `${movie.title} movierulz`,
-    `${movie.title} ibomma`,
-    `${movie.title} jalshamoviez`,
-    `${movie.title} kuttymovies`,
-    // Year variants
-    year ? `download ${movie.title} ${year}` : "",
-    year ? `${movie.title} ${year} download` : "",
-    year ? `${movie.title} ${year} full movie download` : "",
-    year ? `${movie.title} ${year} hd download` : "",
-    year ? `${movie.title} odia movie ${year} download` : "",
-    // Watch online variants
-    `${movie.title} watch online`,
-    `watch ${movie.title} online`,
-    `${movie.title} watch online free`,
-    `${movie.title} watch online hd`,
-    `${movie.title} online movie`,
-    `${movie.title} online play`,
-    `stream ${movie.title} online`,
-    // Generic Ollywood download queries
-    "odia movie download", "odia full movie download",
-    "ollywood movie download", "odia hd movie download",
-    year ? `odia movie download ${year}` : "",
-    year ? `ollywood movie download ${year}` : "",
-  ].filter(Boolean) as string[];
 
   // ── Core keyword matrix ─────────────────────────────────────────────────────
   const directorName = getDirectorFromCast(movie.cast || []) || movie.director;
@@ -488,8 +420,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     ...getMisspellings(movie.title),
     // OTT keyword matrix
     ...ottKw,
-    // Download keyword matrix
-    ...dlKw,
   ].filter(Boolean) as string[];
 
   return {
@@ -566,29 +496,6 @@ function buildFaqJsonLd(movie: any, year: string | number, avgRating: number | n
             return `${movie.title} is streaming on ${movie.streamingOn}.`;
           })()
         : `The OTT release date of ${movie.title} has not been announced yet.`,
-    },
-    // ── Download FAQs — targets high-volume download search queries ──────────
-    {
-      question: `How to download ${movie.title} full movie?`,
-      answer: movie.streamingOn
-        ? `${movie.title} is officially available on ${movie.streamingOn}${movie.streamingUrl ? ` (${movie.streamingUrl})` : ""}. You can legally download it offline via the platform's official app. Downloading from piracy sites like Filmyzilla or Tamilrockers is illegal under the Indian Copyright Act.`
-        : `${movie.title} is not yet available on any official OTT platform. Once released digitally, it can be downloaded via the official app. Downloading from piracy websites is illegal and punishable by law.`,
-    },
-    {
-      question: `Is ${movie.title} available for free download?`,
-      answer: `Free downloads of ${movie.title} from piracy websites are illegal under Indian copyright law and punishable with imprisonment up to 3 years. We recommend watching ${movie.title} only on official platforms${movie.streamingOn ? ` like ${movie.streamingOn}` : " like Aao NXT, Tarang Plus, or Kanccha Lannka"} to support the Odia film industry.`,
-    },
-    {
-      question: `Where can I download ${movie.title} in HD?`,
-      answer: movie.streamingOn && movie.streamingUrl
-        ? `Download ${movie.title} in HD legally via the official ${movie.streamingOn} app at ${movie.streamingUrl}. It supports HD offline downloads for subscribers.`
-        : `${movie.title} HD download will be available on an official OTT platform once its digital rights are released. Piracy sites offering HD downloads are illegal and unsafe. Check Ollypedia for the latest ${movie.title} download updates.`,
-    },
-    {
-      question: `${movie.title} full movie download in Odia — is it available?`,
-      answer: movie.streamingOn
-        ? `Yes, ${movie.title} full movie in original Odia audio is officially available on ${movie.streamingOn}. Download it offline legally through the ${movie.streamingOn} app. Ollypedia advises against piracy to help support Odia cinema.`
-        : `${movie.title} full Odia movie download is not officially available yet. It may release on Odia OTT platforms like Aao NXT or Tarang Plus. Follow Ollypedia for ${movie.title} OTT and download release updates.`,
     },
   ];
   return {
@@ -1737,43 +1644,6 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                       a: movie.streamingOn
                         ? `${movie.title} is available on ${movie.streamingOn}. Please check ${movie.streamingOn}'s subscription plans — some platforms offer a free trial or ad-supported viewing. Visit ${movie.streamingUrl || `the ${movie.streamingOn} platform`} to check current availability and pricing.`
                         : `${movie.title} has not been officially released on any free OTT platform. Watching from unofficial or pirated sources is illegal. Support Odia cinema by watching from official platforms.`,
-                    },
-                    // ── Download FAQs block ──────────────────────────────────
-                    {
-                      q: `How to download ${movie.title} full movie?`,
-                      a: movie.streamingOn
-                        ? `${movie.title} is officially available on ${movie.streamingOn}${movie.streamingUrl ? ` (${movie.streamingUrl})` : ""}. You can watch or download the movie through the platform's official app. Downloading from piracy websites like Filmyzilla, Filmywap, or Tamilrockers is illegal and punishable under Indian copyright law.`
-                        : `${movie.title} is not yet available on any official OTT platform for download. Please avoid piracy websites. Once officially released on OTT, you will be able to download it through the platform's official app. Follow Ollypedia for updates.`,
-                    },
-                    {
-                      q: `Is ${movie.title} available for free download?`,
-                      a: `Free illegal downloads of ${movie.title} from piracy websites are a violation of copyright law. We strongly recommend watching ${movie.title} only through legal and official platforms${movie.streamingOn ? ` like ${movie.streamingOn}` : " like Aao NXT, Tarang Plus, or Kanccha Lannka"}. Supporting official releases helps Odia cinema grow.`,
-                    },
-                    {
-                      q: `Where can I download ${movie.title} in HD?`,
-                      a: movie.streamingOn && movie.streamingUrl
-                        ? `You can download ${movie.title} in HD legally through the official ${movie.streamingOn} app at ${movie.streamingUrl}. The app supports HD offline downloads for subscribed users.`
-                        : `${movie.title} HD download is available only through official OTT platforms once the movie's digital rights are released. Platforms like Aao NXT and Tarang Plus support HD offline downloads. Avoid illegal HD download sites — they may contain malware and are punishable under law.`,
-                    },
-                    {
-                      q: `Can I download ${movie.title} on mobile?`,
-                      a: movie.streamingOn
-                        ? `Yes, you can download ${movie.title} on your Android or iOS mobile through the official ${movie.streamingOn} app. Install the app, subscribe to the plan, and use the offline download option to watch the movie without internet.`
-                        : `Once ${movie.title} releases on an OTT platform, you will be able to download it on mobile via the platform's official app. Follow Ollypedia for the latest ${movie.title} download availability updates.`,
-                    },
-                    {
-                      q: `What is the file size of ${movie.title} movie download?`,
-                      a: `The file size of ${movie.title} depends on the video quality: 480p is roughly 300–500 MB, 720p HD is around 700 MB–1.2 GB, and 1080p Full HD can be 1.5–3 GB. These sizes are for official platform downloads${movie.streamingOn ? ` such as ${movie.streamingOn}` : ""}. File sizes on piracy sites are unreliable and may contain harmful files.`,
-                    },
-                    {
-                      q: `Is downloading ${movie.title} from Filmyzilla or Tamilrockers legal?`,
-                      a: `No, downloading ${movie.title} from piracy websites like Filmyzilla, Filmywap, Tamilrockers, 9xMovies, ibomma, or similar sites is completely illegal under the Indian Copyright Act. It is punishable with up to 3 years of imprisonment and a fine up to ₹3 lakh. Please support Odia cinema by watching ${movie.title} through official platforms.`,
-                    },
-                    {
-                      q: `${movie.title} full movie download in Odia — is it available?`,
-                      a: movie.streamingOn
-                        ? `Yes, ${movie.title} full movie in Odia is officially available on ${movie.streamingOn}. You can stream or download the full Odia audio version via the ${movie.streamingOn} app. Ollypedia recommends watching from official sources to support the Odia film industry.`
-                        : `${movie.title} full movie in Odia is not yet available for official download. Once it releases on an Odia OTT platform, you will be able to download the full movie in the original Odia audio. Stay tuned to Ollypedia for updates.`,
                     },
                   ].map((faq, i) => (
                     <details key={i} className="group border border-[#1a1a1a] rounded-xl overflow-hidden">
