@@ -808,8 +808,10 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
             <Breadcrumb crumbs={[{ label: "Movies", href: "/movies" }, { label: movie.title }]} />
           </div>
 
-          {/* ── Poster + Title row ── */}
-          <div className="flex gap-4 sm:gap-6 pt-5 pb-6 sm:pb-8">
+          {/* ── Poster + Title row + Box Office (right on lg+) ── */}
+          <div className="flex gap-4 sm:gap-6 lg:gap-0 pt-5 pb-6 sm:pb-8 lg:grid lg:grid-cols-[1fr_320px] lg:items-start">
+          {/* Left column: poster + title */}
+          <div className="flex gap-4 sm:gap-6 lg:pr-8">
 
             {/* Poster — fixed sizes per breakpoint, never overflows */}
             <div className="flex-shrink-0 self-start">
@@ -972,7 +974,80 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 )}
               </div>
             </div>
-          </div>
+            </div>{/* end left col flex */}
+
+            {/* ── Box Office card — right column on lg+, hidden on mobile (stays in sidebar) ── */}
+            {(movie.boxOffice?.opening || movie.boxOffice?.total || movie.boxOfficeDays?.length > 0) && (
+              <div className="hidden lg:block bg-[#111] border border-[#1f1f1f] rounded-2xl p-5 self-start">
+                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <TrendingUp className="w-3.5 h-3.5 text-orange-500" /> Box Office
+                </h2>
+                <div className="space-y-0">
+                  {[
+                    ["Opening Day",  movie.boxOffice?.opening],
+                    ["First Week",   movie.boxOffice?.firstWeek],
+                    ["Total Net",    movie.boxOffice?.total],
+                  ].filter(([, v]) => v && v !== "TBA").map(([label, val]) => (
+                    <div key={String(label)} className="flex justify-between items-center py-2.5 border-b border-[#1f1f1f] last:border-0">
+                      <span className="text-xs text-gray-500">{label}</span>
+                      <span className="text-sm font-bold text-green-400">{val}</span>
+                    </div>
+                  ))}
+                </div>
+                {movie.boxOfficeDays?.length > 0 && (
+                  <BoxOfficeDaysChart days={movie.boxOfficeDays} />
+                )}
+                {movie.verdict && (
+                  <div className={`mt-4 text-center py-2 rounded-xl border ${vs.bg} ${vs.border}`}>
+                    <span className={`text-sm font-black ${vs.text}`}>{movie.verdict}</span>
+                  </div>
+                )}
+                {movie.slug && (
+                  <Link href={`/box-office/${movie.slug}`}
+                    className="mt-3 flex items-center justify-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 transition-colors font-semibold">
+                    Full box office data <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>{/* end hero 2-col grid */}
+
+          {/* ── Mobile-only box office strip — compact row below hero ── */}
+          {(movie.boxOffice?.opening || movie.boxOffice?.total || movie.boxOfficeDays?.length > 0) && (
+            <div className="lg:hidden mt-1 mb-4 flex items-stretch gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {/* TrendingUp icon pill */}
+              <div className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                <TrendingUp className="w-3.5 h-3.5 text-orange-400" />
+                <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest whitespace-nowrap">Box Office</span>
+              </div>
+              {/* Stat pills */}
+              {[
+                ["Opening", movie.boxOffice?.opening],
+                ["Week 1",  movie.boxOffice?.firstWeek],
+                ["Total",   movie.boxOffice?.total],
+              ].filter(([, v]) => v && v !== "TBA").map(([label, val]) => (
+                <div key={String(label)} className="flex-shrink-0 flex flex-col justify-center px-3 py-2 bg-[#111] border border-[#1f1f1f] rounded-xl">
+                  <span className="text-[9px] text-gray-500 uppercase tracking-widest leading-none mb-0.5">{label}</span>
+                  <span className="text-xs font-black text-green-400 whitespace-nowrap">{val}</span>
+                </div>
+              ))}
+              {/* Verdict pill */}
+              {movie.verdict && (
+                <div className={`flex-shrink-0 flex items-center px-3 py-2 rounded-xl border ${vs.bg} ${vs.border}`}>
+                  <span className={`text-xs font-black whitespace-nowrap ${vs.text}`}>{movie.verdict}</span>
+                </div>
+              )}
+              {/* Full data link pill */}
+              {movie.slug && (
+                <Link href={`/box-office/${movie.slug}`}
+                  className="flex-shrink-0 flex items-center gap-1 px-3 py-2 bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl transition-colors ml-auto">
+                  <span className="text-[10px] font-semibold text-orange-400 whitespace-nowrap">Full data</span>
+                  <ChevronRight className="w-3 h-3 text-orange-400" />
+                </Link>
+              )}
+            </div>
+          )}
+
         </div>
       </div>
 
@@ -1002,43 +1077,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               )}
             </div>
 
-            {/* Box Office card */}
-            {(movie.boxOffice?.opening || movie.boxOffice?.total || movie.boxOfficeDays?.length > 0) && (
-              <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-5">
-                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-3.5 h-3.5 text-orange-500" /> Box Office
-                </h2>
-                <div className="space-y-0">
-                  {[
-                    ["Opening Day",  movie.boxOffice?.opening],
-                    ["First Week",   movie.boxOffice?.firstWeek],
-                    ["Total Net",    movie.boxOffice?.total],
-                  ].filter(([, v]) => v && v !== "TBA").map(([label, val]) => (
-                    <div key={String(label)} className="flex justify-between items-center py-2.5 border-b border-[#1f1f1f] last:border-0">
-                      <span className="text-xs text-gray-500">{label}</span>
-                      <span className="text-sm font-bold text-green-400">{val}</span>
-                    </div>
-                  ))}
-                </div>
 
-                {/* Day-by-day collection chart */}
-                {movie.boxOfficeDays?.length > 0 && (
-                  <BoxOfficeDaysChart days={movie.boxOfficeDays} />
-                )}
-
-                {movie.verdict && (
-                  <div className={`mt-4 text-center py-2 rounded-xl border ${vs.bg} ${vs.border}`}>
-                    <span className={`text-sm font-black ${vs.text}`}>{movie.verdict}</span>
-                  </div>
-                )}
-                {movie.slug && (
-                  <Link href={`/box-office/${movie.slug}`}
-                    className="mt-3 flex items-center justify-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 transition-colors font-semibold">
-                    Full box office data <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                )}
-              </div>
-            )}
 
             {/* ── OTT / Streaming sidebar card ── */}
             {movie.streamingOn && (

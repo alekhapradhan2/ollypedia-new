@@ -57,7 +57,12 @@ function fmtDate(iso: string) {
 
 // ── Box office helpers (same as /box-office/page.tsx) ────────────
 function parseNum(s: unknown): number {
-  const v = parseFloat(String(s || "").replace(/[^0-9.]/g, ""));
+  const str = String(s || "").trim();
+  const crMatch = str.match(/([\d.]+)\s*Cr/i);
+  if (crMatch) return parseFloat(crMatch[1]) * 1_00_00_000;
+  const lMatch  = str.match(/([\d.]+)\s*L/i);
+  if (lMatch)  return parseFloat(lMatch[1])  * 1_00_000;
+  const v = parseFloat(str.replace(/[^0-9.]/g, ""));
   return isNaN(v) ? 0 : v;
 }
 function fmtINR(n: number): string {
