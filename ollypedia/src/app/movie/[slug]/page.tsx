@@ -47,7 +47,7 @@ function fmtDate(iso?: string): string {
 }
 
 const OTT_LOGOS: Record<string, string> = {
-  "Aao NXT":         "https://play-lh.googleusercontent.com/iGq3yKArlFTqbamZ0b9at4mKGCPB6vrCbffZc9JC7GEI3uPKIX82J0tnwHhMo0c7fyQ",
+  "Aao NXT":         "https://images.wakelet.com/resize?id=595b960a-0fcb-4fb8-a61f-dc7f9a94da2c&h=3840&w=3840&q=85",
   "Tarang Plus":     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS_iUWV_PnE0BrkBKN0YcWGgUBBP1Q_vz13Cg&s",
   "YouTube":         "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg",
   "SonyLIV":         "https://upload.wikimedia.org/wikipedia/commons/3/3f/SonyLIV_logo.png",
@@ -828,7 +828,11 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                     </div>
                   ) : null;
                 })()}
-                {movie.verdict && (
+                {/* Verdict shown here ONLY when no box office data exists yet
+                    (e.g. "Upcoming" movies) — once box office numbers exist,
+                    the verdict already appears in the Box Office card/strip
+                    below, so we skip it here to avoid showing it twice. */}
+                {movie.verdict && !(movie.boxOffice?.opening || movie.boxOffice?.total || movie.boxOfficeDays?.length > 0) && (
                   <div className={`flex items-center gap-2 rounded-lg px-3 py-2 border ${vs.bg} ${vs.border}`}>
                     <div className="min-w-0">
                       <p className="text-[9px] text-gray-600 uppercase tracking-widest leading-none mb-0.5">Verdict</p>

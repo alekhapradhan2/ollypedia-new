@@ -1,12 +1,9 @@
 // app/robots.txt/route.ts
 // ── What changed in this version ──────────────────────────────────────────────
-//  1. AI scraper bots blocked — GPTBot, CCBot, Bytespider, Google-Extended etc.
-//     Your original Odia cinema content shouldn't train AI models for free.
-//  2. /search Disallow added — thin/duplicate content wastes crawl budget
-//  3. /_next/ Disallow added — static asset paths don't need to be indexed
-//  4. Second Sitemap directive added for future sitemap index support
-//  5. Bing, Yandex, DuckDuckGo-friendly (they all read robots.txt)
-//  ✅ All existing rules preserved
+//  1. /blog? now blocks ALL query string variations (was only ?q= before)
+//  2. /movies?genre= blocked — duplicate of canonical /movies/genre/[genre]
+//  3. /songs/category/ left crawlable (canonical), query dupes blocked
+//  ✅ All existing rules preserved (AI bot blocking, sitemap, admin/api block)
 
 import { SITE_URL } from "@/lib/seo";
 
@@ -20,7 +17,13 @@ Disallow: /api/
 Disallow: /admin/
 Disallow: /search
 Disallow: /_next/
-Disallow: /blog?q=
+Disallow: /blog?
+Disallow: /movies?genre=
+
+# Explicitly allowed (kept crawlable — these are canonical, not duplicates)
+Allow: /movies/year/
+Allow: /movies/genre/
+Allow: /box-office?year=
 
 # ── AI training scrapers — block content harvesting ─────
 # These bots scrape content to train AI models without compensation.

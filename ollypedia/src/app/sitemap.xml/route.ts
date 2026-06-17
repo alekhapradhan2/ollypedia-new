@@ -82,13 +82,14 @@ export async function GET() {
   );
 
   // ── Genre pages ────────────────────────────────────────────────────────────
+  // Only the canonical /movies/genre/[genre] path is included.
+  // /movies?genre= is blocked in robots.txt as a duplicate — don't list it here.
   const genres = [
     "Action", "Romance", "Comedy", "Drama", "Family",
     "Thriller", "Mythological", "Horror", "Social", "Devotional",
   ];
   genres.forEach((g) => {
     entries.push(urlEntry(`${SITE_URL}/movies/genre/${encodeURIComponent(g.toLowerCase())}`, today, "weekly", "0.75"));
-    entries.push(urlEntry(`${SITE_URL}/movies?genre=${encodeURIComponent(g)}`, today, "weekly", "0.75"));
   });
 
   // ── Blog category pages ────────────────────────────────────────────────────
@@ -133,6 +134,15 @@ export async function GET() {
     const freq = yr >= YEAR_END - 1 ? "daily"   : yr >= YEAR_END - 4 ? "monthly" : "yearly";
     const pri  = yr >= YEAR_END - 1 ? "0.85"    : yr >= YEAR_END - 4 ? "0.75"    : "0.6";
     entries.push(urlEntry(`${SITE_URL}/movies/year/${yr}`, today, freq, pri));
+  }
+
+  // ── Box office by year pages ───────────────────────────────────────────────
+  // Current year is covered by the static "/box-office" entry above (canonical
+  // points there for the current year). Only past years get the ?year= variant —
+  // matches the dynamic canonical/openGraph logic in app/box-office/page.tsx.
+  const BOX_OFFICE_YEAR_START = 2020;
+  for (let yr = YEAR_END - 1; yr >= BOX_OFFICE_YEAR_START; yr--) {
+    entries.push(urlEntry(`${SITE_URL}/box-office?year=${yr}`, today, "weekly", "0.75"));
   }
 
   try {

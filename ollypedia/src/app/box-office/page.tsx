@@ -26,7 +26,11 @@ export async function generateMetadata(
   return {
     title,
     description,
-    alternates:  { canonical: "https://ollypedia.in/box-office" },
+    alternates:  {
+      canonical: isCurrentYear
+        ? "https://ollypedia.in/box-office"
+        : `https://ollypedia.in/box-office?year=${year}`,
+    },
     robots:      { index: true, follow: true },
     keywords:    [
       "Odia box office", "Ollywood collection", `Odia movie collection ${year}`,
@@ -41,7 +45,9 @@ export async function generateMetadata(
     openGraph: {
       title,
       description,
-      url:         "https://ollypedia.in/box-office",
+      url: isCurrentYear
+        ? "https://ollypedia.in/box-office"
+        : `https://ollypedia.in/box-office?year=${year}`,
       siteName:    "Ollypedia",
       type:        "website",
       locale:      "en_IN",
