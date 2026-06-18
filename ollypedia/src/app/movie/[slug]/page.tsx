@@ -23,7 +23,7 @@ import {
   Calendar, Clock, User, DollarSign, Film, Star,
   Clapperboard, Music, FileText, ChevronRight,
   TrendingUp, Award, Globe, Users, BookOpen,
-  Play, Info, MessageSquare, Tag,
+  Play, Info, Tag,
 } from "lucide-react";
 
 export const revalidate    = 3600;
@@ -1438,11 +1438,11 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               </section>
             )}
 
-            {/* ── User Reviews ── */}
+            {/* ── User Reviews ──
+                ReviewForm now owns the heading + list + form together, so the
+                "(N)" count updates instantly on submit instead of waiting for
+                a full page reload. initialReviews seeds the list. */}
             <section aria-label={`User reviews for ${movie.title}`}>
-              <SectionHeading icon={MessageSquare} title="User Reviews" count={movie.reviews?.length} />
-              {/* ReviewForm now owns the list + form together.
-                  initialReviews seeds the list; new submissions appear instantly. */}
               <ReviewForm
                 movieId={String(movie._id)}
                 movieTitle={movie.title}

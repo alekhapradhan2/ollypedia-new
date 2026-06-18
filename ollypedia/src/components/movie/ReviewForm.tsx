@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface ReviewFormProps {
@@ -20,9 +21,16 @@ interface Review {
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
-const API_BASE = (
-  process.env.NEXT_PUBLIC_API_URL || "/api"
-).replace(/\/$/, "");
+// This always hits Ollypedia's own /api/movies/[id]/review route (same Next.js
+// app, talks to MongoDB directly via connectDB()). It must stay same-origin —
+// it was previously built from NEXT_PUBLIC_API_URL, which points at the
+// separate Express backend used for other endpoints. That backend has no
+// matching route, so requests went to the wrong domain entirely, which is
+// what surfaced in the browser as "Failed to fetch".
+const API_BASE = "/api";
+
+// How many reviews are shown per page in the grid below
+const REVIEWS_PER_PAGE = 6;
 
 // ─── StarRating (1–5 display, mapped ×2 → 1–10 for the API) ──────────────────
 function StarRating({
@@ -90,7 +98,7 @@ function StarRating({
   );
 }
 
-// ─── ReviewCard (renders a single review — stars out of 5) ───────────────────
+// ─── ReviewCard (compact — renders a single review, stars out of 5) ─────────
 function ReviewCard({ review }: { review: Review }) {
   // DB stores 1–10; convert to 1–5 for display
   const stars = Math.round(review.rating / 2);
@@ -100,26 +108,28 @@ function ReviewCard({ review }: { review: Review }) {
       style={{
         background: "#111",
         border: "1px solid #1f1f1f",
-        borderRadius: 16,
-        padding: "18px 20px",
+        borderRadius: 12,
+        padding: "12px 14px",
+        height: "100%",
+        boxSizing: "border-box",
       }}
     >
-      {/* Top row: avatar + name + star badge */}
+      {/* Top row: avatar + name/date + star badge */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          marginBottom: 12,
-          gap: 12,
+          marginBottom: 7,
+          gap: 8,
         }}
       >
-        {/* Avatar + name */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        {/* Avatar + name + date (single line) */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
           <div
             style={{
-              width: 36,
-              height: 36,
+              width: 26,
+              height: 26,
               background: "rgba(245,158,11,.15)",
               borderRadius: "50%",
               display: "flex",
@@ -128,41 +138,49 @@ function ReviewCard({ review }: { review: Review }) {
               flexShrink: 0,
             }}
           >
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth={2}>
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth={2}>
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
           </div>
-          <div>
-            <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", margin: 0 }}>
-              {review.user || "Anonymous"}
-            </p>
+          <p
+            style={{
+              fontSize: "0.78rem",
+              color: "#fff",
+              margin: 0,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              minWidth: 0,
+            }}
+          >
+            <span style={{ fontWeight: 700 }}>{review.user || "Anonymous"}</span>
             {review.date && (
-              <p style={{ fontSize: "0.65rem", color: "#6b7280", margin: 0 }}>
-                {new Date(review.date).toLocaleDateString("en-IN")}
-              </p>
+              <span style={{ color: "#6b7280", fontWeight: 400 }}>
+                {" "}· {new Date(review.date).toLocaleDateString("en-IN")}
+              </span>
             )}
-          </div>
+          </p>
         </div>
 
-        {/* Star badge — FIX: shows X/5 not X/10 */}
+        {/* Star badge — shows X/5 not X/10 */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 4,
+            gap: 2,
             background: "rgba(234,179,8,.08)",
             border: "1px solid rgba(234,179,8,.2)",
-            borderRadius: 8,
-            padding: "5px 10px",
+            borderRadius: 6,
+            padding: "3px 6px",
             flexShrink: 0,
           }}
         >
           {[1, 2, 3, 4, 5].map((s) => (
             <svg
               key={s}
-              width={12}
-              height={12}
+              width={9}
+              height={9}
               viewBox="0 0 24 24"
               fill={s <= stars ? "#f59e0b" : "none"}
               stroke={s <= stars ? "#f59e0b" : "#374151"}
@@ -171,14 +189,25 @@ function ReviewCard({ review }: { review: Review }) {
               <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
             </svg>
           ))}
-          <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#f59e0b", marginLeft: 3 }}>
+          <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#f59e0b", marginLeft: 2 }}>
             {stars}/5
           </span>
         </div>
       </div>
 
-      {/* Review text */}
-      <p style={{ fontSize: "0.85rem", color: "#d1d5db", lineHeight: 1.65, margin: 0 }}>
+      {/* Review text — clamped so very long reviews don't blow up card height */}
+      <p
+        style={{
+          fontSize: "0.8rem",
+          color: "#d1d5db",
+          lineHeight: 1.5,
+          margin: 0,
+          display: "-webkit-box",
+          WebkitLineClamp: 4,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+        }}
+      >
         {review.text}
       </p>
     </div>
@@ -891,6 +920,7 @@ export function ReviewForm({
   onSuccess,
   initialReviews = [], // ← NEW
 }: ReviewFormProps) {
+  const router = useRouter();
   const [user, setUser] = useState("");
   const [starRating, setStarRating] = useState(0); // 1–5 (UI)
   const [text, setText] = useState("");
@@ -899,6 +929,7 @@ export function ReviewForm({
   const [shareReview, setShareReview] = useState<Review | null>(null);
   // ← NEW: local review list, starts with whatever the server sent
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
+  const [page, setPage] = useState(0); // 0-indexed, for the reviews list below
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -946,6 +977,7 @@ export function ReviewForm({
 
       // ← NEW: instantly prepend to local list — no refresh needed
       setReviews((prev) => [confirmedReview, ...prev]);
+      setPage(0); // jump back to page 1 so the new review is visible right away
 
       // Also bubble up to any parent that cares
       onSuccess?.(confirmedReview);
@@ -957,12 +989,24 @@ export function ReviewForm({
 
       // Show share modal
       setShareReview(confirmedReview);
+
+      // The route handler already revalidated this page's cache server-side
+      // (it derives the slug itself), so this refetches the Server Component
+      // (hero rating + review count) with fresh data — without it, those
+      // would stay stale until the page's normal revalidate window (1hr) elapses.
+      router.refresh();
     } catch (err: any) {
       setError(err.message || "Could not save your review. Please try again.");
     } finally {
       setLoading(false);
     }
   }
+
+  // Clamp in case reviews shrinks/refreshes out from under the current page
+  const totalPages = Math.max(1, Math.ceil(reviews.length / REVIEWS_PER_PAGE));
+  const currentPage = Math.min(page, totalPages - 1);
+  const pageStart = currentPage * REVIEWS_PER_PAGE;
+  const visibleReviews = reviews.slice(pageStart, pageStart + REVIEWS_PER_PAGE);
 
   return (
     <>
@@ -976,27 +1020,109 @@ export function ReviewForm({
         />
       )}
 
-      {/* ── Existing reviews list ── */}
+      {/* ── Live heading — count reflects local "reviews" state instantly,
+            so it bumps up the moment a submission succeeds (no reload needed) ── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+        <div style={{ width: 4, height: 26, background: "#f59e0b", borderRadius: 4, flexShrink: 0 }} />
+        <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+          <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth={2}>
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          User Reviews
+          <span style={{ color: "#6b7280", fontWeight: 400, fontSize: "1rem" }}>({reviews.length})</span>
+        </h2>
+      </div>
+
+      {/* ── Existing reviews list — 2-column grid on wider screens to cut vertical height ── */}
       {reviews.length > 0 ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
-          {reviews.slice(0, 5).map((r, i) => (
-            <ReviewCard key={r._id ?? i} review={r} />
-          ))}
-        </div>
+        <>
+          <div className="rv-grid" style={{ marginBottom: 14 }}>
+            {visibleReviews.map((r, i) => (
+              <ReviewCard key={r._id ?? pageStart + i} review={r} />
+            ))}
+          </div>
+
+          {/* Previous / Next — only shown once there's more than one page */}
+          {totalPages > 1 && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 14,
+                marginBottom: 20,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={currentPage === 0}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: 8,
+                  border: "1px solid #2a2a2a",
+                  background: currentPage === 0 ? "#0d0d0d" : "#181818",
+                  color: currentPage === 0 ? "#3f3f46" : "#e5e7eb",
+                  fontSize: "0.8rem",
+                  fontWeight: 700,
+                  cursor: currentPage === 0 ? "not-allowed" : "pointer",
+                  transition: "background .15s, color .15s",
+                }}
+                onMouseEnter={(e) => {
+                  if (currentPage !== 0) (e.target as HTMLElement).style.background = "#222";
+                }}
+                onMouseLeave={(e) => {
+                  if (currentPage !== 0) (e.target as HTMLElement).style.background = "#181818";
+                }}
+              >
+                ← Previous
+              </button>
+
+              <span style={{ fontSize: "0.78rem", color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>
+                Page {currentPage + 1} of {totalPages}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={currentPage === totalPages - 1}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: 8,
+                  border: "1px solid #2a2a2a",
+                  background: currentPage === totalPages - 1 ? "#0d0d0d" : "#181818",
+                  color: currentPage === totalPages - 1 ? "#3f3f46" : "#e5e7eb",
+                  fontSize: "0.8rem",
+                  fontWeight: 700,
+                  cursor: currentPage === totalPages - 1 ? "not-allowed" : "pointer",
+                  transition: "background .15s, color .15s",
+                }}
+                onMouseEnter={(e) => {
+                  if (currentPage !== totalPages - 1) (e.target as HTMLElement).style.background = "#222";
+                }}
+                onMouseLeave={(e) => {
+                  if (currentPage !== totalPages - 1) (e.target as HTMLElement).style.background = "#181818";
+                }}
+              >
+                Next →
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <div
           style={{
             background: "#111",
             border: "1px solid #1f1f1f",
-            borderRadius: 16,
-            padding: "24px 20px",
+            borderRadius: 14,
+            padding: "20px 18px",
             textAlign: "center",
-            marginBottom: 24,
+            marginBottom: 20,
           }}
         >
           <svg
-            width={32}
-            height={32}
+            width={28}
+            height={28}
             viewBox="0 0 24 24"
             fill="none"
             stroke="#374151"
@@ -1011,6 +1137,13 @@ export function ReviewForm({
           </p>
         </div>
       )}
+
+      <style>{`
+        .rv-grid { display: flex; flex-direction: column; gap: 10px; }
+        @media (min-width: 640px) {
+          .rv-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        }
+      `}</style>
 
       {/* ── Write a review form ── */}
       <div

@@ -1,7 +1,10 @@
 // components/blog/BlogCard.tsx
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Clock, User, Calendar, ArrowRight, Eye } from "lucide-react";
+import { Clock, User, Calendar, ArrowRight, Eye, Loader2 } from "lucide-react";
 
 interface BlogCardProps {
   blog: {
@@ -39,7 +42,21 @@ function CategoryBadge({ category }: { category: string }) {
   );
 }
 
+function CardLoadingOverlay({ rounded }: { rounded: string }) {
+  return (
+    <div
+      className={`absolute inset-0 z-20 flex items-center justify-center gap-2 bg-zinc-950/80 backdrop-blur-[2px] ${rounded}`}
+    >
+      <Loader2 className="w-4 h-4 text-orange-400 animate-spin" />
+      <span className="text-xs font-medium text-zinc-300">Opening...</span>
+    </div>
+  );
+}
+
 export function BlogCard({ blog, variant = "standard" }: BlogCardProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const handleNavigate = () => setIsLoading(true);
+
   const image    = blog.coverImage || "/placeholder-blog.jpg";
   const cat      = blog.category   || "General";
   const author   = blog.author     || "Ollypedia Team";
@@ -71,7 +88,7 @@ export function BlogCard({ blog, variant = "standard" }: BlogCardProps) {
         itemType="https://schema.org/BlogPosting"
         className="group relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 hover:border-orange-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-orange-500/20"
       >
-        <Link href={`/blog/${blog.slug}`} className="block">
+        <Link href={`/blog/${blog.slug}`} className="block" onClick={handleNavigate}>
           <div className="relative aspect-video overflow-hidden">
             <Image
               src={image}
@@ -127,6 +144,7 @@ export function BlogCard({ blog, variant = "standard" }: BlogCardProps) {
             </div>
           </div>
         </Link>
+        {isLoading && <CardLoadingOverlay rounded="rounded-2xl" />}
       </article>
     );
   }
@@ -137,9 +155,9 @@ export function BlogCard({ blog, variant = "standard" }: BlogCardProps) {
       <article
         itemScope
         itemType="https://schema.org/BlogPosting"
-        className="group border border-zinc-800 bg-zinc-900 rounded-xl hover:border-orange-500 transition-all duration-200"
+        className="group relative border border-zinc-800 bg-zinc-900 rounded-xl hover:border-orange-500 transition-all duration-200"
       >
-        <Link href={`/blog/${blog.slug}`} className="flex gap-3 p-3">
+        <Link href={`/blog/${blog.slug}`} className="flex gap-3 p-3" onClick={handleNavigate}>
           <div className="relative w-20 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-800">
             <Image
               src={image}
@@ -162,6 +180,7 @@ export function BlogCard({ blog, variant = "standard" }: BlogCardProps) {
             </span>
           </div>
         </Link>
+        {isLoading && <CardLoadingOverlay rounded="rounded-xl" />}
       </article>
     );
   }
@@ -171,9 +190,9 @@ export function BlogCard({ blog, variant = "standard" }: BlogCardProps) {
     <article
       itemScope
       itemType="https://schema.org/BlogPosting"
-      className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 hover:border-orange-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-500/15"
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 hover:border-orange-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-500/15"
     >
-      <Link href={`/blog/${blog.slug}`} className="flex flex-col h-full">
+      <Link href={`/blog/${blog.slug}`} className="flex flex-col h-full" onClick={handleNavigate}>
 
         {/* Thumbnail */}
         <div className="relative aspect-video overflow-hidden flex-shrink-0 bg-zinc-800">
@@ -241,6 +260,7 @@ export function BlogCard({ blog, variant = "standard" }: BlogCardProps) {
           </div>
         </div>
       </Link>
+      {isLoading && <CardLoadingOverlay rounded="rounded-2xl" />}
     </article>
   );
 }

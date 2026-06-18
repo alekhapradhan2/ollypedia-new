@@ -4,7 +4,7 @@ import { useState, useEffect, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Play, Music, Search, ChevronLeft, ChevronRight, X, Loader2 } from "lucide-react";
+import { Play, Music, Search, ChevronLeft, ChevronRight, X, Loader2, Mic2, Music2 } from "lucide-react";
 import clsx from "clsx";
 
 interface Song {
@@ -45,7 +45,7 @@ function songDetailUrl(song: Song): string {
   return `/songs/${movieSlug}/${idx}/${titleSlug}`;
 }
 
-// ── Song card ─────────────────────────────────────────────────────────────────
+// ── Grid Song Card ─────────────────────────────────────────────────────────────
 function SongCard({ song }: { song: Song }) {
   const router  = useRouter();
   const [loading, setLoading] = useState(false);
@@ -68,92 +68,300 @@ function SongCard({ song }: { song: Song }) {
   };
 
   return (
-    <a
-      href={url}
-      onClick={handleClick}
-      className="relative flex items-center gap-3 bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl p-3 group transition-all no-underline"
-      style={{
-        outline: loading ? "2px solid rgba(201,151,58,.7)" : "2px solid transparent",
-        transition: "outline-color .15s, border-color .15s",
-        textDecoration: "none",
-      }}
-    >
-      {/* Thumbnail */}
-      <div className="relative w-[72px] h-[52px] rounded-lg overflow-hidden flex-shrink-0 bg-[#1a1a1a]">
-        {thumb ? (
-          <Image
-            src={thumb}
-            alt={song.title || "Odia Song"}
-            fill
-            className="object-cover"
-            sizes="72px"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-lg text-gray-600">
-            🎵
+    <>
+      <style>{`
+        .sgc {
+          background: #0f0f0f;
+          border: 1px solid #1c1c1c;
+          border-radius: 16px;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          transition: border-color .22s ease, transform .22s ease, box-shadow .22s ease;
+          text-decoration: none;
+          position: relative;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .sgc:hover {
+          border-color: rgba(201,151,58,.5);
+          transform: translateY(-4px);
+          box-shadow: 0 14px 38px rgba(0,0,0,.6), 0 0 0 1px rgba(201,151,58,.07);
+          text-decoration: none;
+        }
+        .sgc:active { transform: translateY(-1px); }
+
+        /* Loading state */
+        .sgc.is-loading {
+          outline: 2px solid rgba(201,151,58,.65);
+        }
+
+        /* Thumbnail */
+        .sgc-thumb {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 16 / 9;
+          background: #141414;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+        .sgc-thumb img {
+          object-fit: cover;
+          transition: transform .35s ease;
+        }
+        .sgc:hover .sgc-thumb img { transform: scale(1.06); }
+
+        /* Placeholder */
+        .sgc-thumb-ph {
+          position: absolute; inset: 0;
+          display: flex; align-items: center; justify-content: center;
+          background: linear-gradient(145deg, #141414, #1c1c1c);
+        }
+
+        /* Play overlay */
+        .sgc-overlay {
+          position: absolute; inset: 0;
+          background: rgba(0,0,0,.5);
+          display: flex; align-items: center; justify-content: center;
+          opacity: 0;
+          transition: opacity .2s ease;
+          z-index: 3;
+        }
+        .sgc:hover .sgc-overlay { opacity: 1; }
+
+        .sgc-play-btn {
+          width: 44px; height: 44px;
+          border-radius: 50%;
+          background: rgba(201,151,58,.95);
+          display: flex; align-items: center; justify-content: center;
+          transform: scale(.72);
+          transition: transform .2s ease;
+          box-shadow: 0 4px 20px rgba(201,151,58,.45);
+        }
+        .sgc:hover .sgc-play-btn { transform: scale(1); }
+
+        .sgc-play-tri {
+          width: 0; height: 0;
+          border-style: solid;
+          border-width: 7px 0 7px 13px;
+          border-color: transparent transparent transparent #0a0a0a;
+          margin-left: 3px;
+        }
+
+        /* Body */
+        .sgc-body {
+          padding: 11px 13px 13px;
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+          flex: 1;
+        }
+
+        /* Title */
+        .sgc-title {
+          font-weight: 700;
+          font-size: 13px;
+          line-height: 1.38;
+          color: #f0f0f0;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          transition: color .15s;
+          letter-spacing: -.01em;
+          margin: 0;
+        }
+        .sgc:hover .sgc-title { color: #c9973a; }
+
+        /* Singer */
+        .sgc-singer {
+          display: flex; align-items: center; gap: 5px;
+          font-size: 11px; color: #888;
+        }
+        .sgc-singer svg { flex-shrink: 0; opacity: .65; }
+        .sgc-singer span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Music Director */
+        .sgc-md {
+          display: flex; align-items: center; gap: 5px;
+          font-size: 10.5px; color: #555;
+        }
+        .sgc-md svg { flex-shrink: 0; opacity: .5; }
+        .sgc-md span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Divider */
+        .sgc-divider {
+          height: 1px;
+          background: #1c1c1c;
+          margin: 1px 0;
+        }
+
+        /* Movie pill */
+        .sgc-movie {
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 3px 8px 3px 6px;
+          background: rgba(255,255,255,.03);
+          border: 1px solid rgba(255,255,255,.07);
+          border-radius: 20px;
+          font-size: 10px; color: #555;
+          max-width: 100%; overflow: hidden;
+          white-space: nowrap; text-overflow: ellipsis;
+          align-self: flex-start;
+          transition: background .15s, border-color .15s, color .15s;
+        }
+        .sgc:hover .sgc-movie {
+          background: rgba(201,151,58,.07);
+          border-color: rgba(201,151,58,.22);
+          color: #999;
+        }
+        .sgc-movie-dot {
+          width: 4px; height: 4px;
+          border-radius: 50%;
+          background: #c9973a;
+          opacity: .45;
+          flex-shrink: 0;
+          transition: opacity .15s;
+        }
+        .sgc:hover .sgc-movie-dot { opacity: .8; }
+
+        /* Progress bar */
+        .sgc-bar {
+          height: 2px;
+          background: rgba(255,255,255,.05);
+          border-radius: 2px;
+          overflow: hidden;
+          margin-top: 4px;
+        }
+        .sgc-bar-fill {
+          height: 100%;
+          background: linear-gradient(to right, #c9973a, #8b5e1a);
+          border-radius: 2px;
+          width: 0;
+          transition: width .3s ease;
+        }
+        .sgc:hover .sgc-bar-fill { width: 100%; }
+
+        /* Corner glow */
+        .sgc::before {
+          content: "";
+          position: absolute; top: 0; left: 0;
+          width: 0; height: 0;
+          border-style: solid;
+          border-width: 26px 26px 0 0;
+          border-color: rgba(201,151,58,.15) transparent transparent transparent;
+          border-radius: 16px 0 0 0;
+          opacity: 0;
+          transition: opacity .22s ease;
+          pointer-events: none;
+          z-index: 2;
+        }
+        .sgc:hover::before { opacity: 1; }
+
+        /* Loading spinner */
+        @keyframes sgc-spin { to { transform: rotate(360deg); } }
+        @keyframes sgc-shimmer {
+          0%   { background-position:  200% 0; }
+          100% { background-position: -200% 0; }
+        }
+      `}</style>
+
+      <a
+        href={url}
+        onClick={handleClick}
+        className={clsx("sgc", loading && "is-loading")}
+        aria-label={`Play ${song.title}${song.singer ? ` by ${song.singer}` : ""}`}
+      >
+        {/* Thumbnail */}
+        <div className="sgc-thumb">
+          {thumb ? (
+            <Image
+              src={thumb}
+              alt={song.title || "Odia Song"}
+              fill
+              sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, 25vw"
+            />
+          ) : (
+            <div className="sgc-thumb-ph">
+              <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style={{ color: "#252525" }}>
+                <circle cx="18" cy="18" r="16" stroke="currentColor" strokeWidth="1.5" />
+                <circle cx="18" cy="18" r="9"  stroke="currentColor" strokeWidth="1"   />
+                <circle cx="18" cy="18" r="3"  fill="currentColor" opacity=".4"        />
+              </svg>
+            </div>
+          )}
+
+          {/* Play overlay */}
+          <div className="sgc-overlay" aria-hidden="true">
+            <div className="sgc-play-btn">
+              <div className="sgc-play-tri" />
+            </div>
           </div>
-        )}
-        {/* Play overlay */}
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-          <Play className="w-4 h-4 text-white fill-white" />
         </div>
-      </div>
 
-      {/* Text info */}
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-white text-sm leading-snug line-clamp-1 group-hover:text-orange-400 transition-colors">
-          {song.title || "Untitled"}
-        </p>
-        {song.singer && (
-          <p className="flex items-center gap-1 text-[11px] text-gray-400 mt-0.5">
-            <Music className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">{song.singer}</span>
-          </p>
-        )}
-        {song.movieTitle && (
-          <p className="text-[10px] text-gray-600 truncate mt-0.5">{song.movieTitle}</p>
-        )}
-      </div>
+        {/* Body */}
+        <div className="sgc-body">
+          <p className="sgc-title">{song.title || "Untitled"}</p>
 
-      {/* Loading overlay */}
-      {loading && (
-        <>
-          <div style={{
-            position: "absolute", inset: 0, zIndex: 20, borderRadius: 12,
-            background: "rgba(0,0,0,.45)", backdropFilter: "blur(2px)",
-          }} />
-          <div style={{
-            position: "absolute", inset: 0, zIndex: 21,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: "50%",
-              border: "3px solid rgba(201,151,58,.25)",
-              borderTopColor: "#c9973a",
-              animation: "sc-spin .6s linear infinite",
-            }} />
+          {song.singer && (
+            <div className="sgc-singer">
+              <Mic2 width={11} height={11} />
+              <span>{song.singer}</span>
+            </div>
+          )}
+
+          {song.musicDirector && (
+            <div className="sgc-md">
+              <Music2 width={10} height={10} />
+              <span>{song.musicDirector}</span>
+            </div>
+          )}
+
+          {song.movieTitle && <div className="sgc-divider" />}
+
+          {song.movieTitle && (
+            <div className="sgc-movie">
+              <span className="sgc-movie-dot" />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{song.movieTitle}</span>
+            </div>
+          )}
+
+          <div className="sgc-bar">
+            <div className="sgc-bar-fill" aria-hidden="true" />
           </div>
-          <div style={{
-            position: "absolute", inset: 0, zIndex: 19,
-            borderRadius: 12, overflow: "hidden", pointerEvents: "none",
-          }}>
+        </div>
+
+        {/* Loading overlay */}
+        {loading && (
+          <>
             <div style={{
-              position: "absolute", inset: 0,
-              background: "linear-gradient(90deg, transparent 0%, rgba(201,151,58,.07) 50%, transparent 100%)",
-              backgroundSize: "200% 100%",
-              animation: "sc-shimmer 1.1s ease infinite",
+              position: "absolute", inset: 0, zIndex: 20, borderRadius: 16,
+              background: "rgba(0,0,0,.42)", backdropFilter: "blur(2px)",
             }} />
-          </div>
-          <style>{`
-            @keyframes sc-spin    { to { transform: rotate(360deg); } }
-            @keyframes sc-shimmer {
-              0%   { background-position:  200% 0; }
-              100% { background-position: -200% 0; }
-            }
-          `}</style>
-        </>
-      )}
-    </a>
+            <div style={{
+              position: "absolute", inset: 0, zIndex: 21,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <div style={{
+                width: 30, height: 30, borderRadius: "50%",
+                border: "3px solid rgba(201,151,58,.2)",
+                borderTopColor: "#c9973a",
+                animation: "sgc-spin .6s linear infinite",
+              }} />
+            </div>
+            <div style={{
+              position: "absolute", inset: 0, zIndex: 19,
+              borderRadius: 16, overflow: "hidden", pointerEvents: "none",
+            }}>
+              <div style={{
+                position: "absolute", inset: 0,
+                background: "linear-gradient(90deg, transparent 0%, rgba(201,151,58,.06) 50%, transparent 100%)",
+                backgroundSize: "200% 100%",
+                animation: "sgc-shimmer 1.1s ease infinite",
+              }} />
+            </div>
+          </>
+        )}
+      </a>
+    </>
   );
 }
 
@@ -166,19 +374,17 @@ export function SongsClient({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  // Search input is controlled locally for debounce, but submits to server via URL
   const [searchInput, setSearchInput] = useState(active.q || "");
 
-  // Debounce: push to URL 400ms after user stops typing
   useEffect(() => {
     const timer = setTimeout(() => {
       const trimmed = searchInput.trim();
       const current = active.q || "";
-      if (trimmed === current) return; // no change
+      if (trimmed === current) return;
       const params = new URLSearchParams(searchParams.toString());
       if (trimmed) {
         params.set("q", trimmed);
-        params.delete("page"); // reset to page 1 on new search
+        params.delete("page");
       } else {
         params.delete("q");
         params.delete("page");
@@ -190,7 +396,6 @@ export function SongsClient({
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // Keep input in sync when active.q changes (e.g. browser back/forward)
   useEffect(() => {
     setSearchInput(active.q || "");
   }, [active.q]);
@@ -335,10 +540,10 @@ export function SongsClient({
         )}
       </div>
 
-      {/* ── Song grid ── */}
+      {/* ── Song Grid — TRUE CARD GRID ── */}
       <div className={clsx("transition-opacity duration-200", isPending && "opacity-50 pointer-events-none")}>
         {songs.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 sm:gap-4">
             {songs.map((song, i) => (
               <SongCard key={`${song.movieSlug}-${song.songIndex ?? i}`} song={song} />
             ))}
@@ -362,7 +567,7 @@ export function SongsClient({
         )}
       </div>
 
-      {/* ── Pagination — hidden during search ── */}
+      {/* ── Pagination ── */}
       {!isSearchActive && totalPages > 1 && (
         <div className="flex items-center justify-center gap-1.5 sm:gap-2 pt-2 flex-wrap">
           <button

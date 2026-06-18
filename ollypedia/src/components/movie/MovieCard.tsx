@@ -1,6 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Calendar, Star } from "lucide-react";
+import { Calendar, Star, Loader2 } from "lucide-react";
 
 interface MovieCardProps {
   movie: {
@@ -29,7 +32,19 @@ function verdictColor(verdict: string) {
   return "badge-gray";
 }
 
+function CardLoadingOverlay() {
+  return (
+    <div className="absolute inset-0 z-20 flex items-center justify-center gap-2 bg-black/80 backdrop-blur-[2px] rounded-[inherit]">
+      <Loader2 className="w-4 h-4 text-orange-400 animate-spin" />
+      <span className="text-xs font-medium text-gray-300">Opening...</span>
+    </div>
+  );
+}
+
 export function MovieCard({ movie, variant = "portrait" }: MovieCardProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const handleNavigate = () => setIsLoading(true);
+
   const href  = `/movie/${movie.slug || movie._id}`;
   const image = movie.posterUrl || movie.thumbnailUrl || "/placeholder-movie.jpg";
   const displayDate = (() => {
@@ -44,7 +59,7 @@ export function MovieCard({ movie, variant = "portrait" }: MovieCardProps) {
 
   if (variant === "landscape") {
     return (
-      <Link href={href} className="card flex gap-3 p-3 group">
+      <Link href={href} className="card relative flex gap-3 p-3 group" onClick={handleNavigate}>
         <div className="relative w-16 h-24 rounded-lg overflow-hidden flex-shrink-0">
           <Image src={image} alt={movie.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
         </div>
@@ -71,13 +86,14 @@ export function MovieCard({ movie, variant = "portrait" }: MovieCardProps) {
             )}
           </div>
         </div>
+        {isLoading && <CardLoadingOverlay />}
       </Link>
     );
   }
 
   return (
-    <Link href={href} className="group block">
-      <div className="card overflow-hidden">
+    <Link href={href} className="group block" onClick={handleNavigate}>
+      <div className="card relative overflow-hidden">
         <div className="relative aspect-[2/3] overflow-hidden">
           <Image
             src={image}
@@ -125,6 +141,7 @@ export function MovieCard({ movie, variant = "portrait" }: MovieCardProps) {
               </span>
             </p>
         </div>
+        {isLoading && <CardLoadingOverlay />}
       </div>
     </Link>
   );
