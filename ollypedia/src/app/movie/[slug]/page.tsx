@@ -190,8 +190,14 @@ async function getMovie(slug: string) {
   await connectDB();
   const isOid = /^[a-f0-9]{24}$/i.test(slug);
   const raw = isOid
-    ? await Movie.findById(slug).populate("productionId", "name logo").lean()
-    : await Movie.findOne({ slug }).populate("productionId", "name logo").lean();
+    ? await Movie.findById(slug)
+        .populate("productionId", "name logo")
+        .populate("collaborators", "name logo")
+        .lean()
+    : await Movie.findOne({ slug })
+        .populate("productionId", "name logo")
+        .populate("collaborators", "name logo")
+        .lean();
   if (!raw) return null;
   const serialized = JSON.parse(JSON.stringify(raw));
   // Normalize productionId after serialization so name is always accessible
@@ -202,6 +208,16 @@ async function getMovie(slug: string) {
     serialized._productionName = null;
     serialized._productionLogo = null;
   }
+  // Co-production houses (collaborators) — populate() leaves any unresolved
+  // refs as plain ObjectId strings, so filter those out defensively.
+  const collaboratorNames: string[] = (serialized.collaborators || [])
+    .filter((c: any) => c && typeof c === "object" && c.name)
+    .map((c: any) => c.name);
+  // Full presentation line: primary production house + every collaborator,
+  // de-duplicated in case the same house is listed both ways.
+  serialized._allProductionNames = Array.from(
+    new Set([...(serialized._productionName ? [serialized._productionName] : []), ...collaboratorNames])
+  );
   return serialized;
 }
 
@@ -581,6 +597,10 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
   const avgRating  = movie.reviews?.length
     ? movie.reviews.reduce((s: number, r: any) => s + (r.rating || 0), 0) / movie.reviews.length
     : null;
+  // Upcoming/TBA movies haven't released, so there's nothing to review or rate
+  // yet — covers both a known future date and a date that's still TBA, since
+  // both use verdict === "Upcoming" (see VERDICT_STYLE / ReleaseCountdown above).
+  const isUnreleased = movie.verdict === "Upcoming";
   const year      = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
   const songs     = movie.media?.songs || [];
   const trailer   = movie.media?.trailer;
@@ -629,7 +649,9 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
         reviewCount: String(movie.reviews?.length || 1),
       },
     } : {}),
-...(movie._productionName ? { productionCompany: { "@type": "Organization", name: movie._productionName } } : {}),
+...(movie._allProductionNames?.length ? {
+      productionCompany: movie._allProductionNames.map((name: string) => ({ "@type": "Organization", name })),
+    } : {}),
     // WatchAction — tells Google where/when this movie can be watched
     ...(movie.streamingOn && movie.streamingUrl && (() => {
       const od = movie.ottReleaseDate || "";
@@ -763,12 +785,18 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 {movie.title}
               </h1>
 
-              {/* Production House — branded tag right below the title */}
-              {movie._productionName && (
-                <div className="inline-flex items-center gap-1.5 mt-1 mb-2">
+              {/* Production House(s) — branded tag right below the title.
+                  Shows every production house (primary + collaborators), not
+                  just the primary productionId, joined naturally with "&". */}
+              {movie._allProductionNames?.length > 0 && (
+                <div className="inline-flex items-center gap-1.5 mt-1 mb-2 flex-wrap">
                   <span className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-widest font-medium">A</span>
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-[3px] border-l-2 border-orange-500 bg-gradient-to-r from-orange-500/10 to-transparent text-orange-300 text-[10px] sm:text-xs font-semibold tracking-wide">
-                    {movie._productionName}
+                    {movie._allProductionNames.length === 1
+                      ? movie._allProductionNames[0]
+                      : movie._allProductionNames.length === 2
+                      ? movie._allProductionNames.join(" & ")
+                      : `${movie._allProductionNames.slice(0, -1).join(", ")} & ${movie._allProductionNames[movie._allProductionNames.length - 1]}`}
                   </span>
                   <span className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-widest font-medium">Presentation</span>
                 </div>
@@ -780,16 +808,34 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 </p>
               )}
 
-              {/* Rating */}
-              {avgRating !== null && (
+              {/* Interested count — shows for every movie, released or not,
+                  as long as at least one vote exists. Rating badge joins it
+                  once the movie has actually released (there's nothing to
+                  rate before that), so both can appear together post-release. */}
+              {(((movie.interestedYes || 0) + (movie.interestedNo || 0)) > 0 || (!isUnreleased && avgRating !== null)) && (
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  <div className="flex items-center gap-1.5 bg-[#111] border border-[#1f1f1f] rounded-lg px-2 py-1 sm:px-3 sm:py-1.5">
-                    <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-bold text-white text-sm sm:text-base">{(avgRating as number).toFixed(1)}</span>
-                    <span className="text-zinc-500 text-[10px] sm:text-xs">/10</span>
-                  </div>
-                  <span className="hidden sm:block"><StarRating rating={avgRating as number} /></span>
-                  <span className="text-[10px] sm:text-xs text-zinc-500">{movie.reviews?.length} reviews</span>
+                  {((movie.interestedYes || 0) + (movie.interestedNo || 0)) > 0 && (
+                    <>
+                      <div className="flex items-center gap-1.5 bg-[#111] border border-[#1f1f1f] rounded-lg px-2 py-1 sm:px-3 sm:py-1.5">
+                        <Users className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
+                        <span className="font-bold text-white text-sm sm:text-base">
+                          {(movie.interestedYes || 0).toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <span className="text-[10px] sm:text-xs text-zinc-500">people interested</span>
+                    </>
+                  )}
+                  {!isUnreleased && avgRating !== null && (
+                    <>
+                      <div className="flex items-center gap-1.5 bg-[#111] border border-[#1f1f1f] rounded-lg px-2 py-1 sm:px-3 sm:py-1.5">
+                        <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
+                        <span className="font-bold text-white text-sm sm:text-base">{(avgRating as number).toFixed(1)}</span>
+                        <span className="text-zinc-500 text-[10px] sm:text-xs">/10</span>
+                      </div>
+                      <span className="hidden sm:block"><StarRating rating={avgRating as number} /></span>
+                      <span className="text-[10px] sm:text-xs text-zinc-500">{movie.reviews?.length} reviews</span>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -983,8 +1029,8 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               <InfoRow icon={DollarSign}   label="Budget"        value={movie.budget} />
               <InfoRow icon={Film}         label="Category"      value={movie.category} />
               <InfoRow icon={Star}         label="Content Rating" value={movie.contentRating} />
-              {movie._productionName && (
-                <InfoRow icon={Film} label="Production House" value={movie._productionName} />
+              {movie._allProductionNames?.length > 0 && (
+                <InfoRow icon={Film} label="Production House" value={movie._allProductionNames.join(", ")} />
               )}
             </div>
 
@@ -1078,9 +1124,16 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               })()
             )}
 
-            {/* Vote buttons */}
-            <VoteButtons movieId={String(movie._id)}
-              initialYes={movie.interestedYes || 0} initialNo={movie.interestedNo || 0} />
+            {/* "Are You Interested" voting:
+                - Upcoming/TBA → lives only in the main content area below
+                  (replacing the review section, since there's nothing to
+                  review yet) — not duplicated here.
+                - Released → restored here in the sidebar (original behavior),
+                  alongside the review section, which is now visible again too. */}
+            {!isUnreleased && (
+              <VoteButtons movieId={String(movie._id)}
+                initialYes={movie.interestedYes || 0} initialNo={movie.interestedNo || 0} />
+            )}
 
             {/* People Also Search */}
             <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-5">
@@ -1326,7 +1379,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                                 {/* Photo + Name */}
                                 <td className="px-4 py-2.5 align-middle">
                                   <Link href={member.castId ? `/cast/${member.castId}` : "#"}
-                                    className="flex items-center gap-2.5 group/link"
+                                    className="flex items-start gap-2.5 group/link"
                                     aria-disabled={!member.castId}>
                                     <div className="relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0 border border-[#333]">
                                       <Image
@@ -1335,7 +1388,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                                         fill className="object-cover"
                                       />
                                     </div>
-                                    <span className="text-sm font-semibold text-white group-hover/link:text-orange-400 transition-colors line-clamp-1">
+                                    <span className="text-sm font-semibold text-white group-hover/link:text-orange-400 transition-colors break-words min-w-0">
                                       {member.name}
                                     </span>
                                   </Link>
@@ -1367,7 +1420,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                                 {/* Photo + Name */}
                                 <td className="px-4 py-2.5 align-middle">
                                   <Link href={member.castId ? `/cast/${member.castId}` : "#"}
-                                    className="flex items-center gap-2.5 group/link"
+                                    className="flex items-start gap-2.5 group/link"
                                     aria-disabled={!member.castId}>
                                     <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-[#333]">
                                       <Image
@@ -1376,7 +1429,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                                         fill className="object-cover"
                                       />
                                     </div>
-                                    <span className="text-sm font-semibold text-white group-hover/link:text-orange-400 transition-colors line-clamp-1">
+                                    <span className="text-sm font-semibold text-white group-hover/link:text-orange-400 transition-colors break-words min-w-0">
                                       {member.name}
                                     </span>
                                   </Link>
@@ -1438,18 +1491,37 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               </section>
             )}
 
-            {/* ── User Reviews ──
-                ReviewForm now owns the heading + list + form together, so the
-                "(N)" count updates instantly on submit instead of waiting for
-                a full page reload. initialReviews seeds the list. */}
-            <section aria-label={`User reviews for ${movie.title}`}>
-              <ReviewForm
-                movieId={String(movie._id)}
-                movieTitle={movie.title}
-                moviePoster={movie.posterUrl}
-                initialReviews={movie.reviews ?? []}
-              />
-            </section>
+            {/* ── User Reviews (released movies) / Are You Interested (Upcoming, TBA) ──
+                Upcoming and TBA movies haven't released yet, so there's nothing
+                to review — showing an empty review form there read as broken.
+                The interest vote now lives here instead, replacing the section
+                entirely rather than sitting alongside it. */}
+            {isUnreleased ? (
+              <section aria-label={`Are you interested in ${movie.title}?`} className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-5 sm:p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-1 h-6 bg-orange-500 rounded flex-shrink-0" />
+                  <h2 className="text-lg sm:text-xl font-extrabold text-white flex items-center gap-2">
+                    <Users className="w-[18px] h-[18px] text-orange-500" />
+                    Are You Interested?
+                  </h2>
+                </div>
+                <p className="text-sm text-gray-500 mb-4">
+                  {movie.title} hasn't released yet, so reviews aren't open. Let us know if you're looking forward to it —
+                  the review section unlocks once it's out.
+                </p>
+                <VoteButtons movieId={String(movie._id)}
+                  initialYes={movie.interestedYes || 0} initialNo={movie.interestedNo || 0} />
+              </section>
+            ) : (
+              <section aria-label={`User reviews for ${movie.title}`}>
+                <ReviewForm
+                  movieId={String(movie._id)}
+                  movieTitle={movie.title}
+                  moviePoster={movie.posterUrl}
+                  initialReviews={movie.reviews ?? []}
+                />
+              </section>
+            )}
 
             {/* ══ SEO CONTENT BLOCK ══ */}
             <section aria-label={`About ${movie.title} Odia film`} className="space-y-5">
