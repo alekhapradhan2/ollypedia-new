@@ -818,7 +818,7 @@ export default function BlogDetailClient({
         <div className="bp-layout">
 
           {/* ── Main column ── */}
-          <div>
+          <div className="bp-main-col">
             {/* ★ Mobile TOC toggle */}
             {tocItems.length >= 3 && (
               <div className="bp-toc-mobile-toggle">
@@ -1250,7 +1250,7 @@ const CSS = `
 }
 *{box-sizing:border-box;}
 
-.bp-root{min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;}
+.bp-root{min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;max-width:100%;}
 
 .bp-banner{position:relative;width:100%;overflow:hidden;min-height:380px;display:flex;align-items:flex-end;}
 @media(min-width:768px){.bp-banner{min-height:520px;}}
@@ -1279,29 +1279,77 @@ const CSS = `
 
 .bp-layout{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:40px;padding:36px 20px 80px;align-items:start;}
 @media(min-width:768px){.bp-layout{padding:44px 32px 80px;}}
-@media(min-width:1060px){.bp-layout{grid-template-columns:1fr 320px;gap:52px;padding:48px 40px 80px;}}
+@media(min-width:1060px){.bp-layout{grid-template-columns:minmax(0,1fr) 320px;gap:52px;padding:48px 40px 80px;}}
 .bp-sidebar{display:flex;flex-direction:column;gap:24px;position:sticky;top:24px;}
 
-.bp-article{font-family:'DM Sans',system-ui,sans-serif;font-size:1.02rem;line-height:1.9;color:rgba(255,255,255,.78);word-break:break-word;}
-.bp-article p{margin:0 0 1.4em;position:relative;}
+/* ★ ROOT-CAUSE FIX: the main column is a CSS-grid track. A bare "1fr" track
+   defaults to a minimum size of max-content (its widest child's intrinsic
+   width), so any generated element wider than the viewport — a long
+   unbroken string, a fixed-width inline-styled div/table from the AI blog
+   generator, etc. — silently stretched the WHOLE grid column (and the
+   page) to the right instead of shrinking/wrapping. minmax(0,1fr) above
+   plus min-width:0 here are what actually let the column shrink so the
+   word-wrap rules below can take effect. Presentation-only — no markup,
+   content, or behavior change. */
+.bp-main-col{min-width:0;max-width:100%;}
+
+.bp-article,
+.bp-article-html{box-sizing:border-box;min-width:0;max-width:100%;}
+.bp-article *,
+.bp-article-html *{box-sizing:border-box;}
+
+.bp-article{font-family:'DM Sans',system-ui,sans-serif;font-size:1.02rem;line-height:1.9;color:rgba(255,255,255,.78);word-break:break-word;overflow-wrap:break-word;}
+.bp-article p{margin:0 0 1.4em;position:relative;text-align:justify;text-justify:inter-word;}
 .bp-article p:first-of-type::first-letter{font-family:'Playfair Display',serif;font-size:4.2rem;font-weight:900;line-height:.72;float:left;margin-right:.12em;margin-top:.08em;color:var(--gold);}
 
-.bp-article-html{font-family:'DM Sans',system-ui,sans-serif;font-size:1.05rem;line-height:1.9;color:rgba(255,255,255,.8);word-break:break-word;}
+.bp-article-html{font-family:'DM Sans',system-ui,sans-serif;font-size:1.05rem;line-height:1.9;color:rgba(255,255,255,.8);word-break:break-word;overflow-wrap:break-word;}
 .bp-article-html p:first-of-type::first-letter{all:unset;}
-.bp-article-html article,.bp-article-html section{display:block;}
+.bp-article-html article,.bp-article-html section{display:block;max-width:100%;}
+
+/* Generated content can never force horizontal overflow, on any blog type */
+.bp-article-html div,
+.bp-article-html section,
+.bp-article-html span,
+.bp-article-html strong,
+.bp-article-html em,
+.bp-article-html li,
+.bp-article-html h1,
+.bp-article-html h2,
+.bp-article-html h3,
+.bp-article-html h4,
+.bp-article-html td,
+.bp-article-html th{max-width:100%;overflow-wrap:break-word;word-break:break-word;}
+
+.bp-article-html a{overflow-wrap:break-word;word-break:break-word;max-width:100%;display:inline-block;}
+
+.bp-article-html img,
+.bp-article-html svg,
+.bp-article-html video,
+.bp-article-html canvas{max-width:100%;height:auto;}
+
+.bp-article-html iframe,
+.bp-article-html embed,
+.bp-article-html object{max-width:100%;}
+
+.bp-article-html pre{white-space:pre-wrap;overflow-wrap:break-word;word-break:break-word;overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch;}
+.bp-article-html code{overflow-wrap:break-word;word-break:break-word;}
+
+/* Tables: keep them responsive without changing their visual style —
+   scroll horizontally inside their own box rather than blowing out the page */
+.bp-article-html .bp-table-scroll{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .bp-article-html h1{font-family:'Playfair Display',serif;font-size:clamp(1.4rem,3vw,2rem);font-weight:900;line-height:1.25;margin:0 0 .9em;color:#fff;}
 .bp-article-html h2{font-size:1.18rem;font-weight:800;margin:2.2em 0 .75em;color:var(--gold);display:flex;align-items:center;gap:10px;letter-spacing:.01em;}
 .bp-article-html h2::before{content:'';display:inline-block;width:18px;height:3px;background:var(--gold);border-radius:2px;flex-shrink:0;}
 .bp-article-html h3{font-size:1rem;font-weight:700;margin:1.6em 0 .5em;color:rgba(255,255,255,.9);border-left:3px solid rgba(201,151,58,.5);padding-left:10px;}
-.bp-article-html p{margin:0 0 1.35em;line-height:1.9;color:rgba(255,255,255,.78);}
+.bp-article-html p{margin:0 0 1.35em;line-height:1.9;color:rgba(255,255,255,.78);text-align:justify;text-justify:inter-word;}
 .bp-article-html strong{color:#fff;font-weight:700;}
 .bp-article-html em{color:rgba(255,255,255,.55);font-style:italic;}
 .bp-article-html ul{margin:0 0 1.6em 0;padding:0;list-style:none;}
-.bp-article-html ul li{position:relative;padding:6px 0 6px 1.6em;color:rgba(255,255,255,.75);font-size:1rem;line-height:1.75;border-bottom:1px solid rgba(255,255,255,.04);}
+.bp-article-html ul li{position:relative;padding:6px 0 6px 1.6em;color:rgba(255,255,255,.75);font-size:1rem;line-height:1.75;border-bottom:1px solid rgba(255,255,255,.04);text-align:justify;text-justify:inter-word;}
 .bp-article-html ul li:last-child{border-bottom:none;}
 .bp-article-html ul li::before{content:'▸';position:absolute;left:0;top:8px;color:var(--gold);font-size:.85em;}
 .bp-article-html ol{margin:0 0 1.6em 0;padding:0;counter-reset:ol-counter;list-style:none;}
-.bp-article-html ol li{position:relative;padding:6px 0 6px 2.2em;color:rgba(255,255,255,.75);font-size:1rem;line-height:1.75;counter-increment:ol-counter;border-bottom:1px solid rgba(255,255,255,.04);}
+.bp-article-html ol li{position:relative;padding:6px 0 6px 2.2em;color:rgba(255,255,255,.75);font-size:1rem;line-height:1.75;counter-increment:ol-counter;border-bottom:1px solid rgba(255,255,255,.04);text-align:justify;text-justify:inter-word;}
 .bp-article-html ol li:last-child{border-bottom:none;}
 .bp-article-html ol li::before{content:counter(ol-counter);position:absolute;left:0;top:8px;width:1.5em;height:1.5em;background:rgba(201,151,58,.15);border:1px solid rgba(201,151,58,.3);border-radius:50%;color:var(--gold);font-size:.72em;font-weight:800;display:flex;align-items:center;justify-content:center;}
 .bp-article-html table{width:100%;border-collapse:collapse;font-size:.93em;margin:0 0 2em;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.07);}
@@ -1311,7 +1359,7 @@ const CSS = `
 .bp-article-html tbody tr:hover td{background:rgba(255,255,255,.02);}
 .bp-article-html tfoot tr{background:rgba(201,151,58,.06);border-top:2px solid rgba(201,151,58,.2);}
 .bp-article-html tfoot td{color:var(--gold);font-weight:700;}
-.bp-article-html blockquote{margin:2em 0;padding:18px 22px;border-left:4px solid var(--gold);background:rgba(201,151,58,.06);border-radius:0 8px 8px 0;font-family:'DM Serif Display',serif;font-style:italic;font-size:1.08rem;color:rgba(255,255,255,.7);line-height:1.75;}
+.bp-article-html blockquote{margin:2em 0;padding:18px 22px;border-left:4px solid var(--gold);background:rgba(201,151,58,.06);border-radius:0 8px 8px 0;font-family:'DM Serif Display',serif;font-style:italic;font-size:1.08rem;color:rgba(255,255,255,.7);line-height:1.75;text-align:justify;text-justify:inter-word;max-width:100%;overflow-wrap:break-word;word-break:break-word;}
 .bp-article-html .faq-section{margin:3em 0 0;padding-top:1.5em;border-top:1px solid var(--border);}
 .bp-article-html .faq-section h2{margin-top:0;}
 .bp-article-html details{background:var(--bg3);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;transition:border-color .2s;}
@@ -1451,4 +1499,4 @@ const CSS = `
 .bp-404-t{font-family:'Playfair Display',serif;font-size:1.5rem;color:rgba(255,255,255,.4);}
 .bp-404-btn{padding:10px 24px;background:var(--gold);border:none;border-radius:2px;color:#000;font-family:inherit;font-weight:700;font-size:.82rem;cursor:pointer;transition:background .15s;}
 .bp-404-btn:hover{background:var(--gold2);}
-`;   
+`;
