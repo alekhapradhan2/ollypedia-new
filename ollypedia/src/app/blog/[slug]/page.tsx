@@ -33,6 +33,37 @@ function toSlug(str?: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
+// ─── SSR article preview — seen by crawlers in initial HTML ────
+// This renders the raw blog HTML server-side so Googlebot gets
+// H1, article text, headings, tables, and internal links without
+// waiting for React hydration. The client component (<BlogDetailClient>)
+// takes over visually after JS loads. No duplicate content — the
+// preview is visually hidden (aria-hidden) so it does NOT show to users.
+function ArticleSSRPreview({ blog }: { blog: any }) {
+  if (!blog?.content) return null;
+
+  // Sanitise the stored HTML minimally — same approach as sanitizeMixedHtml
+  // in BlogDetailClient but server-side so crawlers always see it.
+  const clean = blog.content
+    .replace(/<!--[\s\S]*?-->/g, "")              // strip HTML comments (meta block)
+    .replace(/<script[\s\S]*?<\/script>/gi, "")   // strip embedded <script> tags
+    .replace(/<style[\s\S]*?<\/style>/gi, "");    // strip embedded <style> tags
+
+  return (
+    <article
+      aria-hidden="true"
+      data-ssr-preview="true"
+      style={{ position: "absolute", width: 1, height: 1, overflow: "hidden",
+               clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}
+    >
+      {/* H1 — always present for Google's primary heading signal */}
+      <h1>{blog.title}</h1>
+      {/* Full article HTML — all headings, paragraphs, tables, links */}
+      <div dangerouslySetInnerHTML={{ __html: clean }} />
+    </article>
+  );
+}
+
 // ─── Static params ─────────────────────────────────────────────
 export async function generateStaticParams() {
   await connectDB();
@@ -789,6 +820,8 @@ export default async function BlogPage({ params }: { params: { slug: string } })
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      {/* ★ NEW — server-rendered article for crawlers */}
+      <ArticleSSRPreview blog={blog} />
       <BlogDetailClient slug={params.slug} initialData={blog} sidebarContent={sidebarContent} />
       <SeoInterlinks blog={blog} movie={movie} />
       <RecentBlogs blogs={recentBlogs} />
