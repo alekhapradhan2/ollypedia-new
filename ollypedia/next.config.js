@@ -20,25 +20,19 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
 
-  async redirects() {
-    return [
-      // Redirect non-www → www (permanent 301)
-      {
-        source: "/:path*",
-        has: [{ type: "host", value: "ollypedia.in" }],
-        destination: "https://www.ollypedia.in/:path*",
-        permanent: true,
-      },
-    ];
-  },
-
   async headers() {
     return [
       {
         source: "/(.*)",
         headers: [
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "X-Frame-Options", value: "DENY" },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "X-Frame-Options",
+            value: "DENY",
+          },
           {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
