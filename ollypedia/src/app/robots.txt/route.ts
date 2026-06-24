@@ -3,7 +3,20 @@
 //  1. /blog? now blocks ALL query string variations (was only ?q= before)
 //  2. /movies?genre= blocked — duplicate of canonical /movies/genre/[genre]
 //  3. /songs/category/ left crawlable (canonical), query dupes blocked
-//  ✅ All existing rules preserved (AI bot blocking, sitemap, admin/api block)
+//  4. ★ PerplexityBot REMOVED from block list — Perplexity is an AI search
+//     engine that cites sources and drives real referral traffic. Blocking it
+//     prevents Ollypedia from appearing in Perplexity AI answers.
+//  5. ★ Google-Extended REMOVED from block list — blocking this prevents
+//     Ollypedia content from appearing in Google AI Overviews and Gemini
+//     answers, which are a growing source of discovery traffic.
+//  6. ★ FIX: /blog?category= explicitly allowed — sitemap.xml submits the 6
+//     /blog?category=[X] pages (Box Office, Reviews, Actor, Songs, News, Top
+//     Lists) as real keyword-targeted pages with priority up to 0.9, but the
+//     blanket "Disallow: /blog?" rule was blocking Googlebot from crawling
+//     them — submitted-but-blocked is a wasted/contradictory signal. Only
+//     /blog?category= is allowed; all other /blog? query variants (e.g.
+//     /blog?q=, /blog?page=) remain blocked as before.
+//  ✅ All other existing rules preserved (pure training scrapers still blocked)
 
 import { SITE_URL } from "@/lib/seo";
 
@@ -24,10 +37,14 @@ Disallow: /movies?genre=
 Allow: /movies/year/
 Allow: /movies/genre/
 Allow: /box-office?year=
+Allow: /blog?category=
 
 # ── AI training scrapers — block content harvesting ─────
 # These bots scrape content to train AI models without compensation.
 # Blocking them protects your original Odia cinema writing.
+# NOTE: PerplexityBot and Google-Extended are NOT blocked here —
+# they are AI search engines that cite sources and drive traffic,
+# not training scrapers.
 
 User-agent: GPTBot
 Disallow: /
@@ -41,9 +58,6 @@ Disallow: /
 User-agent: anthropic-ai
 Disallow: /
 
-User-agent: Google-Extended
-Disallow: /
-
 User-agent: Bytespider
 Disallow: /
 
@@ -54,9 +68,6 @@ User-agent: Applebot-Extended
 Disallow: /
 
 User-agent: Meta-ExternalAgent
-Disallow: /
-
-User-agent: PerplexityBot
 Disallow: /
 
 # ── Sitemaps ─────────────────────────────────────────────

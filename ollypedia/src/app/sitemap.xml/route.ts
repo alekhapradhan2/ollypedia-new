@@ -6,6 +6,8 @@
 //  4. News articles added from DB (/news/[slug])
 //  5. News model imported
 //  6. TODO items moved to "Evergreen guides" comment (upcoming/latest/blockbuster done)
+//  7. ★ Blog query now filters { published: true, indexed: { $ne: false } }
+//     so non-indexable day-wise box office articles are excluded from sitemap
 //  ✅ All previous fixes preserved (box-office, blog categories, song pages, priorities)
 
 import { connectDB } from "@/lib/db";
@@ -167,7 +169,7 @@ export async function GET() {
         hasBoxOffice ? "0.85"   : "0.8"
       ));
 
-      // Box office page per movie — NEW, highest priority after homepage
+      // Box office page per movie — highest priority after homepage
       if (hasBoxOffice) {
         entries.push(urlEntry(
           `${SITE_URL}/box-office/${movieSlug}`,
@@ -200,11 +202,16 @@ export async function GET() {
     });
 
     // ── Blogs ──────────────────────────────────────────────────────────────
-    // Box Office blogs: daily + 0.9  — rank for "[movie] day N collection" searches
-    // Featured blogs:   weekly + 0.85
-    // Others:           weekly + 0.75 (upgraded from flat 0.7)
+    // Only blogs with published:true AND indexed not explicitly false.
+    // indexed:false = non-key box office day articles (stored in DB, visible in
+    // UI, but intentionally excluded from sitemap + Google index to avoid
+    // crawl budget waste on near-duplicate day-wise content).
+    // indexed:true or indexed field absent = all other blogs → included normally.
+    // Box Office key/milestone days: daily + 0.9
+    // Featured blogs:                weekly + 0.85
+    // All others:                    weekly + 0.75
     const blogs = await Blog.find(
-      { published: true },
+      { published: true, indexed: { $ne: false } },
       "slug category featured updatedAt createdAt"
     ).lean() as any[];
 
