@@ -76,6 +76,7 @@ interface Post {
   views?: number;
   createdAt?: string;
   updatedAt?: string;   // ★ ADDED — used for "Last updated" display + SEO modifiedTime
+  indexed?: boolean;    // ★ ADDED — false on non-key box office days (noindex in meta)
   movieTitle?: string;
   reviews?: Review[];
   youtubeVideoId?: string;

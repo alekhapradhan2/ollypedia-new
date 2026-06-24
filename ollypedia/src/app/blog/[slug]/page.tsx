@@ -77,6 +77,8 @@ export async function generateStaticParams() {
 // ─── Data helpers ──────────────────────────────────────────────
 async function getBlog(slug: string) {
   await connectDB();
+  // `indexed` field is included automatically — lean() returns the full document.
+  // page.tsx uses blog.indexed to set robots meta (noindex for non-key box office days).
   const blog = await Blog.findOne({ slug, published: true }).lean();
   if (!blog) return null;
   return JSON.parse(JSON.stringify(blog));
@@ -181,10 +183,12 @@ const description = (
     keywords,
     alternates: { canonical },
     // ★ max-image-preview:large → full-size images in Google image results
+    // indexed field controls whether day-wise box office articles are crawled.
+    // undefined/missing = treat as true (all non-box-office blogs always indexed).
     robots: {
-      index: true,
+      index: blog.indexed !== false,
       follow: true,
-      googleBot: { index: true, follow: true },
+      googleBot: { index: blog.indexed !== false, follow: true },
       "max-image-preview": "large" as any,
       "max-snippet": -1 as any,
       "max-video-preview": -1 as any,
