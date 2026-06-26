@@ -6,6 +6,11 @@
 //  - Works even if the external backend is down or cold-starting
 //  - No CORS issues — same origin as the frontend
 //  - Directly writes to MongoDB via Mongoose — no round-trip
+//
+// FIX (Next.js 15): params is now a Promise in App Router route handlers.
+// Accessing { slug } synchronously returned undefined, causing every
+// POST to return 400 "Missing slug" — which caused the view count to
+// never increment (stuck at 0 forever).
 
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
@@ -13,10 +18,10 @@ import Blog from "@/models/Blog";
 
 export async function POST(
   _req: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }  // ← Promise in Next.js 15
 ) {
   try {
-    const { slug } = params;
+    const { slug } = await params;  // ← must be awaited
     if (!slug?.trim()) {
       return NextResponse.json({ error: "Missing slug" }, { status: 400 });
     }

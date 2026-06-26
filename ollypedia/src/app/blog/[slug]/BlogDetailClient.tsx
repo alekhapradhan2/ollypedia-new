@@ -614,6 +614,11 @@ export default function BlogDetailClient({
   // Uses the Next.js API route directly (not the old Express API_BASE)
   // so it works even if the external backend is down.
   // Delayed 2s so it only counts real reads, not bounces.
+  //
+  // FIX: sessionStorage key is now set ONLY after a successful response.
+  // Previously it was set immediately when the timer fired — before the
+  // fetch even started — so any network error or route failure silently
+  // prevented the count from ever incrementing (stuck at 0).
   useEffect(() => {
     if (!post?.slug) return;
 
@@ -625,20 +630,26 @@ export default function BlogDetailClient({
 
     // Wait 2 seconds — only count if user actually reads, not instant bounces
     const timer = setTimeout(async () => {
-      sessionStorage.setItem(sessionKey, "1");
       try {
         const res = await fetch(`/api/blog/${post.slug}/view`, { method: "POST" });
         if (res.ok) {
           const data = await res.json();
+          // Mark as viewed ONLY after confirmed success
+          sessionStorage.setItem(sessionKey, "1");
           // Update displayed view count live in the sidebar
           if (data.views !== undefined) {
             setPost(prev => prev ? { ...prev, views: data.views } : prev);
           }
         } else {
-          // Fallback to Express API if Next.js route isn't set up yet
-          fetch(`${API_BASE}/blog/${post.slug}/view`, { method: "POST" }).catch(() => {});
+          // Fallback to Express API if Next.js route returns an error
+          try {
+            const r2 = await fetch(`${API_BASE}/blog/${post.slug}/view`, { method: "POST" });
+            if (r2.ok) sessionStorage.setItem(sessionKey, "1");
+          } catch {}
         }
       } catch {
+        // Network error — fallback to Express API; don't set sessionStorage
+        // so the next page load can retry.
         fetch(`${API_BASE}/blog/${post.slug}/view`, { method: "POST" }).catch(() => {});
       }
     }, 2000);
