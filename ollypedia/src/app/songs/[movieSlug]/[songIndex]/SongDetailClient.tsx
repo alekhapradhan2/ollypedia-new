@@ -612,13 +612,6 @@ export function SongDetailClient({ movie, initialSongIndex, relatedMovies }: Pro
               </div>
             </div>
 
-            {/* Song description */}
-            {activeSong.description && (
-              <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl p-4 sm:p-5 mb-4">
-                <p className="text-[11px] font-black tracking-[0.12em] uppercase text-gray-500 mb-2">🎵 About This Song</p>
-                <p className="text-sm text-white/75 leading-relaxed">{activeSong.description}</p>
-              </div>
-            )}
 
             {/* Queue */}
             {showQueue && (

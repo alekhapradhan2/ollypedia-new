@@ -192,7 +192,7 @@ async function getHomeData() {
       return { ...m, _days: days, _totalNet: totalNet, _totalGross: totalGross };
     })
     .sort((a: any, b: any) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
-    .slice(0, 10);
+    .slice(0, 5);
 
   // ── JS-side re-sort as guarantee: dated (soonest first) → TBA last ──
   const sortedUpcoming = (upcomingMovies as any[]).sort((a, b) => {
