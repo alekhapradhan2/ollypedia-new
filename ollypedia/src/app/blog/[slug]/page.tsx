@@ -319,7 +319,12 @@ function SeoInterlinks({ blog, movie }: { blog: any; movie: any | null }) {
               {/* ★ Cast snippet for rich text / E-E-A-T */}
               {movie.cast?.length > 0 && (
                 <p className="text-gray-600 text-xs mt-1">
-                  Cast: {movie.cast.slice(0, 3).join(", ")}
+                  Cast:{" "}
+                  {movie.cast
+                    .slice(0, 3)
+                    .map((c: any) => (typeof c === "string" ? c : c?.name || ""))
+                    .filter(Boolean)
+                    .join(", ")}
                 </p>
               )}
               <p className="text-orange-400/60 text-xs mt-2 group-hover:text-orange-400 transition-colors">
@@ -333,23 +338,70 @@ function SeoInterlinks({ blog, movie }: { blog: any; movie: any | null }) {
       {/* ── Songs from this movie ── */}
       {songs.length > 0 && (
         <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-xl p-5 mb-5">
-          <h2 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
+          {/* Pure CSS hover — no event handlers (Server Component) */}
+          <style>{`
+            .olly-sc { background:#111; border:1px solid #1e1e1e; border-radius:14px; overflow:hidden; display:flex; flex-direction:column; transition:border-color .2s,transform .2s; text-decoration:none; }
+            .olly-sc:hover { border-color:rgba(201,151,58,.5); transform:translateY(-3px); }
+            .olly-sc-thumb { position:relative; width:100%; aspect-ratio:16/9; background:#161616; overflow:hidden; flex-shrink:0; }
+            .olly-sc-thumb img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .3s; }
+            .olly-sc:hover .olly-sc-thumb img { transform:scale(1.05); }
+            .olly-sc-overlay { position:absolute; inset:0; background:rgba(0,0,0,.52); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .18s; }
+            .olly-sc:hover .olly-sc-overlay { opacity:1; }
+            .olly-sc-play { width:34px; height:34px; border-radius:50%; background:rgba(201,151,58,.92); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 16px rgba(201,151,58,.5); }
+            .olly-sc-tri { width:0; height:0; border-style:solid; border-width:6px 0 6px 11px; border-color:transparent transparent transparent #0a0a0a; margin-left:2px; }
+            .olly-sc-body { padding:10px 11px 12px; display:flex; flex-direction:column; gap:4px; }
+            .olly-sc-title { font-weight:700; font-size:12.5px; line-height:1.35; color:#f0f0f0; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; letter-spacing:-.01em; transition:color .15s; }
+            .olly-sc:hover .olly-sc-title { color:#c9973a; }
+            .olly-sc-singer { font-size:11px; color:#999; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+            .olly-sc-bar { height:2px; background:#1a1a1a; border-radius:2px; overflow:hidden; margin-top:6px; }
+            .olly-sc-bar-fill { height:100%; background:linear-gradient(to right,#c9973a,#8b5e1a); border-radius:2px; width:0; transition:width .28s ease; }
+            .olly-sc:hover .olly-sc-bar-fill { width:100%; }
+            .olly-sc-ph { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#161616; }
+          `}</style>
+          <h2 className="text-white font-bold text-sm mb-4 flex items-center gap-2">
             <span className="w-4 h-[2.5px] bg-orange-500 rounded inline-block" />
             Songs from {movie.title}
           </h2>
-          <ul className="flex flex-wrap gap-2">
-            {songs.slice(0, 10).map((s: any, i: number) => (
-              <li key={i}>
-                <Link
-                  href={`/songs/${movie.slug}/${i}/${toSlug(s.title) || String(i)}`}
-                  className="text-xs text-gray-400 hover:text-orange-400 bg-[#181818] hover:bg-orange-500/10 border border-[#222] hover:border-orange-500/30 px-3 py-1.5 rounded-full transition-all"
-                >
-                  🎵 {s.title}
-                  {s.singer ? <span className="text-gray-600 ml-1">· {s.singer}</span> : ""}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(150px, 1fr))", gap:"12px" }}>
+            {songs.slice(0, 10).map((s: any, i: number) => {
+              const thumb = s.thumbnailUrl || (s.ytId ? `https://img.youtube.com/vi/${s.ytId}/mqdefault.jpg` : null);
+              const href  = `/songs/${movie.slug}/${i}/${toSlug(s.title) || String(i)}`;
+              return (
+                <Link key={i} href={href} className="olly-sc">
+                  <div className="olly-sc-thumb">
+                    {thumb ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={thumb} alt={s.title || "Song"} loading="lazy" />
+                    ) : (
+                      <div className="olly-sc-ph">
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style={{ color:"#2a2a2a" }}>
+                          <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="1.5" />
+                          <circle cx="16" cy="16" r="8"  stroke="currentColor" strokeWidth="1" />
+                          <circle cx="16" cy="16" r="3"  stroke="currentColor" strokeWidth="1" />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="olly-sc-overlay" aria-hidden="true">
+                      <div className="olly-sc-play"><div className="olly-sc-tri" /></div>
+                    </div>
+                  </div>
+                  <div className="olly-sc-body">
+                    <div className="olly-sc-title">{s.title || "Untitled"}</div>
+                    {s.singer && <div className="olly-sc-singer">🎤 {s.singer}</div>}
+                    <div className="olly-sc-bar"><div className="olly-sc-bar-fill" aria-hidden="true" /></div>
+                  </div>
                 </Link>
-              </li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
+          {songs.length > 10 && (
+            <div style={{ marginTop:12, textAlign:"center" }}>
+              <Link href={`/songs/${movie.slug}/0/${toSlug(songs[0]?.title) || "0"}`}
+                style={{ fontSize:".72rem", color:"#c9973a", fontWeight:700, textDecoration:"none" }}>
+                View all {songs.length} songs →
+              </Link>
+            </div>
+          )}
         </div>
       )}
 
@@ -586,9 +638,10 @@ export default async function BlogPage({ params }: { params: { slug: string } })
             ...(movieYear && { "dateCreated": String(movieYear) }),
             ...(movie.director && { "director": { "@type": "Person", "name": movie.director } }),
             ...(movie.cast?.length > 0 && {
-              "actor": movie.cast.slice(0, 5).map((name: string) => ({
-                "@type": "Person", "name": name,
-              })),
+              "actor": movie.cast.slice(0, 5).map((c: any) => ({
+                "@type": "Person",
+                "name": typeof c === "string" ? c : c?.name || "",
+              })).filter((a: any) => a.name),
             }),
           },
         }),
