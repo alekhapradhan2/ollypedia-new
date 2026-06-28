@@ -217,6 +217,32 @@ export async function generateMetadata({
   };
 }
 
+// ─── Shared design tokens ─────────────────────────────────────
+// accent:   #E8891A  (warm gold-orange)
+// surface:  #0d0d0d  (card bg)
+// border:   #1e1e1e  (default border)
+// muted:    #555     (secondary text)
+
+// ─── Tape Divider — film/cassette motif ───────────────────────
+function TapeDivider() {
+  return (
+    <div className="flex items-center gap-3 my-8 select-none">
+      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#2a2a2a] to-[#2a2a2a]" />
+      <span className="text-[#E8891A] text-[10px] tracking-[0.35em] uppercase font-mono opacity-60">◆</span>
+      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-[#2a2a2a] to-[#2a2a2a]" />
+    </div>
+  );
+}
+
+// ─── Section Eyebrow ──────────────────────────────────────────
+function Eyebrow({ label }: { label: string }) {
+  return (
+    <p className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#E8891A] mb-3 opacity-80">
+      {label}
+    </p>
+  );
+}
+
 // ─── SEO Prose Block (server-rendered) ────────────────────────
 function SeoProseBlock({
   song,
@@ -230,140 +256,230 @@ function SeoProseBlock({
   movie: MovieData;
   idx: number;
   year: string | number;
-  otherSongs: Array<{ title: string; slug: string; index: number }>;
+  otherSongs: Array<{ title: string; slug: string; index: number; singer?: string; ytId?: string; thumbnailUrl?: string }>;
   relatedBlogs: any[];
 }) {
   return (
     <section
       aria-label="About this song"
-      className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 pb-10"
+      className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 pb-16"
     >
-      {/* ── Main prose ── */}
-      <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-5 mb-6">
-        <h2 className="text-white font-bold text-base mb-3">
-          About &ldquo;{song.title}&rdquo; — {movie.title}{year ? ` (${year})` : ""}
-        </h2>
-        <p className="text-gray-400 text-sm leading-relaxed mb-3">
-          &ldquo;{song.title}&rdquo;
-          {song.singer && (
-            <> is sung by <strong className="text-white">{song.singer}</strong></>
-          )}
-          {!song.singer && " is an Odia film song"} from the{" "}
-          {movie.genre?.length ? `${movie.genre.join(", ")} ` : ""}Odia film{" "}
-          <Link href={`/movie/${movie.slug}`} className="text-orange-400 hover:underline font-semibold">
-            {movie.title}
-          </Link>
-          {year ? ` (${year})` : ""}.
-          {song.musicDirector && (
-            <> The music is composed by <strong className="text-white">{song.musicDirector}</strong>.</>
-          )}
-          {song.lyricist && (
-            <> Lyrics are penned by <strong className="text-white">{song.lyricist}</strong>.</>
-          )}
-          {movie.director && (
-            <> The film is directed by <strong className="text-white">{movie.director}</strong>.</>
-          )}{" "}
-          This is track #{idx + 1} of {movie.media?.songs?.length || 1} in the{" "}
-          <Link href={`/movie/${movie.slug}`} className="text-orange-400 hover:underline">
-            {movie.title} soundtrack
-          </Link>.
-          {song.lyrics?.trim() && (
-            <> Scroll up to read the full lyrics with line-by-line sync.</>
-          )}
-        </p>
+      {/* ── 2-col layout: left = prose/blogs, right = more songs ── */}
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
 
-        {/* ── Category / discovery links ── */}
-        <div className="flex flex-wrap gap-2 mt-2">
-          {year && (
-            <Link href={`/songs/category/${year}`} className="text-xs text-orange-400/70 hover:text-orange-400 bg-orange-500/8 border border-orange-500/15 px-2.5 py-1 rounded-full transition-colors">
-              🎵 More Odia Songs {year}
+        {/* ═══ LEFT COLUMN ═══ */}
+        <div className="flex-1 min-w-0">
+
+          {/* ── About card ── */}
+          <div className="relative bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl p-6 sm:p-8 mb-4 overflow-hidden">
+            <div className="absolute left-0 top-6 bottom-6 w-[3px] bg-gradient-to-b from-[#E8891A] via-[#E8891A]/40 to-transparent rounded-r-full" />
+            <div className="pl-4">
+              <Eyebrow label="Track Info" />
+              <h2 className="text-white font-bold text-xl sm:text-2xl leading-tight mb-4 tracking-tight">
+                &ldquo;{song.title}&rdquo;
+                <span className="text-[#E8891A]"> — </span>
+                <Link href={`/movie/${movie.slug}`} className="hover:text-[#E8891A] transition-colors">
+                  {movie.title}
+                </Link>
+                {year ? <span className="text-[#555] font-normal text-base"> ({year})</span> : null}
+              </h2>
+
+              {/* Metadata pills */}
+              <div className="flex flex-wrap gap-2 mb-5">
+                {song.singer && (
+                  <span className="inline-flex items-center gap-1.5 bg-[#161616] border border-[#2a2a2a] text-[#ccc] text-xs px-3 py-1.5 rounded-full">
+                    <span className="text-[#E8891A]">♪</span> {song.singer}
+                  </span>
+                )}
+                {song.musicDirector && (
+                  <span className="inline-flex items-center gap-1.5 bg-[#161616] border border-[#2a2a2a] text-[#ccc] text-xs px-3 py-1.5 rounded-full">
+                    <span className="text-[#E8891A]">♬</span> {song.musicDirector}
+                  </span>
+                )}
+                {song.lyricist && (
+                  <span className="inline-flex items-center gap-1.5 bg-[#161616] border border-[#2a2a2a] text-[#ccc] text-xs px-3 py-1.5 rounded-full">
+                    <span className="text-[#E8891A]">✍</span> {song.lyricist}
+                  </span>
+                )}
+                {movie.director && (
+                  <span className="inline-flex items-center gap-1.5 bg-[#161616] border border-[#2a2a2a] text-[#ccc] text-xs px-3 py-1.5 rounded-full">
+                    <span className="text-[#E8891A]">🎬</span> {movie.director}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5 bg-[#161616] border border-[#2a2a2a] text-[#555] text-xs px-3 py-1.5 rounded-full font-mono">
+                  Track {idx + 1} / {movie.media?.songs?.length || 1}
+                </span>
+              </div>
+
+              {/* Prose */}
+              <p className="text-[#888] text-sm leading-7">
+                &ldquo;{song.title}&rdquo;
+                {song.singer && (
+                  <> is sung by <strong className="text-[#ddd] font-semibold">{song.singer}</strong></>
+                )}
+                {!song.singer && " is an Odia film song"} from the{" "}
+                {movie.genre?.length ? <>{movie.genre.join(", ")} </> : null}
+                Odia film{" "}
+                <Link href={`/movie/${movie.slug}`} className="text-[#E8891A] hover:underline font-semibold underline-offset-2">
+                  {movie.title}
+                </Link>
+                {year ? ` (${year})` : ""}.
+                {song.musicDirector && (
+                  <> Music composed by <strong className="text-[#ddd] font-semibold">{song.musicDirector}</strong>.</>
+                )}
+                {song.lyricist && (
+                  <> Lyrics by <strong className="text-[#ddd] font-semibold">{song.lyricist}</strong>.</>
+                )}
+                {song.lyrics?.trim() && (
+                  <> Full lyrics available — scroll up to read with line-by-line sync.</>
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* ── Discovery pills ── */}
+          <div className="flex flex-wrap gap-2 mb-6 px-1">
+            {year && (
+              <Link href={`/songs/category/${year}`} className="text-xs text-[#E8891A]/70 hover:text-[#E8891A] bg-[#E8891A]/5 hover:bg-[#E8891A]/10 border border-[#E8891A]/15 hover:border-[#E8891A]/30 px-3 py-1.5 rounded-full transition-all font-medium">
+                Odia Songs {year}
+              </Link>
+            )}
+            <Link href="/songs/category/latest" className="text-xs text-[#E8891A]/70 hover:text-[#E8891A] bg-[#E8891A]/5 hover:bg-[#E8891A]/10 border border-[#E8891A]/15 hover:border-[#E8891A]/30 px-3 py-1.5 rounded-full transition-all font-medium">
+              Latest Songs
             </Link>
+            <Link href="/songs/category/trending" className="text-xs text-[#E8891A]/70 hover:text-[#E8891A] bg-[#E8891A]/5 hover:bg-[#E8891A]/10 border border-[#E8891A]/15 hover:border-[#E8891A]/30 px-3 py-1.5 rounded-full transition-all font-medium">
+              Trending
+            </Link>
+            <Link href={`/movie/${movie.slug}`} className="text-xs text-[#E8891A]/70 hover:text-[#E8891A] bg-[#E8891A]/5 hover:bg-[#E8891A]/10 border border-[#E8891A]/15 hover:border-[#E8891A]/30 px-3 py-1.5 rounded-full transition-all font-medium">
+              {movie.title} — Full Page
+            </Link>
+          </div>
+
+          {/* ── Related Blog Posts ── */}
+          {relatedBlogs.length > 0 && (
+            <div>
+              <Eyebrow label="Articles & Reviews" />
+              <h2 className="text-white font-bold text-lg mb-5 tracking-tight">
+                More on <span className="text-[#E8891A]">{movie.title}</span>
+              </h2>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {relatedBlogs.map((b: any) => (
+                  <li key={b._id}>
+                    <Link
+                      href={`/blog/${b.slug}`}
+                      className="group flex gap-4 bg-[#0d0d0d] hover:bg-[#131313] border border-[#1e1e1e] hover:border-[#2e2e2e] rounded-xl p-4 transition-all"
+                    >
+                      <div className="flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border border-[#222] bg-[#161616]">
+                        {b.coverImage ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={b.coverImage} alt={b.title} width={64} height={48} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[#333] text-lg">✍</div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {b.category && (
+                          <p className="text-[10px] font-mono tracking-widest uppercase text-[#E8891A]/60 mb-1">{b.category}</p>
+                        )}
+                        <p className="text-sm font-semibold text-[#ccc] group-hover:text-white transition-colors line-clamp-2 leading-snug">
+                          {b.title}
+                        </p>
+                      </div>
+                      <span className="flex-shrink-0 self-center text-[#333] group-hover:text-[#E8891A] transition-colors text-sm">→</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href={`/blog?movie=${encodeURIComponent(movie.title)}`}
+                className="inline-flex items-center gap-2 mt-4 text-xs text-[#555] hover:text-[#E8891A] transition-colors font-medium"
+              >
+                All articles about {movie.title}
+                <span className="text-[#E8891A]">→</span>
+              </Link>
+            </div>
           )}
-          <Link href="/songs/category/latest" className="text-xs text-orange-400/70 hover:text-orange-400 bg-orange-500/8 border border-orange-500/15 px-2.5 py-1 rounded-full transition-colors">
-            🆕 Latest Odia Songs
-          </Link>
-          <Link href="/songs/category/trending" className="text-xs text-orange-400/70 hover:text-orange-400 bg-orange-500/8 border border-orange-500/15 px-2.5 py-1 rounded-full transition-colors">
-            🔥 Trending Songs
-          </Link>
-          <Link href={`/movie/${movie.slug}`} className="text-xs text-orange-400/70 hover:text-orange-400 bg-orange-500/8 border border-orange-500/15 px-2.5 py-1 rounded-full transition-colors">
-            🎬 {movie.title} — Full Movie Page
-          </Link>
         </div>
+
+        {/* ═══ RIGHT COLUMN — More Songs as cards ═══ */}
+        {otherSongs.length > 0 && (
+          <div className="w-full lg:w-[320px] xl:w-[360px] flex-shrink-0">
+            {/* Sticky container on desktop */}
+            <div className="lg:sticky lg:top-4">
+              <Eyebrow label="Full Soundtrack" />
+              <h2 className="text-white font-bold text-lg mb-4 tracking-tight">
+                More from <span className="text-[#E8891A]">{movie.title}</span>
+              </h2>
+
+              <ul className="flex flex-col gap-2 max-h-[70vh] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-[#2a2a2a] scrollbar-track-transparent">
+                {otherSongs.map((s) => {
+                  const sThumb =
+                    s.thumbnailUrl ||
+                    (s.ytId ? `https://img.youtube.com/vi/${s.ytId}/mqdefault.jpg` : null);
+                  return (
+                    <li key={s.index}>
+                      <Link
+                        href={`/songs/${movie.slug}/${s.index}/${s.slug}`}
+                        className="group flex gap-3 items-center bg-[#0d0d0d] hover:bg-[#111] border border-[#1e1e1e] hover:border-[#E8891A]/30 rounded-xl p-2.5 transition-all"
+                      >
+                        {/* Thumbnail */}
+                        <div className="relative flex-shrink-0 w-[80px] aspect-video rounded-lg overflow-hidden bg-[#161616]">
+                          {sThumb ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={sThumb}
+                              alt={s.title}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <svg width="20" height="20" viewBox="0 0 32 32" fill="none" style={{ color: "#2a2a2a" }}>
+                                <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="1.5" />
+                                <circle cx="16" cy="16" r="8" stroke="currentColor" strokeWidth="1" />
+                                <circle cx="16" cy="16" r="3" stroke="currentColor" strokeWidth="1" />
+                              </svg>
+                            </div>
+                          )}
+                          {/* Play overlay */}
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                            <div className="w-6 h-6 rounded-full bg-[#E8891A]/90 flex items-center justify-center scale-75 group-hover:scale-100 transition-transform duration-150">
+                              <div style={{ width:0, height:0, borderStyle:"solid", borderWidth:"4px 0 4px 7px", borderColor:"transparent transparent transparent #0a0a0a", marginLeft:1 }} />
+                            </div>
+                          </div>
+                          {/* Track number */}
+                          <span className="absolute top-1 left-1 font-mono text-[8px] text-[#E8891A]/70 bg-black/70 px-1 py-0.5 rounded leading-none">
+                            {String(s.index + 1).padStart(2, "0")}
+                          </span>
+                          {/* Progress bar */}
+                          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#1a1a1a]">
+                            <div className="h-full w-0 group-hover:w-full bg-gradient-to-r from-[#E8891A] to-[#8b5e1a] transition-all duration-300" />
+                          </div>
+                        </div>
+
+                        {/* Text */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px] font-bold text-[#f0f0f0] group-hover:text-[#E8891A] transition-colors leading-tight line-clamp-2 tracking-tight mb-0.5">
+                            {s.title}
+                          </p>
+                          {s.singer && (
+                            <p className="text-[10.5px] text-[#555] group-hover:text-[#777] transition-colors truncate">
+                              {s.singer}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* ── ★ NEW: Related Blog Posts for this movie ── */}
-      {relatedBlogs.length > 0 && (
-        <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-xl p-5 mb-6">
-          <h2 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
-            <span className="w-4 h-[2.5px] bg-orange-500 rounded inline-block" />
-            Articles & Reviews for {movie.title}
-          </h2>
-          <ul className="flex flex-col gap-2">
-            {relatedBlogs.map((b: any) => (
-              <li key={b._id}>
-                <Link
-                  href={`/blog/${b.slug}`}
-                  className="flex items-start gap-3 group p-2 rounded-lg hover:bg-[#181818] transition-colors"
-                >
-                  {b.coverImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={b.coverImage}
-                      alt={b.title}
-                      width={58}
-                      height={38}
-                      className="w-[58px] h-[38px] object-cover rounded flex-shrink-0 border border-[#222]"
-                    />
-                  ) : (
-                    <div className="w-[58px] h-[38px] flex-shrink-0 bg-[#1a1a1a] rounded border border-[#222] flex items-center justify-center text-lg">
-                      📝
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-300 group-hover:text-orange-400 transition-colors line-clamp-2">
-                      {b.title}
-                    </p>
-                    {b.category && (
-                      <p className="text-xs text-gray-600 mt-0.5">{b.category}</p>
-                    )}
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <Link
-            href={`/blog?movie=${encodeURIComponent(movie.title)}`}
-            className="block mt-3 text-center text-xs text-orange-400/60 hover:text-orange-400 transition-colors"
-          >
-            View all articles about {movie.title} →
-          </Link>
-        </div>
-      )}
-
-      {/* ── Other songs in this album ── */}
-      {otherSongs.length > 0 && (
-        <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded-xl p-5">
-          <h2 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
-            <span className="w-4 h-[2.5px] bg-orange-500 rounded inline-block" />
-            More Songs from {movie.title}
-          </h2>
-          <ul className="flex flex-wrap gap-2">
-            {otherSongs.map((s) => (
-              <li key={s.index}>
-                <Link
-                  href={`/songs/${movie.slug}/${s.index}/${s.slug}`}
-                  className="text-xs text-gray-400 hover:text-orange-400 bg-[#181818] hover:bg-orange-500/10 border border-[#222] hover:border-orange-500/30 px-3 py-1.5 rounded-full transition-all"
-                >
-                  🎵 {s.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </section>
   );
 }
+
 
 // ─── Page ─────────────────────────────────────────────────────
 export default async function SongDetailSlugPage({
@@ -393,7 +509,14 @@ export default async function SongDetailSlugPage({
   const canonical  = `https://ollypedia.in/songs/${movie.slug}/${idx}/${stableSlug}`;
 
   const otherSongs = (movie.media.songs || [])
-    .map((s: any, i: number) => ({ title: s.title, slug: toSlug(s.title) || String(i), index: i }))
+    .map((s: any, i: number) => ({
+      title:        s.title,
+      slug:         toSlug(s.title) || String(i),
+      index:        i,
+      singer:       s.singer,
+      ytId:         s.ytId,
+      thumbnailUrl: s.thumbnailUrl,
+    }))
     .filter((s: any) => s.index !== idx && s.title);
 
   const jsonLd = {
@@ -466,7 +589,7 @@ export default async function SongDetailSlugPage({
         idx={idx}
         year={year}
         otherSongs={otherSongs}
-        relatedBlogs={relatedBlogs}   // ★ NEW
+        relatedBlogs={relatedBlogs}
       />
     </>
   );
