@@ -26,7 +26,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q")?.trim();
     if (!q) {
-      return NextResponse.json({ movies: [], cast: [], blogs: [], songs: [], boxOffice: [] });
+      return NextResponse.json(
+        { movies: [], cast: [], blogs: [], songs: [], boxOffice: [] },
+        { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } }
+      );
     }
 
     const exact = exactRegex(q);
@@ -84,7 +87,10 @@ export async function GET(req: NextRequest) {
         }))
     ).slice(0, 5);
 
-    return NextResponse.json({ movies, cast, blogs, songs, query: q });
+    return NextResponse.json(
+      { movies, cast, blogs, songs, query: q },
+      { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } }
+    );
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

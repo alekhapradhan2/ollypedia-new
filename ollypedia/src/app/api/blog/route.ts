@@ -25,10 +25,13 @@ export async function GET(req: NextRequest) {
       Blog.countDocuments(filter),
     ]);
 
-    return NextResponse.json({
-      blogs,
-      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-    });
+    return NextResponse.json(
+      {
+        blogs,
+        pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      },
+      { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } }
+    );
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

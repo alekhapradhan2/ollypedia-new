@@ -139,17 +139,32 @@ function isPureProducer(role?: string): boolean {
 function splitCastCrew(castList: any[]): { crew: any[]; cast: any[] } {
   const crew: any[] = [];
   const cast: any[] = [];
-  for (const m of (castList || [])) {
-    const role = (m.role || m.type || "").toLowerCase().trim();
-    const isCrew = isCrewRole(m.role) || isCrewRole(m.type);
-    // Check if this person is ALSO an actor (actor-producer, actor-director etc.)
-    const actingKeywords = ["actor", "actress", "lead", "hero", "heroine", "supporting", "cameo", "special appearance"];
-    const isActor = actingKeywords.some(kw => role.includes(kw));
+  
+  const actingKeywords = ["actor", "actress", "lead", "hero", "heroine", "supporting", "cameo", "special appearance", "villain", "comedian", "child artist", "dancer", "item"];
+  const expandedCrewRoles = [...CREW_ROLES.map(r => r.toLowerCase()), "singer", "playback singer", "lyricist", "action", "makeup", "production", "assistant director", "co-producer", "executive producer"];
 
-    if (isCrew) crew.push(m);
-    // Show in cast if: purely an actor, OR an actor who also has a crew role
-    if (!isCrew || isActor) cast.push(m);
+  for (const m of (castList || [])) {
+    const typeStr = (m.type || "").toLowerCase().trim();
+    const roleStr = (m.role || "").toLowerCase().trim();
+    
+    // Check if they have an explicit acting keyword in type or role.
+    // Also, if type is completely empty, it defaults to actor in our schema.
+    const hasActingKeyword = actingKeywords.some(kw => typeStr.includes(kw) || roleStr.includes(kw));
+    const isActor = typeStr === "" || typeStr === "actor" || typeStr === "actress" || hasActingKeyword;
+    
+    // Check if they have an explicit crew keyword in type or role.
+    const isCrew = expandedCrewRoles.some(cr => typeStr.includes(cr) || roleStr.includes(cr));
+
+    if (isActor) {
+      cast.push(m);
+    }
+    
+    // If they are explicitly a crew member, or if they are NOT an actor (e.g. unknown crew role like 'Spot Boy')
+    if (isCrew || !isActor) {
+      crew.push(m);
+    }
   }
+  
   // Sort crew by role priority
   crew.sort((a, b) => {
     const ra = (a.role || a.type || "").toLowerCase();

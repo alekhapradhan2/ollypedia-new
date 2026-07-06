@@ -15,10 +15,13 @@ export async function GET(req: NextRequest) {
       News.countDocuments({ published: true }),
     ]);
 
-    return NextResponse.json({
-      news,
-      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-    });
+    return NextResponse.json(
+      {
+        news,
+        pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      },
+      { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } }
+    );
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

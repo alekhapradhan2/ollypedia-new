@@ -579,7 +579,7 @@ export function Navbar() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     abortRef.current?.abort();
 
-    if (!q.trim()) {
+    if (!q.trim() || q.trim().length < 2) {
       setResults([]);
       setLoading(false);
       return;
@@ -610,7 +610,7 @@ export function Navbar() {
       } finally {
         setLoading(false);
       }
-    }, 250);
+    }, 600);
   }, []);
 
   useEffect(() => { runSearch(query); }, [query, runSearch]);
