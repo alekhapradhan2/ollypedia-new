@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 // ── Helpers ─────────────────────────────────────────────────────────
 const extractYtId = (input: string | null | undefined) => {
@@ -55,6 +56,12 @@ export interface HeroMovie {
 export default function HeroCarousel({ movies }: { movies: HeroMovie[] }) {
   const [heroIdx, setHeroIdx] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [loadingHref, setLoadingHref] = useState<string | null>(null);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setLoadingHref(null);
+  }, [pathname]);
 
   const startTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -201,8 +208,33 @@ export default function HeroCarousel({ movies }: { movies: HeroMovie[] }) {
                         ▶ Watch Trailer
                       </Link>
                     )}
-                    <Link href={mHref} className="hh-btn-info">
-                      More Info
+                    <Link 
+                      href={mHref} 
+                      className="hh-btn-info"
+                      onClick={() => setLoadingHref(mHref)}
+                      style={{ display: "inline-flex", alignItems: "center", gap: "8px", minWidth: "115px", justifyContent: "center" }}
+                    >
+                      {loadingHref === mHref ? (
+                        <>
+                          <svg
+                            style={{ width: "16px", height: "16px", animation: "hh-spin 1s linear infinite" }}
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" style={{ opacity: 0.25 }} />
+                            <path
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              style={{ opacity: 0.75 }}
+                            />
+                            <style>{`@keyframes hh-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+                          </svg>
+                          Loading
+                        </>
+                      ) : (
+                        "More Info"
+                      )}
                     </Link>
                   </div>
                 </div>
