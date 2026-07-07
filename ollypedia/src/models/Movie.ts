@@ -41,6 +41,8 @@ const MovieSchema = new Schema(
     genre:         [{ type: String }],
     releaseDate:   { type: String, default: "" },
     releaseTBA:    { type: Boolean, default: false },
+    isReRelease:   { type: Boolean, default: false },
+    reReleaseDate: { type: String, default: "" },
     director:      { type: String, default: "" },
     producer:      { type: String, default: "" },
     budget:        { type: String, default: "" },

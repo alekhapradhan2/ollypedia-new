@@ -862,6 +862,13 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                     value={new Date(movie.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                   />
                 )}
+                {movie.isReRelease && movie.reReleaseDate && (
+                  <StatChip
+                    label="Re-Release"
+                    value={new Date(movie.reReleaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    accent={true}
+                  />
+                )}
                 {movie.runtime && <StatChip label="Runtime" value={movie.runtime} />}
                 {/* Director: prefer cast list, fallback to movie.director field */}
                 {(() => {
@@ -1037,6 +1044,9 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 <Info className="w-3.5 h-3.5" /> Movie Info
               </h2>
               <InfoRow icon={Calendar}     label="Release Date"  value={fmtDate(movie.releaseDate) || (movie.releaseTBA ? "TBA" : undefined)} />
+              {movie.isReRelease && movie.reReleaseDate && (
+                <InfoRow icon={Calendar} label="Re-Release Date" value={fmtDate(movie.reReleaseDate)} />
+              )}
               <InfoRow icon={Clock}        label="Runtime"       value={movie.runtime} />
               <InfoRow icon={Globe}        label="Language"      value={movie.language || "Odia"} />
               <InfoRow icon={Clapperboard} label="Director"      value={getDirectorFromCast(movie.cast || []) || movie.director} />

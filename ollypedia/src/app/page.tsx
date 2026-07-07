@@ -74,10 +74,10 @@ function fmtINR(n: number): string {
 
 async function getHomeData() {
   await connectDB();
-  const [allMovies, upcomingMovies, latestBlogs] = await Promise.all([
+  const [allMovies, upcomingMovies, latestBlogs, reReleaseMovies] = await Promise.all([
     Movie.find({}, "-reviews -media.songs")
       .sort({ releaseDate: -1 })
-      .limit(80)
+      .limit(100)
       .lean(),
     // ── Dedicated upcoming query so TBA movies (no releaseDate) are never
     //    crowded out by the 80-doc limit on the main descending-date query.
@@ -119,22 +119,30 @@ async function getHomeData() {
       .sort({ createdAt: -1 })
       .limit(6)
       .lean(),
+    // Re-releases to ensure they aren't missed by limits
+    Movie.find({ isReRelease: true }, "-reviews -media.songs").lean(),
   ]);
 
+  const allPossibleMovies = [...(allMovies as any[]), ...(upcomingMovies as any[]), ...(reReleaseMovies as any[])];
+  const uniqueMoviesMap = new Map();
+  allPossibleMovies.forEach(m => uniqueMoviesMap.set(String(m._id), m));
+  const uniqueMovies = Array.from(uniqueMoviesMap.values());
+
   // ── Hero movies ───────────────────────────────────────────────
-  const heroMovies: HeroMovie[] = (allMovies as any[])
+  const heroMovies: HeroMovie[] = uniqueMovies
     .filter((m) => {
       const hasImage = m.thumbnailUrl || m.media?.trailer?.ytId || m.posterUrl;
       if (!hasImage) return false;
       if (!m.verdict || m.verdict === "Upcoming") return true;
-      if (m.releaseDate && withinDays(m.releaseDate, 60, 0)) return true;
-      return isThisMonth(m.releaseDate) || isLastMonth(m.releaseDate);
+      const rd = m.isReRelease && m.reReleaseDate ? m.reReleaseDate : m.releaseDate;
+      if (rd && withinDays(rd, 60, 0)) return true;
+      return isThisMonth(rd) || isLastMonth(rd);
     })
     .sort((a: any, b: any) => {
       const aUp = !a.verdict || a.verdict === "Upcoming";
       const bUp = !b.verdict || b.verdict === "Upcoming";
-      const aDate = a.releaseDate ? new Date(a.releaseDate).getTime() : null;
-      const bDate = b.releaseDate ? new Date(b.releaseDate).getTime() : null;
+      const aDate = a.isReRelease && a.reReleaseDate ? new Date(a.reReleaseDate).getTime() : a.releaseDate ? new Date(a.releaseDate).getTime() : null;
+      const bDate = b.isReRelease && b.reReleaseDate ? new Date(b.reReleaseDate).getTime() : b.releaseDate ? new Date(b.releaseDate).getTime() : null;
       if (aUp && bUp) {
         if (!aDate && !bDate) return 0;
         if (!aDate) return 1;
@@ -154,6 +162,8 @@ async function getHomeData() {
       genre:       m.genre       || undefined,
       language:    m.language    || undefined,
       releaseDate: m.releaseDate || undefined,
+      isReRelease: m.isReRelease || undefined,
+      reReleaseDate: m.reReleaseDate || undefined,
       director:    m.director    || undefined,
       verdict:     m.verdict     || undefined,
       synopsis:    m.synopsis    || undefined,
@@ -205,15 +215,16 @@ async function getHomeData() {
   });
 
   // ── This Month in Ollywood ──────────────────────────────────
-  const thisMonthReleased = (allMovies as any[])
-    .filter((m) => isThisMonth(m.releaseDate) && m.releaseDate && new Date(m.releaseDate) <= _now)
-    .sort((a: any, b: any) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
-
-  const thisMonthUpcoming = (upcomingMovies as any[])
-    .filter((m) => m.releaseDate && isThisMonth(m.releaseDate) && new Date(m.releaseDate) > _now)
-    .sort((a: any, b: any) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
-
-  const thisMonthAll = [...thisMonthReleased, ...thisMonthUpcoming].slice(0, 8);
+  const thisMonthAll = uniqueMovies
+    .filter((m: any) => {
+      const rd = m.isReRelease && m.reReleaseDate ? m.reReleaseDate : m.releaseDate;
+      return rd && isThisMonth(rd);
+    })
+    .sort((a: any, b: any) => {
+      const aRd = a.isReRelease && a.reReleaseDate ? a.reReleaseDate : a.releaseDate;
+      const bRd = b.isReRelease && b.reReleaseDate ? b.reReleaseDate : b.releaseDate;
+      return new Date(aRd).getTime() - new Date(bRd).getTime();
+    });
 
   // ── Random movie pool — year-aware, poster required ───────────
   const currentYear = _now.getFullYear();
@@ -833,10 +844,12 @@ export default async function HomePage() {
 
                 <div className="space-y-3">
                   {thisMonthAll.map((m: any, i: number) => {
-                    const released  = new Date(m.releaseDate) <= _now;
-                    const isToday   = new Date(m.releaseDate).toDateString() === _now.toDateString();
-                    const dateLabel = m.releaseDate
-                      ? new Date(m.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+                    const rdStr = m.isReRelease && m.reReleaseDate ? m.reReleaseDate : m.releaseDate;
+                    const isRe = m.isReRelease && m.reReleaseDate;
+                    const released  = rdStr ? new Date(rdStr) <= _now : false;
+                    const isToday   = rdStr ? new Date(rdStr).toDateString() === _now.toDateString() : false;
+                    const dateLabel = rdStr
+                      ? (isRe ? "Re-Release: " : "") + new Date(rdStr).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
                       : "TBA";
                     const hasVerdict = m.verdict && !["Upcoming","Released",""].includes(m.verdict);
 

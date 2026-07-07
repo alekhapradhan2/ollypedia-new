@@ -39,6 +39,8 @@ export interface HeroMovie {
   genre?: string[];
   language?: string;
   releaseDate?: string;
+  isReRelease?: boolean;
+  reReleaseDate?: string;
   director?: string;
   verdict?: string;
   synopsis?: string;
@@ -181,7 +183,16 @@ export default function HeroCarousel({ movies }: { movies: HeroMovie[] }) {
 
                   {/* Meta row */}
                   <div className="hh-meta">
-                    {movie.releaseDate && <span>🗓 {fmtDate(movie.releaseDate)}</span>}
+                    {movie.isReRelease && movie.reReleaseDate ? (
+                      <span
+                        className="hh-badge"
+                        style={{ background: `#f9731622`, border: `1px solid #f97316`, color: `#f97316`, marginLeft: 0 }}
+                      >
+                        🗓 Re-Release: {fmtDate(movie.reReleaseDate)}
+                      </span>
+                    ) : movie.releaseDate ? (
+                      <span>🗓 {fmtDate(movie.releaseDate)}</span>
+                    ) : null}
                     {movie.director   && <span>🎬 {movie.director}</span>}
                     {movie.verdict && movie.verdict !== "Upcoming" && (
                       <span

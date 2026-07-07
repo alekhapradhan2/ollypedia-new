@@ -83,13 +83,38 @@ async function getCastMember(id: string) {
   return JSON.parse(JSON.stringify({ ...member, moviesList: movies, newsList: news, blogsList: blogs }));
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function getDerivedRoles(person: any, movies: any[]): string[] {
+  let roles = person.roles?.length ? person.roles.filter((r: string) => r.toLowerCase() !== "other") : [];
+  if (roles.length === 0) {
+    const movieRoles = new Set<string>();
+    movies.forEach((m: any) => {
+      const entry = (m.cast || []).find((c: any) => String(c.castId) === String(person._id));
+      if (entry) {
+        if (entry.role && entry.role.toLowerCase() !== "other") {
+          movieRoles.add(entry.role);
+        } else if (entry.type && entry.type.toLowerCase() !== "other") {
+          movieRoles.add(entry.type);
+        }
+      }
+    });
+    if (movieRoles.size > 0) roles = Array.from(movieRoles).slice(0, 3);
+  }
+  if (roles.length === 0) {
+    const pt = person.type || "Artist";
+    roles = [pt.toLowerCase() === "other" ? "Artist" : pt];
+  }
+  return roles;
+}
+
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const person = await getCastMember(params.id);
   if (!person) return { robots: { index: false, follow: false } };
 
-  const roles    = person.roles?.length ? person.roles.join(", ") : person.type || "Artist";
   const movies   = (person.moviesList || []) as any[];
+  const rolesArr = getDerivedRoles(person, movies);
+  const roles    = rolesArr.join(", ");
   const hits     = movies.filter((m: any) => ["Hit", "Super Hit", "Blockbuster"].includes(m.verdict));
   const debutYear = movies.length
     ? new Date(movies[movies.length - 1].releaseDate || Date.now()).getFullYear()
@@ -131,7 +156,8 @@ function fmtDate(d?: string | Date) {
 
 function generateRichBio(person: any, movies: any[]): string {
   if (person.bio && person.bio.trim().length > 80) return person.bio;
-  const roles    = person.roles?.length ? person.roles.join(" and ") : person.type || "artist";
+  const rolesArr = getDerivedRoles(person, movies);
+  const roles    = rolesArr.join(" and ");
   const released = movies.filter(m => m.verdict && m.verdict !== "Upcoming");
   const debutMovie = movies.length ? movies[movies.length - 1] : null;
   const debutYear  = debutMovie?.releaseDate ? new Date(debutMovie.releaseDate).getFullYear() : null;
@@ -215,9 +241,9 @@ export default async function CastDetailPage({ params }: { params: { id: string 
   const movies   = (person.moviesList || []) as any[];
   const newsList = (person.newsList   || []) as any[];
   const blogsList = (person.blogsList || []) as any[];
-  const roles    = person.roles?.length ? person.roles : [person.type || "Artist"];
+  const roles    = getDerivedRoles(person, movies);
   const rolesStr = roles.join(", ");
-  const icon     = ROLE_ICON[person.type] || "🎭";
+  const icon     = ROLE_ICON[roles[0]] || ROLE_ICON[person.type] || "🎭";
 
   const flops    = movies.filter((m: any) => ["Flop", "Disaster"].includes(m.verdict));
   const upcoming = movies.filter((m: any) => !m.verdict || m.verdict === "Upcoming");
