@@ -350,12 +350,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     `${movie.title} ott release`,
     `${movie.title} ott release date`,
     `${movie.title} ott platform`,
-    `${movie.title} watch online`,
     `${movie.title} streaming`,
     `${movie.title} streaming platform`,
     `${movie.title} where to watch`,
-    `${movie.title} online watch`,
-    `${movie.title} watch free`,
     `${movie.title} digital release`,
     `${movie.title} digital release date`,
     `${movie.title} web release`,
@@ -371,14 +368,12 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     // With year
     year ? `${movie.title} ${year} ott` : "",
     year ? `${movie.title} ${year} ott release date` : "",
-    year ? `${movie.title} ${year} watch online` : "",
     year ? `${movie.title} ${year} ${movie.streamingOn}` : "",
     year ? `${movie.title} ${year} streaming` : "",
     year ? `${movie.title} ${year} digital release` : "",
     // Odia-specific OTT queries
     `${movie.title} odia movie ott`,
     `${movie.title} odia film ott`,
-    `${movie.title} odia movie watch online`,
     `${movie.title} odia movie streaming`,
     `${movie.title} odia movie digital release`,
     // Status-specific keywords
@@ -406,7 +401,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   ].filter(Boolean) as string[] : [
     // No platform yet — rank for "where to watch" queries anyway
     `${movie.title} ott`,
-    `${movie.title} watch online`,
     `${movie.title} streaming`,
     `${movie.title} ott release date`,
     `${movie.title} where to watch`,
@@ -428,6 +422,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     `${movie.title} songs`,
     `${movie.title} cast`,
     `${movie.title} trailer`,
+    `watch ${movie.title} legally`,
+    `${movie.title} official release`,
     `${movie.title} box office`,
     `${movie.title} box office collection`,
     `${movie.title} collection`,

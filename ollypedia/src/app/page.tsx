@@ -26,7 +26,8 @@ export const metadata: Metadata = buildMeta({
   keywords: [
     "Odia movies 2025", "Ollywood", "Odia cinema", "Odia films", "Babushaan",
     "Elina Samantray", "Odia actor", "Odia songs", "Odia movie reviews",
-    "Ollywood box office", "Odia film blog",
+    "Ollywood box office", "Odia film blog", "official Odia cinema database",
+    "legal Odia movie streaming info",
   ],
   url: "/",
 });

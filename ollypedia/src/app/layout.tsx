@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   keywords: [
     "Odia movies", "Ollywood", "Odia films", "Odia cinema", "Odia actors",
     "Odia songs", "Ollywood news", "Odia movie reviews", "Odia film database",
+    "official Odia movies", "legal Odia streaming", "watch Odia movies legally",
   ],
   openGraph: {
     type: "website",
