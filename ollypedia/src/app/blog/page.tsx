@@ -10,7 +10,7 @@ import Blog from "@/models/Blog";
 import { buildMeta } from "@/lib/seo";
 import { BlogCard } from "@/components/blog/BlogCard";
 import { BlogSearch } from "@/components/blog/BlogSearch";
-import { BlogPagination } from "@/components/blog/BlogPagination";
+import { BlogInfiniteScroll } from "@/components/blog/BlogInfiniteScroll";
 import { Search, BookOpen, TrendingUp, Star, Eye, Flame } from "lucide-react";
 
 export const revalidate = 600;
@@ -633,11 +633,11 @@ export default async function BlogPage({
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {regularBlogs.map((b) => (
-                  <BlogCard key={String(b._id)} blog={b} variant="standard" />
-                ))}
-              </div>
+              <BlogInfiniteScroll
+                initialBlogs={regularBlogs}
+                totalPages={totalPages}
+                searchParams={{ page: page.toString(), q: query, category }}
+              />
             </section>
           ) : (
             <div className="text-center py-24">
@@ -710,19 +710,7 @@ export default async function BlogPage({
             </nav>
           )}
 
-          {/* ── PAGINATION ───────────────────────────────────────────────── */}
-          {totalPages > 1 && (
-            <div className="mt-10">
-              <Suspense>
-                <BlogPagination
-                  currentPage={page}
-                  totalPages={totalPages}
-                  query={query}
-                  category={category}
-                />
-              </Suspense>
-            </div>
-          )}
+          {/* Pagination removed in favor of Infinite Scroll */}
 
           {/* ── SEO CONTENT SECTION ──────────────────────────────────────── */}
           {!isFiltered && page === 1 && (

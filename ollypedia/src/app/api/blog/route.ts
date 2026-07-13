@@ -10,11 +10,15 @@ export async function GET(req: NextRequest) {
     const limit    = parseInt(searchParams.get("limit")    || "12");
     const category = searchParams.get("category");
     const featured = searchParams.get("featured");
+    const movie    = searchParams.get("movie");
+    const hasMovie = searchParams.get("hasMovie");
     const skip     = (page - 1) * limit;
 
     const filter: any = { published: true };
     if (category) filter.category = category;
     if (featured === "true") filter.featured = true;
+    if (movie) filter.movieTitle = { $regex: movie, $options: "i" };
+    if (hasMovie === "true") filter.movieTitle = { $exists: true, $ne: "" };
 
     const [blogs, total] = await Promise.all([
       Blog.find(filter, "-content -reviews")

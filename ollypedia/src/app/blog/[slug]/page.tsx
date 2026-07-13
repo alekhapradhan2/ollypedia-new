@@ -717,39 +717,6 @@ export default async function BlogPage({ params }: { params: { slug: string } })
 
   const sidebarContent = (
     <>
-      {/* Related Articles */}
-      {recentBlogs.length > 0 && (
-        <div className="bp-sidebar-box" style={{ marginTop: 0 }}>
-          <div className="bp-sidebar-hd" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>Related Articles</span>
-            <Link href="/blog" style={{ fontSize: ".65rem", color: "rgba(201,151,58,.6)", textDecoration: "none", fontWeight: 600 }}>View all →</Link>
-          </div>
-          {recentBlogs.slice(0, 5).map((b: any) => (
-            <Link key={b._id} href={`/blog/${b.slug}`} style={{ textDecoration: "none" }}>
-              <div className="bp-rel-item">
-                {b.coverImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={b.coverImage} alt={b.title} className="bp-rel-thumb" loading="lazy" />
-                ) : (
-                  <div className="bp-rel-ph">📰</div>
-                )}
-                <div className="bp-rel-info">
-                  <div className="bp-rel-title">{b.title}</div>
-                  <div className="bp-rel-meta" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
-                    {b.category && (
-                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${catClass(b.category)}`}>
-                        {b.category}
-                      </span>
-                    )}
-                    <span>{fmtDateStr(b.createdAt)}</span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
-
       {/* Trending Searches */}
       <div className="bp-sidebar-box" style={{ marginTop: 0 }}>
         <div className="bp-sidebar-hd">🔍 Trending Searches</div>
@@ -881,7 +848,6 @@ export default async function BlogPage({ params }: { params: { slug: string } })
       <ArticleSSRPreview blog={blog} />
       <BlogDetailClient slug={params.slug} initialData={blog} sidebarContent={sidebarContent} />
       <SeoInterlinks blog={blog} movie={movie} />
-      <RecentBlogs blogs={recentBlogs} />
     </>
   );
 }

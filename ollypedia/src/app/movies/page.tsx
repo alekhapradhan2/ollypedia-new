@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { MoviesFilter } from "./MoviesFilter";
+import { MoviesInfiniteScroll } from "./MoviesInfiniteScroll";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { buildMeta } from "@/lib/seo";
 import {
@@ -389,24 +390,11 @@ export default async function MoviesPage({
           </div>
 
           {movies.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {movies.map((m: any, idx: number) => (
-                <React.Fragment key={String(m._id)}>
-                  <LoadingCard borderRadius={12}>
-                    <MovieCard movie={m} />
-                  </LoadingCard>
-
-                  {/* ── In-grid AdSense unit after every 10th card ── */}
-                  {(idx + 1) % 10 === 0 && (
-                    <div
-                      className="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-5 my-2"
-                    >
-                      <AdBanner slot="0987654321" format="auto" />
-                    </div>
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
+            <MoviesInfiniteScroll 
+              initialMovies={movies} 
+              totalPages={pages} 
+              searchParams={{ genre, verdict, sort, page: page?.toString() }} 
+            />
           ) : (
             <div className="text-center py-20 bg-[#111] border border-[#1f1f1f] rounded-2xl">
               <Film className="w-12 h-12 text-gray-700 mx-auto mb-4" />

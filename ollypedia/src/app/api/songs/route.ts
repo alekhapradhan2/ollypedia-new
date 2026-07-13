@@ -21,31 +21,44 @@ export async function GET(req: NextRequest) {
     const movieMatch: any = {};
     if (movieSlug) movieMatch.slug = movieSlug;
 
-    const pipeline: any[] = [
+    const basePipeline: any[] = [
       { $match: movieMatch },
-      { $unwind: "$media.songs" },
+      { $unwind: { path: "$media.songs", includeArrayIndex: "songIndex" } },
       ...(Object.keys(songMatch).length ? [{ $match: songMatch }] : []),
-      { $project: {
-        _id: 0,
-        songId:        "$media.songs._id",
-        title:         "$media.songs.title",
-        singer:        "$media.songs.singer",
-        musicDirector: "$media.songs.musicDirector",
-        lyricist:      "$media.songs.lyricist",
-        ytId:          "$media.songs.ytId",
-        thumbnailUrl:  "$media.songs.thumbnailUrl",
-        description:   "$media.songs.description",
-        lyrics:        "$media.songs.lyrics",
-        movieTitle:    "$title",
-        movieSlug:     "$slug",
-        movieId:       "$_id",
-      }},
-      { $sort: { movieTitle: 1, title: 1 } },
     ];
 
-    const allSongs = await Movie.aggregate(pipeline);
-    const total    = allSongs.length;
-    const songs    = allSongs.slice(skip, skip + limit);
+    const projectStage = { $project: {
+      _id: 0,
+      songId:        "$media.songs._id",
+      title:         "$media.songs.title",
+      singer:        "$media.songs.singer",
+      musicDirector: "$media.songs.musicDirector",
+      lyricist:      "$media.songs.lyricist",
+      ytId:          "$media.songs.ytId",
+      thumbnailUrl:  "$media.songs.thumbnailUrl",
+      description:   "$media.songs.description",
+      lyrics:        "$media.songs.lyrics",
+      movieTitle:    "$title",
+      movieSlug:     "$slug",
+      movieId:       "$_id",
+      songIndex:     "$songIndex",
+    }};
+
+    const [songs, countResult] = await Promise.all([
+      Movie.aggregate([
+        ...basePipeline,
+        { $sort: { "media.songs.title": 1 } },
+        { $skip: skip },
+        { $limit: limit },
+        projectStage,
+      ]),
+      Movie.aggregate([
+        ...basePipeline,
+        { $count: "total" }
+      ])
+    ]);
+
+    const total = countResult[0]?.total || 0;
 
     return NextResponse.json(
       {

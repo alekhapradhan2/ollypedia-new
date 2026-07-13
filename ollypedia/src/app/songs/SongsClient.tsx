@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -375,6 +375,63 @@ export function SongsClient({
   const [isPending, startTransition] = useTransition();
 
   const [searchInput, setSearchInput] = useState(active.q || "");
+  
+  // Infinite scroll state
+  const [currentSongs, setCurrentSongs] = useState<Song[]>(songs);
+  const [page, setPage] = useState(currentPage);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(currentPage < totalPages);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setCurrentSongs(songs);
+    setPage(currentPage);
+    setHasMore(currentPage < totalPages);
+  }, [songs, currentPage, totalPages]);
+
+  const fetchMoreSongs = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+
+    try {
+      const nextPage = page + 1;
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("page", String(nextPage));
+
+      const res = await fetch(`/api/songs?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.songs && data.songs.length > 0) {
+          setCurrentSongs((prev) => [...prev, ...data.songs]);
+          setPage(nextPage);
+          setHasMore(nextPage < data.pagination.pages);
+        } else {
+          setHasMore(false);
+        }
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Error fetching more songs:", error);
+      setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [page, hasMore, loadingMore, searchParams]);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || loadingMore || !hasMore) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        fetchMoreSongs();
+      }
+    }, { rootMargin: '100px' });
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [loadingMore, hasMore, fetchMoreSongs]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -400,35 +457,21 @@ export function SongsClient({
     setSearchInput(active.q || "");
   }, [active.q]);
 
-  function buildFilterUrl(key: string, value: string | null, page = 1) {
+  function buildFilterUrl(key: string, value: string | null) {
     const params = new URLSearchParams();
     if (active.singer        && key !== "singer")        params.set("singer",        active.singer);
     if (active.musicDirector && key !== "musicDirector") params.set("musicDirector", active.musicDirector);
     if (active.q             && key !== "q")             params.set("q",             active.q);
     if (value) params.set(key, value);
-    if (page > 1) params.set("page", String(page));
     return `/songs?${params.toString()}`;
-  }
-
-  function gotoPage(p: number) {
-    const params = new URLSearchParams();
-    if (active.singer)        params.set("singer",        active.singer);
-    if (active.musicDirector) params.set("musicDirector", active.musicDirector);
-    if (active.movie)         params.set("movie",         active.movie);
-    if (active.q)             params.set("q",             active.q);
-    if (p > 1) params.set("page", String(p));
-    startTransition(() => {
-      router.push(`/songs?${params.toString()}`);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
   }
 
   const pillBase = "px-3 py-1.5 text-xs font-medium rounded-full border transition-all cursor-pointer whitespace-nowrap";
   const pillOn   = "bg-orange-500/20 border-orange-500/50 text-orange-400";
   const pillOff  = "border-[#2a2a2a] text-gray-400 hover:border-orange-500/30 hover:text-white";
 
-  const start = (currentPage - 1) * pageSize + 1;
-  const end   = Math.min(currentPage * pageSize, total);
+  const start = 1;
+  const end   = currentSongs.length;
 
   const isSearchActive = !!(active.q);
   const isFiltered     = !!(active.singer || active.musicDirector || active.q);
@@ -542,10 +585,15 @@ export function SongsClient({
 
       {/* ── Song Grid — TRUE CARD GRID ── */}
       <div className={clsx("transition-opacity duration-200", isPending && "opacity-50 pointer-events-none")}>
-        {songs.length > 0 ? (
+        {currentSongs.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 sm:gap-4">
-            {songs.map((song, i) => (
-              <SongCard key={`${song.movieSlug}-${song.songIndex ?? i}`} song={song} />
+            {currentSongs.map((song, i) => (
+              <div
+                key={`${song.movieSlug}-${song.songIndex ?? i}-${i}`}
+                className={i >= songs.length ? "animate-zoom-in" : ""}
+              >
+                <SongCard song={song} />
+              </div>
             ))}
           </div>
         ) : (
@@ -567,46 +615,20 @@ export function SongsClient({
         )}
       </div>
 
-      {/* ── Pagination ── */}
-      {!isSearchActive && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-1.5 sm:gap-2 pt-2 flex-wrap">
-          <button
-            onClick={() => gotoPage(currentPage - 1)}
-            disabled={currentPage <= 1}
-            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-[#2a2a2a] text-xs sm:text-sm text-gray-400 hover:border-orange-500/40 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-          >
-            <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Prev</span>
-          </button>
-
-          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-            let p: number;
-            if (totalPages <= 5)                    p = i + 1;
-            else if (currentPage <= 3)              p = i + 1;
-            else if (currentPage >= totalPages - 2) p = totalPages - 4 + i;
-            else                                    p = currentPage - 2 + i;
-            return (
-              <button
-                key={p}
-                onClick={() => gotoPage(p)}
-                className={[
-                  "w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-xs sm:text-sm font-medium transition-all border",
-                  p === currentPage
-                    ? "bg-orange-500/20 border-orange-500/50 text-orange-400"
-                    : "border-[#2a2a2a] text-gray-400 hover:border-orange-500/30 hover:text-white",
-                ].join(" ")}
-              >
-                {p}
-              </button>
-            );
-          })}
-
-          <button
-            onClick={() => gotoPage(currentPage + 1)}
-            disabled={currentPage >= totalPages}
-            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-[#2a2a2a] text-xs sm:text-sm text-gray-400 hover:border-orange-500/40 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-          >
-            <span className="hidden sm:inline">Next</span> <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          </button>
+      {/* Infinite Scroll trigger & Loading state */}
+      {hasMore && (
+        <div
+          ref={loadMoreRef}
+          className={`flex justify-center items-center py-8 transition-opacity duration-500 ${
+            loadingMore ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <div className="flex items-center gap-3 animate-pulse">
+            <div className="w-5 h-5 rounded-full border-2 border-orange-500/30 border-t-orange-500 animate-spin" />
+            <span className="text-orange-400 text-sm font-semibold tracking-wide">
+              Cinematic Magic is loading...
+            </span>
+          </div>
         </div>
       )}
 

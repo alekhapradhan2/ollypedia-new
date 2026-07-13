@@ -15,7 +15,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api").replace(/\/$/, "");
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "/api").replace(/\/$/, "");
 
 // ─── Font loader ──────────────────────────────────────────────────────────────
 // Note: ideally move these <link> tags to your root layout.tsx <head>
@@ -520,7 +520,6 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 export default function BlogDetailClient({
   slug, initialData, sidebarContent
 }: {
@@ -529,6 +528,7 @@ export default function BlogDetailClient({
   sidebarContent?: React.ReactNode;
 }) {
   const router = useRouter();
+  const articleRef = useRef<HTMLDivElement>(null);
 
   const [post,          setPost]         = useState<Post | null>(initialData ?? null);
   const [related,       setRelated]      = useState<Post[]>([]);
@@ -576,9 +576,35 @@ export default function BlogDetailClient({
     if (!post) return;
     (async () => {
       try {
-        const r = await fetch(`${API_BASE}/blog?limit=6${post.category ? `&category=${encodeURIComponent(post.category)}` : ""}`);
-        const d = await r.json();
-        setRelated(((d.posts || d || []) as Post[]).filter((p) => p.slug !== slug).slice(0, 4));
+        let posts: Post[] = [];
+        
+        // 1. Prioritize articles about the same movie
+        if (post.movieTitle) {
+          const r1 = await fetch(`${API_BASE}/blog?movie=${encodeURIComponent(post.movieTitle)}&limit=25`);
+          const d1 = await r1.json();
+          const p1 = d1.blogs || d1.posts || d1 || [];
+          if (Array.isArray(p1)) posts = [...posts, ...p1];
+        }
+
+        // 2. Then fetch other movie articles if we need more
+        if (posts.length < 25) {
+          const r2 = await fetch(`${API_BASE}/blog?hasMovie=true&limit=25`);
+          const d2 = await r2.json();
+          const p2 = d2.blogs || d2.posts || d2 || [];
+          if (Array.isArray(p2)) posts = [...posts, ...p2];
+        }
+
+        // Deduplicate and filter out the current article
+        const uniquePosts: Post[] = [];
+        const seen = new Set<string>();
+        for (const p of posts) {
+          if (p.slug !== slug && !seen.has(p.slug)) {
+            uniquePosts.push(p);
+            seen.add(p.slug);
+          }
+        }
+
+        setRelated(uniquePosts.slice(0, 20));
       } catch {}
     })();
 
@@ -608,6 +634,22 @@ export default function BlogDetailClient({
       })();
     }
   }, [post, slug]);
+
+  // ★ Continuous Reading Scroll-Spy
+  useEffect(() => {
+    if (!articleRef.current || !post) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && entry.intersectionRatio > 0.1) {
+          window.history.replaceState(null, '', `/blog/${slug}`);
+          document.title = `${post.title} | Ollypedia`;
+        }
+      });
+    }, { threshold: 0.1 });
+    observer.observe(articleRef.current);
+    return () => observer.disconnect();
+  }, [slug, post]);
+
 
   // ─── View tracking ────────────────────────────────────────────
   // Fires once per slug per browser session.
@@ -795,7 +837,7 @@ export default function BlogDetailClient({
   );
 
   return (
-    <>
+    <div ref={articleRef} className="bp-root" style={{ position: "relative" }}>
       <Fonts />
       <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: CSS }} />
 
@@ -1131,25 +1173,7 @@ export default function BlogDetailClient({
             {/* Related articles from page.tsx sidebarContent */}
             {sidebarContent}
 
-            {related.length > 0 && (
-              <div className="bp-sidebar-box">
-                <div className="bp-sidebar-hd">Related Articles</div>
-                {related.map((r) => (
-                  <div key={r._id} className="bp-rel-item" onClick={() => router.push(`/blog/${r.slug}`)}>
-                    {r.coverImage ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={r.coverImage} alt={r.title} className="bp-rel-thumb" loading="lazy" />
-                    ) : (
-                      <div className="bp-rel-ph">✍️</div>
-                    )}
-                    <div className="bp-rel-info">
-                      <div className="bp-rel-title">{r.title}</div>
-                      <div className="bp-rel-meta">{fmtShort(r.createdAt)}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Related articles will be moved to a grid below */}
 
             {relMovies.length > 0 && (
               <div className="bp-sidebar-box">
@@ -1242,7 +1266,39 @@ export default function BlogDetailClient({
           </aside>
         </div>
       </div>
-    </>
+      
+      {/* ─── Related Blogs Grid ─── */}
+      {related.length > 0 && (
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px 80px" }}>
+          <h2 className="font-display font-bold text-2xl mb-6 text-white">Related Articles</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {related.map((blog) => (
+              <div
+                key={blog._id}
+                onClick={() => router.push(`/blog/${blog.slug}`)}
+                className="bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl overflow-hidden cursor-pointer transition-all hover:-translate-y-1"
+              >
+                <div className="w-full aspect-video bg-[#1a1a1a] relative">
+                  {blog.coverImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={blog.coverImage} alt={blog.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-4xl">✍️</div>
+                  )}
+                </div>
+                <div className="p-4">
+                  <h3 className="text-white font-bold text-sm mb-2 line-clamp-2">{blog.title}</h3>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{blog.category || "Article"}</span>
+                    <span>{fmtShort(blog.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
