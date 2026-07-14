@@ -10,6 +10,7 @@
 //  8. ★ NEW: Cross-links to related blog posts for this movie
 //  9. ★ NEW: Keyword set targeting movie-name + song-name searches
 // 10. ★ NEW: Blog JSON-LD ItemList so Google sees blog links from song page
+import { SITE_URL } from "@/lib/seo";
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -150,7 +151,7 @@ export async function generateMetadata({
   const thumb     = song.thumbnailUrl
     || (song.ytId ? `https://img.youtube.com/vi/${song.ytId}/hqdefault.jpg` : null)
     || movie.posterUrl
-    || "https://www.ollypedia.in/og-default.jpg";
+    || `${SITE_URL}/og-default.jpg`;
 
   // ★ Rich title — song + singer + movie + year for long-tail capture
   const title = `${song.title}${singerStr} – ${movie.title}${year ? ` (${year})` : ""} | Odia Song | Ollypedia`;
@@ -164,7 +165,7 @@ export async function generateMetadata({
   const description = descParts.join("").replace(/\s+/g, " ").trim().slice(0, 160);
 
   const stableSlug = toSlug(song.title) || String(idx);
-  const canonical  = `https://www.ollypedia.in/songs/${movie.slug}/${idx}/${stableSlug}`;
+  const canonical  = `${SITE_URL}/songs/${movie.slug}/${idx}/${stableSlug}`;
 
   // ★ Comprehensive keyword set — hit every variant someone might search
   const keywords = [
@@ -507,7 +508,7 @@ export default async function SongDetailSlugPage({
     || movie.posterUrl;
 
   const stableSlug = toSlug(song.title) || String(idx);
-  const canonical  = `https://www.ollypedia.in/songs/${movie.slug}/${idx}/${stableSlug}`;
+  const canonical  = `${SITE_URL}/songs/${movie.slug}/${idx}/${stableSlug}`;
 
   const otherSongs = (movie.media.songs || [])
     .map((s: any, i: number) => ({
@@ -545,15 +546,15 @@ export default async function SongDetailSlugPage({
         "associatedMedia": {
           "@type": "Movie",
           "name": movie.title,
-          "url": `https://www.ollypedia.in/movie/${movie.slug}`,
+          "url": `${SITE_URL}/movie/${movie.slug}`,
         },
       },
       {
         "@type": "BreadcrumbList",
         "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "Home",       "item": "https://www.ollypedia.in/" },
-          { "@type": "ListItem", "position": 2, "name": "Songs",      "item": "https://www.ollypedia.in/songs" },
-          { "@type": "ListItem", "position": 3, "name": movie.title,  "item": `https://www.ollypedia.in/movie/${movie.slug}` },
+          { "@type": "ListItem", "position": 1, "name": "Home",       "item": `${SITE_URL}/` },
+          { "@type": "ListItem", "position": 2, "name": "Songs",      "item": `${SITE_URL}/songs` },
+          { "@type": "ListItem", "position": 3, "name": movie.title,  "item": `${SITE_URL}/movie/${movie.slug}` },
           { "@type": "ListItem", "position": 4, "name": song.title,   "item": canonical },
         ],
       },
@@ -566,7 +567,7 @@ export default async function SongDetailSlugPage({
               "@type": "ListItem",
               "position": i + 1,
               "name": b.title,
-              "url": `https://www.ollypedia.in/blog/${b.slug}`,
+              "url": `${SITE_URL}/blog/${b.slug}`,
             })),
           }]
         : []),

@@ -2,6 +2,7 @@
 // AdSense-ready: semantic HTML5, structured content, proper headings, no intrusive patterns
 // SEO: rich meta, JSON-LD schema, keyword-rich intro section
 // Features: 20/page pagination (URL-based), search that works across pages
+import { SITE_URL } from "@/lib/seo";
 
 import type { Metadata } from "next";
 import { Suspense } from "react";
@@ -58,23 +59,23 @@ export async function generateMetadata({
     : "Explore the latest Ollywood blog posts — in-depth movie reviews, actor profiles, top 10 lists, song guides, and behind-the-scenes coverage of Odia cinema. Updated weekly.";
 
   const canonical = category
-    ? `https://www.ollypedia.in/blog?category=${encodeURIComponent(category)}${page > 1 ? `&page=${page}` : ""}`
+    ? `${SITE_URL}/blog?category=${encodeURIComponent(category)}${page > 1 ? `&page=${page}` : ""}`
     : page > 1
-    ? `https://www.ollypedia.in/blog?page=${page}`
-    : "https://www.ollypedia.in/blog";
+    ? `${SITE_URL}/blog?page=${page}`
+    : `${SITE_URL}/blog`;
 
   // ── PREV link ──
   const prevPage = page > 1
     ? (page === 2
-        ? (category ? `https://www.ollypedia.in/blog?category=${encodeURIComponent(category)}` : "https://www.ollypedia.in/blog")
-        : (category ? `https://www.ollypedia.in/blog?category=${encodeURIComponent(category)}&page=${page - 1}` : `https://www.ollypedia.in/blog?page=${page - 1}`))
+        ? (category ? `${SITE_URL}/blog?category=${encodeURIComponent(category)}` : `${SITE_URL}/blog`)
+        : (category ? `${SITE_URL}/blog?category=${encodeURIComponent(category)}&page=${page - 1}` : `${SITE_URL}/blog?page=${page - 1}`))
     : undefined;
 
   // ── NEXT link (new) ──
   const nextPage = page < totalPages
     ? (category
-        ? `https://www.ollypedia.in/blog?category=${encodeURIComponent(category)}&page=${page + 1}`
-        : `https://www.ollypedia.in/blog?page=${page + 1}`)
+        ? `${SITE_URL}/blog?category=${encodeURIComponent(category)}&page=${page + 1}`
+        : `${SITE_URL}/blog?page=${page + 1}`)
     : undefined;
 
   return {
@@ -99,14 +100,14 @@ export async function generateMetadata({
       siteName: "Ollypedia",
       type:     "website",
       locale:   "en_IN",
-      images: [{ url: "https://www.ollypedia.in/og-blog.jpg", width: 1200, height: 630, alt: "Ollypedia Blog — Odia Cinema News & Reviews" }],
+      images: [{ url: `${SITE_URL}/og-blog.jpg`, width: 1200, height: 630, alt: "Ollypedia Blog — Odia Cinema News & Reviews" }],
     },
     twitter: {
       card:        "summary_large_image",
       title,
       description,
       site:        "@ollypedia",
-      images:      ["https://www.ollypedia.in/og-blog.jpg"],
+      images:      [`${SITE_URL}/og-blog.jpg`],
     },
   };
 }
@@ -127,13 +128,13 @@ function BlogSchema({
     "@type": "Blog",
     name: "Ollypedia Blog",
     description: "News, reviews, and guides about Ollywood — the Odia-language film industry based in Bhubaneswar, Odisha.",
-    url: "https://www.ollypedia.in/blog",
+    url: `${SITE_URL}/blog`,
     dateModified: mostRecentDate,
     publisher: {
       "@type": "Organization",
       name: "Ollypedia",
-      url: "https://www.ollypedia.in",
-      logo: { "@type": "ImageObject", url: "https://www.ollypedia.in/logo.png" },
+      url: `${SITE_URL}`,
+      logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.png` },
       address: {
         "@type": "PostalAddress",
         addressLocality: "Bhubaneswar",
@@ -159,7 +160,7 @@ function BlogSchema({
     itemListElement: blogs.slice(0, 10).map((b: any, i: number) => ({
       "@type": "ListItem",
       position: i + 1,
-      url: `https://www.ollypedia.in/blog/${b.slug}`,
+      url: `${SITE_URL}/blog/${b.slug}`,
       name: b.title,
       // NEW: richer item data for Google
       image: b.coverImage ?? undefined,
@@ -175,12 +176,12 @@ function BlogSchema({
         "@context": "https://schema.org",
         "@type": "WebSite",
         name: "Ollypedia",
-        url: "https://www.ollypedia.in",
+        url: `${SITE_URL}`,
         potentialAction: {
           "@type": "SearchAction",
           target: {
             "@type": "EntryPoint",
-            urlTemplate: "https://www.ollypedia.in/blog?q={search_term_string}",
+            urlTemplate: `${SITE_URL}/blog?q={search_term_string}`,
           },
           "query-input": "required name=search_term_string",
         },

@@ -1,5 +1,6 @@
 // app/cast/[id]/page.tsx
 // Full redesign — Tailwind-based, improved readability, AdSense-ready SEO content
+import { SITE_URL } from "@/lib/seo";
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -125,7 +126,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const description =
     person.bio?.slice(0, 155) ||
     `${person.name} is a celebrated Odia ${roles.toLowerCase()} in Ollywood with ${movies.length} films${debutYear ? `, active since ${debutYear}` : ""}. Discover their full biography, filmography, songs and career on Ollypedia.`;
-  const canonical = `https://www.ollypedia.in/cast/${String(person._id)}`;
+  const canonical = `${SITE_URL}/cast/${String(person._id)}`;
 
   return {
     title, description,
@@ -274,7 +275,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
     movies.find((m: any) => m.posterUrl)?.posterUrl || null;
 
   const bio = generateRichBio(person, movies);
-  const canonical = `https://www.ollypedia.in/cast/${String(person._id)}`;
+  const canonical = `${SITE_URL}/cast/${String(person._id)}`;
 
   const debutMovie  = movies.length ? movies[movies.length - 1] : null;
   const latestMovie = movies[0];
@@ -309,8 +310,8 @@ export default async function CastDetailPage({ params }: { params: { id: string 
   const breadcrumbLd = {
     "@context": "https://schema.org", "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.ollypedia.in" },
-      { "@type": "ListItem", position: 2, name: "Cast", item: "https://www.ollypedia.in/cast" },
+      { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}` },
+      { "@type": "ListItem", position: 2, name: "Cast", item: `${SITE_URL}/cast` },
       { "@type": "ListItem", position: 3, name: person.name, item: canonical },
     ],
   };

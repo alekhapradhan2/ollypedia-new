@@ -2,6 +2,7 @@
 // Privacy Policy page — fixes the 404 caused by Footer.tsx linking to /privacy
 // with no corresponding route. Styled to match the dark theme used in Footer
 // (bg-black, gray-5xx text, orange-500 accents).
+import { SITE_URL } from "@/lib/seo";
 
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
   description:
     "Read Ollypedia's Privacy Policy to learn how we collect, use, and protect your information while you browse Odisha's most complete Odia cinema encyclopedia.",
   alternates: {
-    canonical: "https://www.ollypedia.in/privacy",
+    canonical: `${SITE_URL}/privacy`,
   },
   robots: {
     index: true,

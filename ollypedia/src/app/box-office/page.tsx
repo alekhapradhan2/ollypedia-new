@@ -1,5 +1,6 @@
 // app/box-office/page.tsx
 // Box Office listing — all years, year-wise tabs, all-time leaderboard
+import { SITE_URL } from "@/lib/seo";
 
 import type { Metadata } from "next";
 import Link              from "next/link";
@@ -32,8 +33,8 @@ export async function generateMetadata({
     description,
     alternates:  {
       canonical: isCurrentYear
-        ? "https://www.ollypedia.in/box-office"
-        : `https://www.ollypedia.in/box-office?year=${year}`,
+        ? `${SITE_URL}/box-office`
+        : `${SITE_URL}/box-office?year=${year}`,
     },
     robots:      { index: true, follow: true },
     keywords:    [
@@ -50,18 +51,18 @@ export async function generateMetadata({
       title,
       description,
       url: isCurrentYear
-        ? "https://www.ollypedia.in/box-office"
-        : `https://www.ollypedia.in/box-office?year=${year}`,
+        ? `${SITE_URL}/box-office`
+        : `${SITE_URL}/box-office?year=${year}`,
       siteName:    "Ollypedia",
       type:        "website",
       locale:      "en_IN",
-      images: [{ url: "https://www.ollypedia.in/og-box-office.jpg", width: 1200, height: 630, alt: `Odia Box Office Collection ${year} — Ollypedia` }],
+      images: [{ url: `${SITE_URL}/og-box-office.jpg`, width: 1200, height: 630, alt: `Odia Box Office Collection ${year} — Ollypedia` }],
     },
     twitter: {
       card:        "summary_large_image",
       title,
       description: `Day-wise net & gross earnings for all Odia (Ollywood) movies ${year}. Updated daily.`,
-      images:      ["https://www.ollypedia.in/og-box-office.jpg"],
+      images:      [`${SITE_URL}/og-box-office.jpg`],
       site:        "@ollypedia",
     },
   };
@@ -297,9 +298,9 @@ export default async function BoxOfficePage({
     "@context": "https://schema.org",
     "@type":    "BreadcrumbList",
     "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Home",       "item": "https://www.ollypedia.in" },
-      { "@type": "ListItem", "position": 2, "name": "Box Office", "item": "https://www.ollypedia.in/box-office" },
-      ...(selectedYear !== currentYear ? [{ "@type": "ListItem", "position": 3, "name": String(selectedYear), "item": `https://www.ollypedia.in/box-office?year=${selectedYear}` }] : []),
+      { "@type": "ListItem", "position": 1, "name": "Home",       "item": `${SITE_URL}` },
+      { "@type": "ListItem", "position": 2, "name": "Box Office", "item": `${SITE_URL}/box-office` },
+      ...(selectedYear !== currentYear ? [{ "@type": "ListItem", "position": 3, "name": String(selectedYear), "item": `${SITE_URL}/box-office?year=${selectedYear}` }] : []),
     ],
   };
 
@@ -307,10 +308,10 @@ export default async function BoxOfficePage({
     "@context": "https://schema.org",
     "@type":    "WebSite",
     "name":     "Ollypedia",
-    "url":      "https://www.ollypedia.in",
+    "url":      `${SITE_URL}`,
     "potentialAction": {
       "@type":       "SearchAction",
-      "target":      { "@type": "EntryPoint", "urlTemplate": "https://www.ollypedia.in/search?q={search_term_string}" },
+      "target":      { "@type": "EntryPoint", "urlTemplate": `${SITE_URL}/search?q={search_term_string}` },
       "query-input": "required name=search_term_string",
     },
   };
@@ -320,9 +321,9 @@ export default async function BoxOfficePage({
     "@type":    "CollectionPage",
     "name":     `Odia Box Office Collection ${selectedYear} | Ollypedia`,
     "description": `Complete day-wise box office collection for Odia (Ollywood) movies ${selectedYear}. Updated daily.`,
-    "url":      "https://www.ollypedia.in/box-office",
+    "url":      `${SITE_URL}/box-office`,
     "dateModified": lastUpdated,
-    "publisher": { "@type": "Organization", "name": "Ollypedia", "url": "https://www.ollypedia.in" },
+    "publisher": { "@type": "Organization", "name": "Ollypedia", "url": `${SITE_URL}` },
     "mainEntity": {
       "@type": "ItemList",
       "name":  `Odia Movies Box Office ${selectedYear}`,
@@ -331,7 +332,7 @@ export default async function BoxOfficePage({
         "@type":    "ListItem",
         "position": i + 1,
         "name":     m.title,
-        "url":      `https://www.ollypedia.in/box-office/${movieSlug(m)}`,
+        "url":      `${SITE_URL}/box-office/${movieSlug(m)}`,
       })),
     },
   };
@@ -390,7 +391,7 @@ export default async function BoxOfficePage({
     "itemListElement": blogs.map((b: any, i: number) => ({
       "@type":    "ListItem",
       "position": i + 1,
-      "url":      `https://www.ollypedia.in/blog/${b.slug}`,
+      "url":      `${SITE_URL}/blog/${b.slug}`,
       "name":     b.title,
     })),
   } : null;

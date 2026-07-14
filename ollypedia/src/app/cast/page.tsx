@@ -1,6 +1,7 @@
 // app/cast/page.tsx
 // AdSense-ready: semantic HTML5, proper headings, breadcrumbs, structured content
 // SEO: JSON-LD schema, keyword-rich intro, internal links, meta tags
+import { SITE_URL } from "@/lib/seo";
 
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -194,9 +195,9 @@ function CastSchema({ type, total }: { type?: string; total: number }) {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home",        item: "https://www.ollypedia.in" },
-      { "@type": "ListItem", position: 2, name: "Cast & Crew", item: "https://www.ollypedia.in/cast" },
-      ...(type ? [{ "@type": "ListItem", position: 3, name: `${type}s`, item: `https://www.ollypedia.in/cast?type=${type}` }] : []),
+      { "@type": "ListItem", position: 1, name: "Home",        item: `${SITE_URL}` },
+      { "@type": "ListItem", position: 2, name: "Cast & Crew", item: `${SITE_URL}/cast` },
+      ...(type ? [{ "@type": "ListItem", position: 3, name: `${type}s`, item: `${SITE_URL}/cast?type=${type}` }] : []),
     ],
   };
 
@@ -208,7 +209,7 @@ function CastSchema({ type, total }: { type?: string; total: number }) {
       ? `Complete list of Odia ${type}s in Ollywood cinema`
       : "Complete directory of actors, actresses, directors and crew in Odia cinema",
     numberOfItems: total,
-    url: type ? `https://www.ollypedia.in/cast?type=${type}` : "https://www.ollypedia.in/cast",
+    url: type ? `${SITE_URL}/cast?type=${type}` : `${SITE_URL}/cast`,
   };
 
   return (

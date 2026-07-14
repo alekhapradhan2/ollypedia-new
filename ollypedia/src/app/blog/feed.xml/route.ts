@@ -2,11 +2,12 @@
 // Serve an RSS 2.0 feed for the latest 20 Ollywood blog posts.
 // Add <link rel="alternate" type="application/rss+xml" title="Ollypedia Blog" href="/blog/feed.xml">
 // to your root layout's <head> so browsers and crawlers discover it automatically.
+import { SITE_URL } from "@/lib/seo";
 
 import { connectDB } from "@/lib/db";
 import Blog from "@/models/Blog";
 
-const SITE_URL = "https://www.ollypedia.in";
+const SITE_URL = `${SITE_URL}`;
 const FEED_URL = `${SITE_URL}/blog/feed.xml`;
 
 function escapeXml(str: string): string {

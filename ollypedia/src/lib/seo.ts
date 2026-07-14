@@ -1,4 +1,4 @@
-export const SITE_URL  = process.env.NEXT_PUBLIC_SITE_URL  || "https://www.ollypedia.in";
+export const SITE_URL = "https://www.ollypedia.in";
 export const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "Ollypedia";
 
 export function buildTitle(pageTitle: string) {
