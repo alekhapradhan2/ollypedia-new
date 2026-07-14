@@ -6,6 +6,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { AdSenseUnit } from "@/components/ui/AdSenseUnit";
 import { TrendingUp, Calendar, IndianRupee, BarChart3, ChevronDown, ChevronUp, Film, Music, BookOpen, ExternalLink } from "lucide-react";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api").replace(/\/$/, "");
@@ -600,6 +601,20 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
           </div>
         </div>
       </div>
+
+      {/* ── 3-Column Layout for Main Content & Ads ── */}
+      <div className="w-full max-w-[1400px] mx-auto flex justify-center items-start gap-4 xl:gap-6 px-2 sm:px-4 mt-2">
+        
+        {/* Left Ad Unit */}
+        <div className="hidden xl:block w-[160px] flex-shrink-0 sticky top-24 pt-2">
+          <div className="w-full h-[600px] bg-[#0f0f0f] border border-[#1c1c1c] rounded flex items-center justify-center overflow-hidden">
+            <span className="text-xs text-gray-600 font-medium tracking-wider rotate-[-90deg] whitespace-nowrap">Advertisement</span>
+            {/* Inject Google AdSense / Ad Unit Here */}
+          </div>
+        </div>
+
+        {/* Center Main Content */}
+        <div className="flex-1 w-full max-w-6xl min-w-0">
 
       {/* ── Stats Cards ── */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-4 mb-8">
@@ -1197,6 +1212,19 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
           </aside>
         </div>
       </div>
+      
+      </div> {/* End Center Main Content */}
+
+      {/* Right Ad Unit */}
+      <div className="hidden xl:block w-[160px] flex-shrink-0 sticky top-24 pt-2">
+        <div className="w-full h-[600px] bg-[#0f0f0f] border border-[#1c1c1c] rounded flex items-center justify-center overflow-hidden">
+          <span className="text-xs text-gray-600 font-medium tracking-wider rotate-[90deg] whitespace-nowrap">Advertisement</span>
+          {/* Inject Google AdSense / Ad Unit Here */}
+        </div>
+      </div>
+
+      </div> {/* End 3-Column Layout */}
+
     </div>
   );
 }

@@ -7,6 +7,7 @@ import Link              from "next/link";
 import { connectDB }     from "@/lib/db";
 import Movie             from "@/models/Movie";
 import Blog              from "@/models/Blog";
+import { AdSenseUnit }     from "@/components/ui/AdSenseUnit";
 
 export const revalidate = 600;
 
