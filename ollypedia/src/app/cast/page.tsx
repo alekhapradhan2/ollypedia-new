@@ -65,18 +65,24 @@ function serialise(docs: any[]): PlainPerson[] {
 export async function generateMetadata({
   searchParams,
 }: {
-  searchParams: { type?: string };
+  searchParams: { type?: string; page?: string };
 }): Promise<Metadata> {
-  const { type } = searchParams;
+  const { type, page: pageStr } = searchParams;
+  const page = parseInt(pageStr || "1", 10);
+  const pageLabel = page > 1 ? ` | Page ${page}` : "";
   const seo = type ? ROLE_SEO[type] : null;
+  
+  let baseUrl = type ? `/cast?type=${type}` : "/cast";
+  let url = page > 1 ? `${baseUrl}${type ? '&' : '?'}page=${page}` : baseUrl;
+
   return buildMeta({
     title: seo
-      ? `${seo.title} – Ollywood Directory | Ollypedia`
-      : "Odia Actors, Actresses & Crew – Complete Ollywood Cast Directory | Ollypedia",
+      ? `${seo.title} – Ollywood Directory${pageLabel} | Ollypedia`
+      : `Odia Actors, Actresses & Crew – Complete Ollywood Cast Directory${pageLabel} | Ollypedia`,
     description: seo
-      ? `${seo.description} View complete filmographies, biographies and career highlights on Ollypedia.`
-      : "Explore the complete directory of Odia film actors, actresses, directors, singers and crew. Browse profiles with filmographies and career stats of Ollywood celebrities.",
-    url: type ? `/cast?type=${type}` : "/cast",
+      ? `${seo.description} View complete filmographies, biographies and career highlights on Ollypedia.${page > 1 ? ` (Page ${page})` : ""}`
+      : `Explore the complete directory of Odia film actors, actresses, directors, singers and crew.${page > 1 ? ` (Page ${page})` : ""} Browse profiles with filmographies and career stats of Ollywood celebrities.`,
+    url,
   });
 }
 
@@ -188,9 +194,9 @@ function CastSchema({ type, total }: { type?: string; total: number }) {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home",        item: "https://ollypedia.in" },
-      { "@type": "ListItem", position: 2, name: "Cast & Crew", item: "https://ollypedia.in/cast" },
-      ...(type ? [{ "@type": "ListItem", position: 3, name: `${type}s`, item: `https://ollypedia.in/cast?type=${type}` }] : []),
+      { "@type": "ListItem", position: 1, name: "Home",        item: "https://www.ollypedia.in" },
+      { "@type": "ListItem", position: 2, name: "Cast & Crew", item: "https://www.ollypedia.in/cast" },
+      ...(type ? [{ "@type": "ListItem", position: 3, name: `${type}s`, item: `https://www.ollypedia.in/cast?type=${type}` }] : []),
     ],
   };
 
@@ -202,7 +208,7 @@ function CastSchema({ type, total }: { type?: string; total: number }) {
       ? `Complete list of Odia ${type}s in Ollywood cinema`
       : "Complete directory of actors, actresses, directors and crew in Odia cinema",
     numberOfItems: total,
-    url: type ? `https://ollypedia.in/cast?type=${type}` : "https://ollypedia.in/cast",
+    url: type ? `https://www.ollypedia.in/cast?type=${type}` : "https://www.ollypedia.in/cast",
   };
 
   return (

@@ -31,10 +31,12 @@ Disallow: /admin/
 Disallow: /search
 Disallow: /_next/
 Disallow: /blog?
-Disallow: /movies?genre=
+Disallow: /*?sort=
+Disallow: /*?page=
 
 # Explicitly allowed (kept crawlable — these are canonical, not duplicates)
 Allow: /movies/year/
+Allow: /movies?genre=
 Allow: /movies/genre/
 Allow: /box-office?year=
 Allow: /blog?category=

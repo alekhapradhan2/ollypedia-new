@@ -31,13 +31,18 @@ export async function generateStaticParams() {
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: { year: string };
+  searchParams: { page?: string };
 }): Promise<Metadata> {
   const year = Number(params.year);
+  const page = parseInt(searchParams?.page || "1", 10);
+  const pageLabel = page > 1 ? ` | Page ${page}` : "";
+
   return buildMeta({
-    title: `Odia Movies ${year} A to Z – Complete Ollywood Films List | Ollypedia`,
-    description: `${year} Odia Movies A to Z full list – Browse all Ollywood films released in ${year} with movie names, directors, release dates, box office collection, cast, songs, and reviews. Complete ${year} Odia movie list.`,
+    title: `Odia Movies ${year} A to Z – Complete Ollywood Films List${pageLabel} | Ollypedia`,
+    description: `${year} Odia Movies A to Z full list${page > 1 ? ` (Page ${page})` : ""} – Browse all Ollywood films released in ${year} with movie names, directors, release dates, box office collection, cast, songs, and reviews. Complete ${year} Odia movie list.`,
     keywords: [
       // A-to-Z / list variants
       `Odia movies ${year} A to Z`,
@@ -73,7 +78,7 @@ export async function generateMetadata({
       `Odia film industry`,
       `Odia cinema`,
     ],
-    url: `/movies/year/${year}`,
+    url: page > 1 ? `/movies/year/${year}?page=${page}` : `/movies/year/${year}`,
   });
 }
 
@@ -1097,16 +1102,16 @@ export default async function MoviesByYearPage({
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {[
-                    { label: `${year} Odia Action Movies`,    href: `/movies/genre/action`    },
-                    { label: `${year} Odia Romance Movies`,   href: `/movies/genre/romance`   },
-                    { label: `${year} Odia Comedy Movies`,    href: `/movies/genre/comedy`    },
-                    { label: `${year} Odia Drama Movies`,     href: `/movies/genre/drama`     },
-                    { label: `${year} Odia Family Movies`,    href: `/movies/genre/family`    },
-                    { label: `${year} Odia Thriller Movies`,  href: `/movies/genre/thriller`  },
-                    { label: `${year} Odia Mythological Films`, href: `/movies/genre/mythological` },
-                    { label: `${year} Odia Horror Movies`,   href: `/movies/genre/horror`    },
-                    { label: `${year} Odia Social Films`,    href: `/movies/genre/social`    },
-                    { label: `${year} Odia Devotional Films`, href: `/movies/genre/devotional` },
+                    { label: `${year} Odia Action Movies`,    href: `/movies/action`    },
+                    { label: `${year} Odia Romance Movies`,   href: `/movies/romance`   },
+                    { label: `${year} Odia Comedy Movies`,    href: `/movies/comedy`    },
+                    { label: `${year} Odia Drama Movies`,     href: `/movies/drama`     },
+                    { label: `${year} Odia Family Movies`,    href: `/movies/family`    },
+                    { label: `${year} Odia Thriller Movies`,  href: `/movies/thriller`  },
+                    { label: `${year} Odia Mythological Films`, href: `/movies/mythological` },
+                    { label: `${year} Odia Horror Movies`,   href: `/movies/horror`    },
+                    { label: `${year} Odia Social Films`,    href: `/movies/social`    },
+                    { label: `${year} Odia Devotional Films`, href: `/movies/devotional` },
                   ].map(({ label, href }) => (
                     <Link
                       key={label}

@@ -340,8 +340,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       : `Complete info about Odia film ${movie.title}${yearStr}${ottDescPart} Cast, songs, trailer, box office & reviews on Ollypedia.`
   ).slice(0, 160);
 
-  const image     = movie.posterUrl || movie.thumbnailUrl || "https://ollypedia.in/default.jpg";
-  const canonical = `https://ollypedia.in/movie/${movie.slug || movie._id}`;
+  const image     = movie.posterUrl || movie.thumbnailUrl || "https://www.ollypedia.in/default.jpg";
+  const canonical = `https://www.ollypedia.in/movie/${movie.slug || movie._id}`;
 
   // ── OTT keyword matrix ──────────────────────────────────────────────────────
   const ottKw: string[] = movie.streamingOn ? [
@@ -451,7 +451,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
   return {
     title, description, keywords,
-    metadataBase: new URL("https://ollypedia.in"),
+    metadataBase: new URL("https://www.ollypedia.in"),
     alternates: { canonical },
     robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-snippet": -1, "max-image-preview": "large" } },
     openGraph: {
@@ -541,7 +541,7 @@ function buildAggregateRatingJsonLd(movie: any, avgRating: number) {
     "@context": "https://schema.org",
     "@type": "Movie",
     name: movie.title,
-    url: `https://ollypedia.in/movie/${movie.slug || movie._id}`,
+    url: `https://www.ollypedia.in/movie/${movie.slug || movie._id}`,
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: avgRating.toFixed(1),
@@ -615,7 +615,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
   const year      = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
   const songs     = movie.media?.songs || [];
   const trailer   = movie.media?.trailer;
-  const canonical = `https://ollypedia.in/movie/${movie.slug || movie._id}`;
+  const canonical = `https://www.ollypedia.in/movie/${movie.slug || movie._id}`;
   const vs        = verdictStyle(movie.verdict);
 
   // Prefer cast-list names, fall back to movie fields
@@ -630,11 +630,11 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
     .map((m: any) => ({
       "@type": "Person",
       name: m.name,
-      ...(m.castId ? { url: `https://ollypedia.in/cast/${m.castId}` } : {}),
+      ...(m.castId ? { url: `https://www.ollypedia.in/cast/${m.castId}` } : {}),
     }));
   const dirCrewEntry = crewForSchema.find((c: any) => c.role?.toLowerCase().includes("director"));
   const directorPersonObj = directorName
-    ? [{ "@type": "Person", name: directorName, ...(dirCrewEntry?.castId ? { url: `https://ollypedia.in/cast/${dirCrewEntry.castId}` } : {}) }]
+    ? [{ "@type": "Person", name: directorName, ...(dirCrewEntry?.castId ? { url: `https://www.ollypedia.in/cast/${dirCrewEntry.castId}` } : {}) }]
     : [];
 
   const enrichedMovieSchema = {
@@ -687,8 +687,8 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
   const structuredData = [
     enrichedMovieSchema,
     breadcrumbJsonLd([
-      { name: "Home",   url: "https://ollypedia.in/" },
-      { name: "Movies", url: "https://ollypedia.in/movies" },
+      { name: "Home",   url: "https://www.ollypedia.in/" },
+      { name: "Movies", url: "https://www.ollypedia.in/movies" },
       { name: movie.title, url: canonical },
     ]),
     buildFaqJsonLd(movie, year, avgRating, songs, directorName, producerName),
@@ -699,7 +699,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
       name: `Articles about ${movie.title}`,
       itemListElement: blogs.map((b: any, i: number) => ({
         "@type": "ListItem", position: i + 1, name: b.title,
-        url: `https://ollypedia.in/blog/${b.slug}`,
+        url: `https://www.ollypedia.in/blog/${b.slug}`,
       })),
     }] : []),
     ...(songs.length > 0 ? [{
@@ -710,7 +710,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
       track: songs.map((s: any, i: number) => ({
         "@type": "MusicRecording",
         name: s.title,
-        url: `https://ollypedia.in/songs/${movie.slug}/${i}/${toSlug(s.title) || String(i)}`,
+        url: `https://www.ollypedia.in/songs/${movie.slug}/${i}/${toSlug(s.title) || String(i)}`,
         ...(s.singer && { byArtist: { "@type": "Person", name: s.singer } }),
       })),
     }] : []),
@@ -1446,6 +1446,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                                     <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-[#333]">
                                       <Image
                                         src={member.photo || "/placeholder-person.svg"}
+                                        priority={true}
                                         alt={`${member.name} in ${movie.title}`}
                                         fill className="object-cover"
                                       />
@@ -1551,37 +1552,53 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-6">
                 <SectionHeading title={`About ${movie.title}${year ? ` (${year})` : ""}`} />
                 <div className="space-y-3 text-gray-400 text-sm leading-relaxed">
-                  <p>
-                    <strong className="text-white">{movie.title}</strong> is{" "}
-                    {(movie.genre || []).length > 0
-                      ? `a ${(movie.genre as string[]).join(", ")} Odia film`
-                      : "an Odia film"}
-                    {year ? ` released in ${year}` : ""}{directorName ? `, directed by ${directorName}` : ""}
-                    {producerName ? ` and produced by ${producerName}` : ""}.
-                    {movie.language ? ` The film is in the ${movie.language} language` : " The film is in the Odia language"},
-                    making it a part of the <strong className="text-white">Ollywood film industry</strong> — the Odia language cinema based in Bhubaneswar, Odisha.
-                  </p>
-                  {movie.synopsis && (
-                    <p>
-                      {movie.synopsis.length > 350 ? movie.synopsis.slice(0, 350).trimEnd() + "…" : movie.synopsis}
-                    </p>
-                  )}
-                  {movie.verdict && (
-                    <p>
-                      At the box office, <strong className="text-white">{movie.title}</strong> was declared a{" "}
-                      <strong className="text-white">{movie.verdict}</strong>
-                      {movie.boxOffice?.total ? `, grossing a total collection of ${movie.boxOffice.total}` : ""}.
-                      {avgRating !== null
-                        ? ` On Ollypedia, the film holds a user rating of ${(avgRating as number).toFixed(1)}/10 based on ${movie.reviews?.length} audience reviews.`
-                        : ""}
-                    </p>
-                  )}
+                  {(() => {
+                    const hash = String(movie._id).split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+                    const v = hash % 3;
+                    const gText = (movie.genre || []).length > 0 ? (movie.genre as string[]).join(", ") : "";
+                    
+                    if (v === 0) {
+                      return (
+                        <>
+                          <p>
+                            <strong className="text-white">{movie.title}</strong> is {gText ? `a ${gText}` : "an"} Odia film
+                            {year ? ` released in ${year}` : ""}{directorName ? `, directed by ${directorName}` : ""}.
+                            Produced {producerName ? `by ${producerName}` : "in the Odia language"}, it is a prominent title in the <strong className="text-white">Ollywood film industry</strong>.
+                          </p>
+                          {movie.synopsis && <p>{movie.synopsis.length > 350 ? movie.synopsis.slice(0, 350).trimEnd() + "…" : movie.synopsis}</p>}
+                          {movie.verdict && <p>The box office verdict of <strong className="text-white">{movie.title}</strong> is <strong className="text-white">{movie.verdict}</strong>{movie.boxOffice?.total ? `, with a total collection of ${movie.boxOffice.total}` : ""}.</p>}
+                        </>
+                      );
+                    } else if (v === 1) {
+                      return (
+                        <>
+                          <p>
+                            Directed by {directorName || "an acclaimed director"}, <strong className="text-white">{movie.title}</strong> is a popular {gText} movie from Ollywood{year ? ` that hit theatres in ${year}` : ""}.
+                            {producerName ? ` It was produced by ${producerName}.` : ""}
+                          </p>
+                          {movie.synopsis && <p>The plot follows: {movie.synopsis.length > 300 ? movie.synopsis.slice(0, 300).trimEnd() + "…" : movie.synopsis}</p>}
+                          {movie.verdict && <p>Commercially, it emerged as a <strong className="text-white">{movie.verdict}</strong> in the Odia cinema circuit{movie.boxOffice?.total ? ` grossing ${movie.boxOffice.total}` : ""}.</p>}
+                        </>
+                      );
+                    } else {
+                      return (
+                        <>
+                          <p>
+                            Adding to the rich legacy of Odia cinema, <strong className="text-white">{movie.title}</strong>{year ? ` (${year})` : ""} is {gText ? `an engaging ${gText}` : "a"} feature film.
+                            {directorName ? ` Helmed by ${directorName}` : ""}{producerName ? ` and backed by ${producerName}` : ""}, the film was widely discussed among Ollywood fans.
+                          </p>
+                          {movie.synopsis && <p>{movie.synopsis.length > 320 ? movie.synopsis.slice(0, 320).trimEnd() + "…" : movie.synopsis}</p>}
+                          {movie.verdict && <p>In terms of box office performance, <strong className="text-white">{movie.title}</strong> was a <strong className="text-white">{movie.verdict}</strong>{movie.boxOffice?.total ? ` (${movie.boxOffice.total})` : ""}.</p>}
+                        </>
+                      );
+                    }
+                  })()}
+                  
                   {songs.length > 0 && (
                     <p>
                       The <strong className="text-white">{movie.title} soundtrack</strong> features{" "}
                       <strong className="text-white">{songs.length} songs</strong>
                       {songs[0]?.singer ? `, including tracks by ${[...new Set(songs.slice(0,3).map((s:any)=>s.singer).filter(Boolean))].join(", ")}` : ""}.
-                      All songs are available to explore on Ollypedia with YouTube videos and full credits.
                     </p>
                   )}
                   {movie.cast?.length > 0 && (

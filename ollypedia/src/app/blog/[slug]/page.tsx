@@ -145,8 +145,8 @@ const description = (
   blog.content?.replace(/<[^>]+>/g, "").slice(0, 155) ||
   `Read ${blog.title} on Ollypedia...`
 );
-  const image     = blog.coverImage || "https://ollypedia.in/default.jpg";
-  const canonical = `https://ollypedia.in/blog/${blog.slug}`;
+  const image     = blog.coverImage || "https://www.ollypedia.in/default.jpg";
+  const canonical = `https://www.ollypedia.in/blog/${blog.slug}`;
 
   // ★ Keyword set — no misspellings (Google ignores <meta keywords>).
   // Focus on real long-tail terms only.
@@ -555,7 +555,7 @@ export default async function BlogPage({ params }: { params: { slug: string } })
   ]);
 
   const movieYear  = movie?.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
-  const movieCanon = movie ? `https://ollypedia.in/movie/${movie.slug}` : undefined;
+  const movieCanon = movie ? `https://www.ollypedia.in/movie/${movie.slug}` : undefined;
   const songs: any[] = movie?.media?.songs || [];
 
   // ─── FAQ items for JSON-LD ───────────────────────────────────
@@ -590,7 +590,7 @@ export default async function BlogPage({ params }: { params: { slug: string } })
         "description":     blog.excerpt || "",
         "datePublished":   blog.createdAt ? new Date(blog.createdAt).toISOString() : undefined,
         "dateModified":    blog.updatedAt ? new Date(blog.updatedAt).toISOString() : undefined,
-        "image":           blog.coverImage || "https://ollypedia.in/default.jpg",
+        "image":           blog.coverImage || "https://www.ollypedia.in/default.jpg",
         "inLanguage":      "en-IN",
         "articleSection":  blog.category || "Entertainment",
         "wordCount":       wordCount || undefined,
@@ -602,7 +602,7 @@ export default async function BlogPage({ params }: { params: { slug: string } })
         "author": {
           "@type":  "Person",
           "name":   blog.author || "Ollypedia Editorial Team",
-          "url":    "https://ollypedia.in/about",
+          "url":    "https://www.ollypedia.in/about",
           // sameAs signals authorship authority to Google
           "sameAs": [
             "https://www.facebook.com/ollypedia",
@@ -613,10 +613,10 @@ export default async function BlogPage({ params }: { params: { slug: string } })
         "publisher": {
           "@type": "Organization",
           "name":  "Ollypedia",
-          "url":   "https://ollypedia.in",
+          "url":   "https://www.ollypedia.in",
           "logo": {
             "@type":  "ImageObject",
-            "url":    "https://ollypedia.in/logo.png",
+            "url":    "https://www.ollypedia.in/logo.png",
             "width":  600,
             "height": 60,
           },
@@ -628,7 +628,7 @@ export default async function BlogPage({ params }: { params: { slug: string } })
         },
         "mainEntityOfPage": {
           "@type": "WebPage",
-          "@id":   `https://ollypedia.in/blog/${blog.slug}`,
+          "@id":   `https://www.ollypedia.in/blog/${blog.slug}`,
         },
         ...(movie && {
           "about": {
@@ -656,12 +656,12 @@ export default async function BlogPage({ params }: { params: { slug: string } })
       {
         "@type": "BreadcrumbList",
         "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "Home",  "item": "https://ollypedia.in/" },
-          { "@type": "ListItem", "position": 2, "name": "Blog",  "item": "https://ollypedia.in/blog" },
+          { "@type": "ListItem", "position": 1, "name": "Home",  "item": "https://www.ollypedia.in/" },
+          { "@type": "ListItem", "position": 2, "name": "Blog",  "item": "https://www.ollypedia.in/blog" },
           ...(blog.category
-            ? [{ "@type": "ListItem", "position": 3, "name": blog.category, "item": `https://ollypedia.in/blog/category/${toSlug(blog.category)}` }]
+            ? [{ "@type": "ListItem", "position": 3, "name": blog.category, "item": `https://www.ollypedia.in/blog/category/${toSlug(blog.category)}` }]
             : []),
-          { "@type": "ListItem", "position": blog.category ? 4 : 3, "name": blog.title, "item": `https://ollypedia.in/blog/${blog.slug}` },
+          { "@type": "ListItem", "position": blog.category ? 4 : 3, "name": blog.title, "item": `https://www.ollypedia.in/blog/${blog.slug}` },
         ],
       },
       // ★ FAQPage schema — only for non-Box-Office blogs.
@@ -684,7 +684,7 @@ export default async function BlogPage({ params }: { params: { slug: string } })
         ? [{
             "@type": "Table",
             "about": `${movie.title} Day-wise Box Office Collection`,
-            "url": `https://ollypedia.in/box-office/${movie.slug}`,
+            "url": `https://www.ollypedia.in/box-office/${movie.slug}`,
           }]
         : []),
       // Songs schema
@@ -694,7 +694,7 @@ export default async function BlogPage({ params }: { params: { slug: string } })
             "name": `Songs from ${movie?.title}`,
             "itemListElement": songs.slice(0, 10).map((s: any, i: number) => ({
               "@type": "ListItem", "position": i + 1, "name": s.title,
-              "url": `https://ollypedia.in/songs/${movie?.slug}/${i}/${toSlug(s.title) || String(i)}`,
+              "url": `https://www.ollypedia.in/songs/${movie?.slug}/${i}/${toSlug(s.title) || String(i)}`,
             })),
           }]
         : []),

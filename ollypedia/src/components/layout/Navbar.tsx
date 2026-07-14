@@ -238,7 +238,7 @@ function SuggestionRow({
         item.image ? "" : c.iconBg,
       )}>
         {item.image
-          ? <img src={item.image} alt="" className="w-full h-full object-cover" />
+          ? <img src={item.image} alt={`${item.title} thumbnail`} className="w-full h-full object-cover" />
           : <c.Icon className={clsx("w-4.5 h-4.5", c.color)} aria-hidden="true" />
         }
       </div>

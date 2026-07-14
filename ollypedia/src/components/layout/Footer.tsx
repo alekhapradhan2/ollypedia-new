@@ -193,7 +193,8 @@ const NAV_LINKS = {
     { label: "About Us",          href: "/about"            },
     { label: "Contact",           href: "/contact"          },
     { label: "Privacy Policy",    href: "/privacy"          },
-    { label: "Disclaimer",        href: "/disclaimer"       },
+    { label: "Terms of Service",  href: "/terms"            },
+    { label: "HTML Sitemap",      href: "/sitemap"          },
     { label: "Terms & Conditions", href: "/terms-and-conditions" },
   ],
 };

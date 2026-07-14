@@ -136,14 +136,24 @@ async function getSongs(category: string): Promise<SongDoc[]> {
 }
 
 // ── Metadata ─────────────────────────────────────────────────────────────────
-export async function generateMetadata({ params }: any): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: { category: string };
+  searchParams: { page?: string };
+}): Promise<Metadata> {
   const cfg = CATEGORY_CONFIG[params.category];
   if (!cfg) return {};
+  
+  const page = parseInt(searchParams?.page || "1", 10);
+  const pageLabel = page > 1 ? ` | Page ${page}` : "";
+
   return buildMeta({
-    title: cfg.metaTitle,
-    description: cfg.metaDesc,
-    keywords: cfg.keywords,
-    url: `/songs/category/${params.category}`,
+    title:       `${cfg.metaTitle}${pageLabel}`,
+    description: `${cfg.metaDesc}${page > 1 ? ` (Page ${page})` : ""}`,
+    keywords:    cfg.keywords,
+    url:         page > 1 ? `/songs/category/${params.category}?page=${page}` : `/songs/category/${params.category}`,
   });
 }
 

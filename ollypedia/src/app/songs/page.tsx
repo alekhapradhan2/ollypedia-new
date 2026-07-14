@@ -18,21 +18,32 @@ export async function generateMetadata({
 }: {
   searchParams: Record<string, string | undefined>;
 }): Promise<Metadata> {
-  const { singer, year, q } = searchParams || {};
+  const { singer, year, q, page: pageStr } = searchParams || {};
+  const page = parseInt(pageStr || "1", 10);
+  const pageLabel = page > 1 ? ` | Page ${page}` : "";
 
-  let title       = "Odia Songs 2026 – Latest Ollywood Music & Film Songs | Ollypedia";
-  let description = "Browse thousands of Odia songs from Ollywood films. Listen to the latest Odia movie songs, romantic tracks, devotional music and dance numbers. Find songs by singer, film or music director.";
+  let title       = `Odia Songs 2026 – Latest Ollywood Music & Film Songs${pageLabel} | Ollypedia`;
+  let description = `Browse thousands of Odia songs from Ollywood films${page > 1 ? ` (Page ${page})` : ""}. Listen to the latest Odia movie songs, romantic tracks, devotional music and dance numbers. Find songs by singer, film or music director.`;
 
   if (q) {
-    title       = `"${q}" – Odia Songs Search | Ollypedia`;
-    description = `Search results for "${q}" in Ollypedia's Odia songs database. Find matching songs, singers and Odia movies.`;
+    title       = `"${q}" – Odia Songs Search${pageLabel} | Ollypedia`;
+    description = `Search results for "${q}" in Ollypedia's Odia songs database${page > 1 ? ` (Page ${page})` : ""}. Find matching songs, singers and Odia movies.`;
   } else if (singer) {
-    title       = `${singer} Songs – Odia Movie Songs | Ollypedia`;
-    description = `Listen to all ${singer} Odia songs. Watch YouTube videos, read lyrics and explore every film song by ${singer}.`;
+    title       = `${singer} Songs – Odia Movie Songs${pageLabel} | Ollypedia`;
+    description = `Listen to the best Odia songs by ${singer}${page > 1 ? ` (Page ${page})` : ""}. Explore the complete music discography, latest movie tracks and hit Ollywood songs by ${singer}.`;
   } else if (year) {
-    title       = `Odia Songs ${year} – Latest Ollywood Music | Ollypedia`;
-    description = `Explore all Odia songs released in ${year}. Find the best Ollywood songs and music videos of ${year}.`;
+    title       = `Odia Songs ${year} – Top Ollywood Movie Songs${pageLabel} | Ollypedia`;
+    description = `List of all Odia songs released in ${year}${page > 1 ? ` (Page ${page})` : ""}. Listen to the top Ollywood hit songs, romantic tracks and dance numbers of ${year}.`;
   }
+
+  const queryParams = new URLSearchParams();
+  if (singer) queryParams.set("singer", singer);
+  if (year)   queryParams.set("year", year);
+  if (q)      queryParams.set("q", q);
+  if (page > 1) queryParams.set("page", String(page));
+  const queryString = queryParams.toString();
+
+  const url = queryString ? `https://ollypedia.com/songs?${queryString}` : "https://ollypedia.com/songs";
 
   return {
     title,

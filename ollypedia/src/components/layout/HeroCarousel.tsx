@@ -163,6 +163,9 @@ export default function HeroCarousel({ movies }: { movies: HeroMovie[] }) {
               className={`hh-slide${i === heroIdx ? " active" : ""}`}
               style={{ backgroundImage: mImg ? `url(${mImg})` : "none" }}
             >
+              {i === heroIdx && mImg && (
+                <link rel="preload" as="image" href={mImg} />
+              )}
               <div className="hh-inner">
                 <div className="hh-overlay" />
 

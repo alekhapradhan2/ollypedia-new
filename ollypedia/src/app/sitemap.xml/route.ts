@@ -83,16 +83,7 @@ export async function GET() {
     urlEntry(`${SITE_URL}${p}`, today, f, pr)
   );
 
-  // ── Genre pages ────────────────────────────────────────────────────────────
-  // Only the canonical /movies/genre/[genre] path is included.
-  // /movies?genre= is blocked in robots.txt as a duplicate — don't list it here.
-  const genres = [
-    "Action", "Romance", "Comedy", "Drama", "Family",
-    "Thriller", "Mythological", "Horror", "Social", "Devotional",
-  ];
-  genres.forEach((g) => {
-    entries.push(urlEntry(`${SITE_URL}/movies/genre/${encodeURIComponent(g.toLowerCase())}`, today, "weekly", "0.75"));
-  });
+  // ── Genre pages (Removed because route does not exist) ──────────────
 
   // ── Blog category pages ────────────────────────────────────────────────────
   // Each is a unique keyword-targeted page. Box Office gets daily crawl priority.

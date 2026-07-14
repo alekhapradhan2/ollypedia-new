@@ -16,50 +16,59 @@ import {
 
 export const revalidate = 600;
 
-export const metadata: Metadata = buildMeta({
-  title: "Odia Movies – Complete Ollywood Film Database | Ollypedia",
-  description:
-    "Browse the complete list of Odia (Ollywood) movies. Filter by genre, year, verdict and more. Find your favourite Odia films with full cast, songs, box office collection, trailers and reviews.",
-  keywords: [
-    "Odia movies list", "Ollywood films", "Odia movies 2024", "Odia movies 2025",
-    "Odia cinema database", "Ollywood box office", "Odia film reviews",
-    "best Odia movies", "new Odia movies", "Odia movie cast",
-    "upcoming Odia movies", "Odia blockbuster movies", "latest Ollywood films",
-  ],
-  url: "/movies",
-});
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}): Promise<Metadata> {
+  const page = parseInt(searchParams.page || "1", 10);
+  const pageLabel = page > 1 ? ` | Page ${page}` : "";
+
+  return buildMeta({
+    title: `Odia Movies – Complete Ollywood Film Database${pageLabel} | Ollypedia`,
+    description:
+      `Browse the complete list of Odia (Ollywood) movies${page > 1 ? ` (Page ${page})` : ""}. Filter by genre, year, verdict and more. Find your favourite Odia films with full cast, songs, box office collection, trailers and reviews.`,
+    keywords: [
+      "Odia movies list", "Ollywood films", "Odia movies 2024", "Odia movies 2025", "Odia movies 2026",
+      "Odia cinema database", "Ollywood box office", "Odia film reviews",
+      "best Odia movies", "new Odia movies", "Odia movie cast",
+      "upcoming Odia movies", "Odia blockbuster movies", "latest Ollywood films",
+    ],
+    url: page > 1 ? `/movies?page=${page}` : "/movies",
+  });
+}
 
 /* ─── CONSTANTS ──────────────────────────────────────────── */
-const GENRES   = ["Action", "Romance", "Drama", "Comedy", "Thriller", "Horror", "Devotional", "Family", "Historical"];
+const GENRES = ["Action", "Romance", "Drama", "Comedy", "Thriller", "Horror", "Devotional", "Family", "Historical"];
 const VERDICTS = ["Hit", "Superhit", "Blockbuster", "Average", "Flop", "Upcoming"];
 
 const GENRE_META: Record<string, { emoji: string; desc: string; color: string }> = {
-  Action:     { emoji: "⚔️",  desc: "High-octane Odia action films",        color: "from-red-500/20 to-orange-500/10"   },
-  Romance:    { emoji: "❤️",  desc: "Romantic Ollywood love stories",        color: "from-pink-500/20 to-rose-500/10"    },
-  Drama:      { emoji: "🎭",  desc: "Emotional Odia drama films",            color: "from-purple-500/20 to-violet-500/10"},
-  Comedy:     { emoji: "😄",  desc: "Fun Odia comedy movies",                color: "from-yellow-500/20 to-amber-500/10" },
-  Thriller:   { emoji: "🔍",  desc: "Suspenseful Odia thrillers",            color: "from-cyan-500/20 to-sky-500/10"     },
-  Horror:     { emoji: "👻",  desc: "Scary Odia horror films",               color: "from-gray-700/40 to-zinc-800/10"    },
-  Devotional: { emoji: "🪔",  desc: "Spiritual & devotional Odia films",     color: "from-amber-500/20 to-yellow-400/10" },
-  Family:     { emoji: "👨‍👩‍👧",  desc: "Family entertainer Odia movies",       color: "from-green-500/20 to-emerald-500/10"},
-  Historical: { emoji: "🏛️",  desc: "Historical Odia period films",          color: "from-stone-500/20 to-slate-500/10"  },
+  Action: { emoji: "⚔️", desc: "High-octane Odia action films", color: "from-red-500/20 to-orange-500/10" },
+  Romance: { emoji: "❤️", desc: "Romantic Ollywood love stories", color: "from-pink-500/20 to-rose-500/10" },
+  Drama: { emoji: "🎭", desc: "Emotional Odia drama films", color: "from-purple-500/20 to-violet-500/10" },
+  Comedy: { emoji: "😄", desc: "Fun Odia comedy movies", color: "from-yellow-500/20 to-amber-500/10" },
+  Thriller: { emoji: "🔍", desc: "Suspenseful Odia thrillers", color: "from-cyan-500/20 to-sky-500/10" },
+  Horror: { emoji: "👻", desc: "Scary Odia horror films", color: "from-gray-700/40 to-zinc-800/10" },
+  Devotional: { emoji: "🪔", desc: "Spiritual & devotional Odia films", color: "from-amber-500/20 to-yellow-400/10" },
+  Family: { emoji: "👨‍👩‍👧", desc: "Family entertainer Odia movies", color: "from-green-500/20 to-emerald-500/10" },
+  Historical: { emoji: "🏛️", desc: "Historical Odia period films", color: "from-stone-500/20 to-slate-500/10" },
 };
 
 const ODIA_FILM_FACTS = [
-  { icon: Film,     stat: "1936",  label: "First Odia Film",   note: "Sita Bibaha — the first ever Odia feature film" },
-  { icon: Globe,    stat: "40–60", label: "Films Per Year",    note: "Ollywood produces 40–60 Odia films annually" },
-  { icon: Users,    stat: "1000+", label: "Cast & Crew",       note: "Actors, directors & technicians in our database" },
-  { icon: Calendar, stat: "85+",   label: "Years of Cinema",   note: "Odia cinema has a rich heritage of over 85 years" },
+  { icon: Film, stat: "1936", label: "First Odia Film", note: "Sita Bibaha — the first ever Odia feature film" },
+  { icon: Globe, stat: "40–60", label: "Films Per Year", note: "Ollywood produces 40–60 Odia films annually" },
+  { icon: Users, stat: "1000+", label: "Cast & Crew", note: "Actors, directors & technicians in our database" },
+  { icon: Calendar, stat: "85+", label: "Years of Cinema", note: "Odia cinema has a rich heritage of over 85 years" },
 ];
 
 const VERDICT_TABS = [
-  { label: "All",         value: null,         icon: Film,      color: "text-gray-300"  },
-  { label: "Upcoming",    value: "Upcoming",   icon: Calendar,  color: "text-sky-400"   },
-  { label: "Blockbuster", value: "Blockbuster",icon: Flame,     color: "text-orange-400"},
-  { label: "Superhit",    value: "Superhit",   icon: Star,      color: "text-yellow-400"},
-  { label: "Hit",         value: "Hit",        icon: TrendingUp,color: "text-green-400" },
-  { label: "Average",     value: "Average",    icon: Zap,       color: "text-blue-400"  },
-  { label: "Flop",        value: "Flop",       icon: Clock,     color: "text-red-400"   },
+  { label: "All", value: null, icon: Film, color: "text-gray-300" },
+  { label: "Upcoming", value: "Upcoming", icon: Calendar, color: "text-sky-400" },
+  { label: "Blockbuster", value: "Blockbuster", icon: Flame, color: "text-orange-400" },
+  { label: "Superhit", value: "Superhit", icon: Star, color: "text-yellow-400" },
+  { label: "Hit", value: "Hit", icon: TrendingUp, color: "text-green-400" },
+  { label: "Average", value: "Average", icon: Zap, color: "text-blue-400" },
+  { label: "Flop", value: "Flop", icon: Clock, color: "text-red-400" },
 ];
 
 /* ─── HELPERS ────────────────────────────────────────────── */
@@ -72,7 +81,7 @@ async function getMovies({ genre, verdict, sort, page }: {
 }) {
   await connectDB();
   const LIMIT = 20;
-  const skip  = ((page || 1) - 1) * LIMIT;
+  const skip = ((page || 1) - 1) * LIMIT;
   const filter: any = {};
   if (genre) filter.genre = { $in: [genre] };
 
@@ -85,10 +94,10 @@ async function getMovies({ genre, verdict, sort, page }: {
   }
 
   const sortMap: Record<string, any> = {
-    oldest: { releaseDate:  1 },
-    az:     { title:        1 },
-    za:     { title:       -1 },
-    rating: { imdbRating:  -1 },
+    oldest: { releaseDate: 1 },
+    az: { title: 1 },
+    za: { title: -1 },
+    rating: { imdbRating: -1 },
   };
 
   if (verdict === "Upcoming" && (!sort || sort === "latest")) {
@@ -176,7 +185,7 @@ export default async function MoviesPage({
   });
 
   const currentPage = Number(page) || 1;
-  const isFiltered  = !!(genre || verdict || sort);
+  const isFiltered = !!(genre || verdict || sort);
 
   const activeVerdictLabel = verdict
     ? VERDICT_TABS.find((t) => t.value === verdict)?.label || verdict
@@ -264,7 +273,7 @@ export default async function MoviesPage({
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-3">
             {VERDICT_TABS.map(({ label, value, icon: Icon, color }) => {
               const isActive = (value === null && !verdict) || value === verdict;
-              const href     = value ? `/movies?verdict=${value}` : "/movies";
+              const href = value ? `/movies?verdict=${value}` : "/movies";
               return (
                 <Link
                   key={label}
@@ -390,10 +399,10 @@ export default async function MoviesPage({
           </div>
 
           {movies.length > 0 ? (
-            <MoviesInfiniteScroll 
-              initialMovies={movies} 
-              totalPages={pages} 
-              searchParams={{ genre, verdict, sort, page: page?.toString() }} 
+            <MoviesInfiniteScroll
+              initialMovies={movies}
+              totalPages={pages}
+              searchParams={{ genre, verdict, sort, page: page?.toString() }}
             />
           ) : (
             <div className="text-center py-20 bg-[#111] border border-[#1f1f1f] rounded-2xl">

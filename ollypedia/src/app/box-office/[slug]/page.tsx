@@ -199,8 +199,8 @@ export async function generateMetadata({
     ? `${movie.title}${year ? ` (${year})` : ""} box office: ₹ ${fmtINR(totalNet)} net, ${fmtINR(totalGross)} gross in ${lastDay} days. Day 1 collection: ${fmtINR(day1Net)}. Full day-wise Odia (Ollywood) box office data on Ollypedia.`
     : `Track ${movie.title} day-wise box office collection — net and gross earnings updated daily. Odia (Ollywood) cinema box office data on Ollypedia.`;
 
-  const image     = movie.bannerUrl || movie.posterUrl || "https://ollypedia.in/default.jpg";
-  const canonical = `https://ollypedia.in/box-office/${slug}`;
+  const image     = movie.bannerUrl || movie.posterUrl || "https://www.ollypedia.in/default.jpg";
+  const canonical = `https://www.ollypedia.in/box-office/${slug}`;
 
   // ★ Comprehensive keyword set — movie name first in every variant
   const keywords = [
@@ -354,22 +354,22 @@ export default async function BoxOfficePage({
     "description": `Complete day-wise box office collection of ${movie.title}. Total Net: ${fmtINR(totalNet)}, Total Gross: ${fmtINR(totalGross)}.`,
     "datePublished": movie.createdAt ? new Date(movie.createdAt).toISOString() : undefined,
     "dateModified":  movie.updatedAt ? new Date(movie.updatedAt).toISOString() : undefined,
-    "image":         movie.bannerUrl || movie.posterUrl || "https://ollypedia.in/default.jpg",
+    "image":         movie.bannerUrl || movie.posterUrl || "https://www.ollypedia.in/default.jpg",
     "author":        { "@type": "Organization", "name": "Ollypedia" },
     "publisher": {
       "@type": "Organization",
       "name":  "Ollypedia",
-      "logo":  { "@type": "ImageObject", "url": "https://ollypedia.in/logo.png" },
+      "logo":  { "@type": "ImageObject", "url": "https://www.ollypedia.in/logo.png" },
     },
     "mainEntityOfPage": {
       "@type": "@id",
-      "@id":   `https://ollypedia.in/box-office/${slug}`,
+      "@id":   `https://www.ollypedia.in/box-office/${slug}`,
     },
     // ★ Link box-office page → movie entity with cast for Knowledge Panel
     "about": {
       "@type":       "Movie",
       "name":        movie.title,
-      "url":         `https://ollypedia.in/movie/${movie.slug}`,
+      "url":         `https://www.ollypedia.in/movie/${movie.slug}`,
       "dateCreated": movie.releaseDate || undefined,
       // sameAs links to IMDB/Wikipedia allow Google to match this to a known entity
       // Add the real IMDB/Wikipedia URL if available in your movie data
@@ -390,13 +390,13 @@ export default async function BoxOfficePage({
     },
     // ★ Mention all cross-linked pages so Google traces the entity web
     "mentions": [
-      { "@type": "WebPage", "name": `${movie.title} — Movie Page`,  "url": `https://ollypedia.in/movie/${movie.slug}` },
-      { "@type": "WebPage", "name": `${movie.title} Songs`,          "url": `https://ollypedia.in/songs/${movie.slug}` },
-      { "@type": "WebPage", "name": `${movie.title} Blog & Reviews`, "url": `https://ollypedia.in/blog?movie=${encodeURIComponent(movie.title)}` },
+      { "@type": "WebPage", "name": `${movie.title} — Movie Page`,  "url": `https://www.ollypedia.in/movie/${movie.slug}` },
+      { "@type": "WebPage", "name": `${movie.title} Songs`,          "url": `https://www.ollypedia.in/songs/${movie.slug}` },
+      { "@type": "WebPage", "name": `${movie.title} Blog & Reviews`, "url": `https://www.ollypedia.in/blog?movie=${encodeURIComponent(movie.title)}` },
       ...relatedBlogs.map((b: any) => ({
         "@type": "WebPage",
         "name":  b.title,
-        "url":   `https://ollypedia.in/blog/${b.slug}`,
+        "url":   `https://www.ollypedia.in/blog/${b.slug}`,
       })),
     ],
   };
@@ -408,14 +408,14 @@ export default async function BoxOfficePage({
     "@type":      "Dataset",
     "name":       `${movie.title} Day-wise Box Office Collection`,
     "description": `Complete day-wise net and gross box office collection of ${movie.title} at the Odia (Ollywood) box office.`,
-    "url":        `https://ollypedia.in/box-office/${slug}`,
+    "url":        `https://www.ollypedia.in/box-office/${slug}`,
     "creator":    { "@type": "Organization", "name": "Ollypedia" },
     "dateModified": movie.updatedAt ? new Date(movie.updatedAt).toISOString() : undefined,
     "variableMeasured": ["Net Collection (INR)", "Gross Collection (INR)", "Day"],
     "distribution": {
       "@type":        "DataDownload",
       "encodingFormat": "text/html",
-      "contentUrl":   `https://ollypedia.in/box-office/${slug}`,
+      "contentUrl":   `https://www.ollypedia.in/box-office/${slug}`,
     },
   } : null;
 
@@ -502,9 +502,9 @@ export default async function BoxOfficePage({
     "@context": "https://schema.org",
     "@type":    "BreadcrumbList",
     "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Home",       "item": "https://ollypedia.in/" },
-      { "@type": "ListItem", "position": 2, "name": "Box Office", "item": "https://ollypedia.in/box-office" },
-      { "@type": "ListItem", "position": 3, "name": movie.title,  "item": `https://ollypedia.in/box-office/${slug}` },
+      { "@type": "ListItem", "position": 1, "name": "Home",       "item": "https://www.ollypedia.in/" },
+      { "@type": "ListItem", "position": 2, "name": "Box Office", "item": "https://www.ollypedia.in/box-office" },
+      { "@type": "ListItem", "position": 3, "name": movie.title,  "item": `https://www.ollypedia.in/box-office/${slug}` },
     ],
   };
 
@@ -532,7 +532,7 @@ export default async function BoxOfficePage({
       "@type":    "ListItem",
       "position": i + 1,
       "name":     b.title,
-      "url":      `https://ollypedia.in/blog/${b.slug}`,
+      "url":      `https://www.ollypedia.in/blog/${b.slug}`,
     })),
   } : null;
 

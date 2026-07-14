@@ -589,7 +589,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                 {/* WhatsApp share — primary sharing platform in Odisha */}
                 {totalNet > 0 && (
                   <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`${movie.title} Box Office Collection: ${fmtINR(totalNet)} net in ${days.length} days 🎬\n\nFull day-wise data: https://ollypedia.in/box-office/${movie.slug}`)}`}
+                    href={`https://wa.me/?text=${encodeURIComponent(`${movie.title} Box Office Collection: ${fmtINR(totalNet)} net in ${days.length} days 🎬\n\nFull day-wise data: https://www.ollypedia.in/box-office/${movie.slug}`)}`}
                     target="_blank" rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600/10 hover:bg-green-600/20 border border-green-600/25 hover:border-green-600/50 rounded-full text-xs font-semibold text-green-400 transition-all">
                     📲 Share on WhatsApp

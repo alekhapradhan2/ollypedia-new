@@ -125,7 +125,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const description =
     person.bio?.slice(0, 155) ||
     `${person.name} is a celebrated Odia ${roles.toLowerCase()} in Ollywood with ${movies.length} films${debutYear ? `, active since ${debutYear}` : ""}. Discover their full biography, filmography, songs and career on Ollypedia.`;
-  const canonical = `https://ollypedia.in/cast/${String(person._id)}`;
+  const canonical = `https://www.ollypedia.in/cast/${String(person._id)}`;
 
   return {
     title, description,
@@ -139,11 +139,9 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
     openGraph: {
       title, description, url: canonical, siteName: "Ollypedia", type: "profile",
-      images: person.photo
-        ? [{ url: person.photo, width: 800, height: 1000, alt: person.name }]
-        : [{ url: "https://ollypedia.in/default.jpg", width: 1200, height: 630 }],
+      ...(person.photo && { images: [{ url: person.photo, width: 800, height: 1000, alt: person.name }] }),
     },
-    twitter: { card: "summary_large_image", title, description, images: [person.photo || "https://ollypedia.in/default.jpg"] },
+    twitter: { card: "summary_large_image", title, description, ...(person.photo && { images: [person.photo] }) },
   };
 }
 
@@ -276,7 +274,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
     movies.find((m: any) => m.posterUrl)?.posterUrl || null;
 
   const bio = generateRichBio(person, movies);
-  const canonical = `https://ollypedia.in/cast/${String(person._id)}`;
+  const canonical = `https://www.ollypedia.in/cast/${String(person._id)}`;
 
   const debutMovie  = movies.length ? movies[movies.length - 1] : null;
   const latestMovie = movies[0];
@@ -311,8 +309,8 @@ export default async function CastDetailPage({ params }: { params: { id: string 
   const breadcrumbLd = {
     "@context": "https://schema.org", "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://ollypedia.in" },
-      { "@type": "ListItem", position: 2, name: "Cast", item: "https://ollypedia.in/cast" },
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.ollypedia.in" },
+      { "@type": "ListItem", position: 2, name: "Cast", item: "https://www.ollypedia.in/cast" },
       { "@type": "ListItem", position: 3, name: person.name, item: canonical },
     ],
   };
@@ -357,7 +355,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
 
         {/* ── Backgrounds ── */}
         {backdrop ? (
-          <Image src={backdrop} alt="" fill
+          <Image src={backdrop} alt={`${person.name} background banner`} fill
             className="object-cover object-center" style={{ filter: "blur(3px) brightness(0.15)", transform: "scale(1.08)" }} />
         ) : (
           <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #1c0d00 0%, #0f0800 50%, #0a0a0a 100%)" }} />
@@ -857,7 +855,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                                 <Link key={String(m._id)} href={`/movie/${m.slug || String(m._id)}`}
                                   className="flex items-center gap-2 px-2.5 py-1 bg-[#0d0d0d] border border-[#1f1f1f] hover:border-orange-500/30 rounded-full text-xs text-white hover:text-orange-400 transition-all">
                                   {m.posterUrl && (
-                                    <Image src={m.posterUrl} alt="" width={14} height={18}
+                                    <Image src={m.posterUrl} alt={`${m.title} Odia movie poster`} width={14} height={18}
                                       className="rounded-sm flex-shrink-0 object-cover" />
                                   )}
                                   <span className="font-medium">{m.title}</span>

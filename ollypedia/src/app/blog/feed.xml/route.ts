@@ -6,7 +6,7 @@
 import { connectDB } from "@/lib/db";
 import Blog from "@/models/Blog";
 
-const SITE_URL = "https://ollypedia.in";
+const SITE_URL = "https://www.ollypedia.in";
 const FEED_URL = `${SITE_URL}/blog/feed.xml`;
 
 function escapeXml(str: string): string {

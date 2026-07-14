@@ -11,25 +11,29 @@ export const revalidate = 600;
 
 /* ─── Dynamic metadata ──────────────────────────────────────────────────────── */
 
-export async function generateMetadata(
-  { searchParams }: { searchParams: { year?: string } }
-): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: { year?: string; page?: string };
+}): Promise<Metadata> {
   const year = searchParams?.year ? parseInt(searchParams.year, 10) : new Date().getFullYear();
+  const page = parseInt(searchParams?.page || "1", 10);
+  const pageLabel = page > 1 ? ` | Page ${page}` : "";
   const isCurrentYear = year === new Date().getFullYear();
   const title = isCurrentYear
-    ? `Odia Box Office Collection ${year} | Ollypedia`
-    : `Odia Box Office Collection ${year} | Ollywood Hit Flop List | Ollypedia`;
+    ? `Odia Box Office Collection ${year}${pageLabel} | Ollypedia`
+    : `Odia Box Office Collection ${year}${pageLabel} | Ollywood Hit Flop List | Ollypedia`;
   const description = isCurrentYear
-    ? `Complete Odia (Ollywood) box office collection report ${year}. Day-wise net and gross earnings for all latest Odia movies — updated daily on Ollypedia.`
-    : `Odia (Ollywood) box office collection ${year} — all movies, hit & flop verdict, day-wise net and gross earnings. Complete Ollywood ${year} trade report on Ollypedia.`;
+    ? `Complete Odia (Ollywood) box office collection report ${year}${page > 1 ? ` (Page ${page})` : ""}. Day-wise net and gross earnings for all latest Odia movies — updated daily on Ollypedia.`
+    : `Odia (Ollywood) box office collection ${year}${page > 1 ? ` (Page ${page})` : ""} — all movies, hit & flop verdict, day-wise net and gross earnings. Complete Ollywood ${year} trade report on Ollypedia.`;
 
   return {
     title,
     description,
     alternates:  {
       canonical: isCurrentYear
-        ? "https://ollypedia.in/box-office"
-        : `https://ollypedia.in/box-office?year=${year}`,
+        ? "https://www.ollypedia.in/box-office"
+        : `https://www.ollypedia.in/box-office?year=${year}`,
     },
     robots:      { index: true, follow: true },
     keywords:    [
@@ -46,18 +50,18 @@ export async function generateMetadata(
       title,
       description,
       url: isCurrentYear
-        ? "https://ollypedia.in/box-office"
-        : `https://ollypedia.in/box-office?year=${year}`,
+        ? "https://www.ollypedia.in/box-office"
+        : `https://www.ollypedia.in/box-office?year=${year}`,
       siteName:    "Ollypedia",
       type:        "website",
       locale:      "en_IN",
-      images: [{ url: "https://ollypedia.in/og-box-office.jpg", width: 1200, height: 630, alt: `Odia Box Office Collection ${year} — Ollypedia` }],
+      images: [{ url: "https://www.ollypedia.in/og-box-office.jpg", width: 1200, height: 630, alt: `Odia Box Office Collection ${year} — Ollypedia` }],
     },
     twitter: {
       card:        "summary_large_image",
       title,
       description: `Day-wise net & gross earnings for all Odia (Ollywood) movies ${year}. Updated daily.`,
-      images:      ["https://ollypedia.in/og-box-office.jpg"],
+      images:      ["https://www.ollypedia.in/og-box-office.jpg"],
       site:        "@ollypedia",
     },
   };
@@ -293,9 +297,9 @@ export default async function BoxOfficePage({
     "@context": "https://schema.org",
     "@type":    "BreadcrumbList",
     "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Home",       "item": "https://ollypedia.in" },
-      { "@type": "ListItem", "position": 2, "name": "Box Office", "item": "https://ollypedia.in/box-office" },
-      ...(selectedYear !== currentYear ? [{ "@type": "ListItem", "position": 3, "name": String(selectedYear), "item": `https://ollypedia.in/box-office?year=${selectedYear}` }] : []),
+      { "@type": "ListItem", "position": 1, "name": "Home",       "item": "https://www.ollypedia.in" },
+      { "@type": "ListItem", "position": 2, "name": "Box Office", "item": "https://www.ollypedia.in/box-office" },
+      ...(selectedYear !== currentYear ? [{ "@type": "ListItem", "position": 3, "name": String(selectedYear), "item": `https://www.ollypedia.in/box-office?year=${selectedYear}` }] : []),
     ],
   };
 
@@ -303,10 +307,10 @@ export default async function BoxOfficePage({
     "@context": "https://schema.org",
     "@type":    "WebSite",
     "name":     "Ollypedia",
-    "url":      "https://ollypedia.in",
+    "url":      "https://www.ollypedia.in",
     "potentialAction": {
       "@type":       "SearchAction",
-      "target":      { "@type": "EntryPoint", "urlTemplate": "https://ollypedia.in/search?q={search_term_string}" },
+      "target":      { "@type": "EntryPoint", "urlTemplate": "https://www.ollypedia.in/search?q={search_term_string}" },
       "query-input": "required name=search_term_string",
     },
   };
@@ -316,9 +320,9 @@ export default async function BoxOfficePage({
     "@type":    "CollectionPage",
     "name":     `Odia Box Office Collection ${selectedYear} | Ollypedia`,
     "description": `Complete day-wise box office collection for Odia (Ollywood) movies ${selectedYear}. Updated daily.`,
-    "url":      "https://ollypedia.in/box-office",
+    "url":      "https://www.ollypedia.in/box-office",
     "dateModified": lastUpdated,
-    "publisher": { "@type": "Organization", "name": "Ollypedia", "url": "https://ollypedia.in" },
+    "publisher": { "@type": "Organization", "name": "Ollypedia", "url": "https://www.ollypedia.in" },
     "mainEntity": {
       "@type": "ItemList",
       "name":  `Odia Movies Box Office ${selectedYear}`,
@@ -327,7 +331,7 @@ export default async function BoxOfficePage({
         "@type":    "ListItem",
         "position": i + 1,
         "name":     m.title,
-        "url":      `https://ollypedia.in/box-office/${movieSlug(m)}`,
+        "url":      `https://www.ollypedia.in/box-office/${movieSlug(m)}`,
       })),
     },
   };
@@ -386,7 +390,7 @@ export default async function BoxOfficePage({
     "itemListElement": blogs.map((b: any, i: number) => ({
       "@type":    "ListItem",
       "position": i + 1,
-      "url":      `https://ollypedia.in/blog/${b.slug}`,
+      "url":      `https://www.ollypedia.in/blog/${b.slug}`,
       "name":     b.title,
     })),
   } : null;

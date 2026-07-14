@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description:
     "Read Ollypedia's Privacy Policy to learn how we collect, use, and protect your information while you browse Odisha's most complete Odia cinema encyclopedia.",
   alternates: {
-    canonical: "https://ollypedia.in/privacy",
+    canonical: "https://www.ollypedia.in/privacy",
   },
   robots: {
     index: true,

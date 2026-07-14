@@ -1,0 +1,7 @@
+SEO AUDIT REPORT
+=================
+
+
+TEST INVALID URL: /movie/this-slug-definitely-does-not-exist-12345
+Expected: 404
+Actual Status: 500

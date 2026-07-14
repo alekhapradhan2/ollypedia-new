@@ -58,23 +58,23 @@ export async function generateMetadata({
     : "Explore the latest Ollywood blog posts — in-depth movie reviews, actor profiles, top 10 lists, song guides, and behind-the-scenes coverage of Odia cinema. Updated weekly.";
 
   const canonical = category
-    ? `https://ollypedia.in/blog?category=${encodeURIComponent(category)}${page > 1 ? `&page=${page}` : ""}`
+    ? `https://www.ollypedia.in/blog?category=${encodeURIComponent(category)}${page > 1 ? `&page=${page}` : ""}`
     : page > 1
-    ? `https://ollypedia.in/blog?page=${page}`
-    : "https://ollypedia.in/blog";
+    ? `https://www.ollypedia.in/blog?page=${page}`
+    : "https://www.ollypedia.in/blog";
 
   // ── PREV link ──
   const prevPage = page > 1
     ? (page === 2
-        ? (category ? `https://ollypedia.in/blog?category=${encodeURIComponent(category)}` : "https://ollypedia.in/blog")
-        : (category ? `https://ollypedia.in/blog?category=${encodeURIComponent(category)}&page=${page - 1}` : `https://ollypedia.in/blog?page=${page - 1}`))
+        ? (category ? `https://www.ollypedia.in/blog?category=${encodeURIComponent(category)}` : "https://www.ollypedia.in/blog")
+        : (category ? `https://www.ollypedia.in/blog?category=${encodeURIComponent(category)}&page=${page - 1}` : `https://www.ollypedia.in/blog?page=${page - 1}`))
     : undefined;
 
   // ── NEXT link (new) ──
   const nextPage = page < totalPages
     ? (category
-        ? `https://ollypedia.in/blog?category=${encodeURIComponent(category)}&page=${page + 1}`
-        : `https://ollypedia.in/blog?page=${page + 1}`)
+        ? `https://www.ollypedia.in/blog?category=${encodeURIComponent(category)}&page=${page + 1}`
+        : `https://www.ollypedia.in/blog?page=${page + 1}`)
     : undefined;
 
   return {
@@ -99,14 +99,14 @@ export async function generateMetadata({
       siteName: "Ollypedia",
       type:     "website",
       locale:   "en_IN",
-      images: [{ url: "https://ollypedia.in/og-blog.jpg", width: 1200, height: 630, alt: "Ollypedia Blog — Odia Cinema News & Reviews" }],
+      images: [{ url: "https://www.ollypedia.in/og-blog.jpg", width: 1200, height: 630, alt: "Ollypedia Blog — Odia Cinema News & Reviews" }],
     },
     twitter: {
       card:        "summary_large_image",
       title,
       description,
       site:        "@ollypedia",
-      images:      ["https://ollypedia.in/og-blog.jpg"],
+      images:      ["https://www.ollypedia.in/og-blog.jpg"],
     },
   };
 }
@@ -127,13 +127,13 @@ function BlogSchema({
     "@type": "Blog",
     name: "Ollypedia Blog",
     description: "News, reviews, and guides about Ollywood — the Odia-language film industry based in Bhubaneswar, Odisha.",
-    url: "https://ollypedia.in/blog",
+    url: "https://www.ollypedia.in/blog",
     dateModified: mostRecentDate,
     publisher: {
       "@type": "Organization",
       name: "Ollypedia",
-      url: "https://ollypedia.in",
-      logo: { "@type": "ImageObject", url: "https://ollypedia.in/logo.png" },
+      url: "https://www.ollypedia.in",
+      logo: { "@type": "ImageObject", url: "https://www.ollypedia.in/logo.png" },
       address: {
         "@type": "PostalAddress",
         addressLocality: "Bhubaneswar",
@@ -159,7 +159,7 @@ function BlogSchema({
     itemListElement: blogs.slice(0, 10).map((b: any, i: number) => ({
       "@type": "ListItem",
       position: i + 1,
-      url: `https://ollypedia.in/blog/${b.slug}`,
+      url: `https://www.ollypedia.in/blog/${b.slug}`,
       name: b.title,
       // NEW: richer item data for Google
       image: b.coverImage ?? undefined,
@@ -175,12 +175,12 @@ function BlogSchema({
         "@context": "https://schema.org",
         "@type": "WebSite",
         name: "Ollypedia",
-        url: "https://ollypedia.in",
+        url: "https://www.ollypedia.in",
         potentialAction: {
           "@type": "SearchAction",
           target: {
             "@type": "EntryPoint",
-            urlTemplate: "https://ollypedia.in/blog?q={search_term_string}",
+            urlTemplate: "https://www.ollypedia.in/blog?q={search_term_string}",
           },
           "query-input": "required name=search_term_string",
         },

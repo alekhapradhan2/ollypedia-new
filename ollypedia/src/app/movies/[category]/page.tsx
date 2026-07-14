@@ -154,16 +154,22 @@ blockbuster: {
 // ─── Metadata — uses your existing buildMeta helper ──────────────────────────
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: { category: string };
+  searchParams: { page?: string };
 }): Promise<Metadata> {
   const cfg = CATEGORY_CONFIG[params.category];
   if (!cfg) return {};
+  
+  const page = parseInt(searchParams?.page || "1", 10);
+  const pageLabel = page > 1 ? ` | Page ${page}` : "";
+
   return buildMeta({
-    title:       cfg.metaTitle,
-    description: cfg.metaDesc,
+    title:       `${cfg.metaTitle}${pageLabel}`,
+    description: `${cfg.metaDesc}${page > 1 ? ` (Page ${page})` : ""}`,
     keywords:    cfg.keywords,
-    url:         `/movies/${params.category}`,
+    url:         page > 1 ? `/movies/${params.category}?page=${page}` : `/movies/${params.category}`,
   });
 }
 
