@@ -66,7 +66,9 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
     .lean()
     .exec();
 
-  const isStreaming = ott.status === "Streaming" || (ott.watchUrl !== "");
+  const now = new Date();
+  const isUpcoming = ott.status === "Upcoming" || (ott.releaseDate && new Date(ott.releaseDate) > now);
+  const isStreaming = !isUpcoming && (ott.status === "Streaming" || ott.watchUrl !== "");
   const formattedDate = ott.releaseDate && ott.releaseDate !== "TBA" 
     ? new Date(ott.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })
     : "TBA";
@@ -117,7 +119,7 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
               </div>
               
               <div className="flex flex-wrap items-center gap-4">
-                {ott.watchUrl ? (
+                {ott.watchUrl && isStreaming ? (
                   <a href={ott.watchUrl} target="_blank" rel="noopener noreferrer" className="px-8 py-3.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-bold transition-all flex items-center gap-2 text-lg">
                     <Play className="w-5 h-5 fill-current" />
                     Watch on {ott.platform}
