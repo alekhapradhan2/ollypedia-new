@@ -242,7 +242,7 @@ export default async function IndividualTrailerPage({ params }: { params: Params
 
           {movie.synopsis && (
             <div className="max-w-3xl mb-6">
-              <p className="text-gray-400 text-base leading-relaxed text-justify line-clamp-2">
+              <p className="text-gray-400 text-base leading-relaxed text-left sm:text-justify line-clamp-2">
                 {movie.synopsis}
               </p>
               <Link href={`/movie/${movieSlug}`} className="text-orange-500 hover:text-orange-400 text-sm font-semibold mt-1.5 inline-flex items-center gap-1">

@@ -1248,9 +1248,11 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   <div className="p-6">
                     <div className="flex gap-4">
                       <div className="w-1 bg-gradient-to-b from-orange-500 to-orange-500/0 rounded-full flex-shrink-0 self-stretch min-h-[40px]" />
-                      <p className="text-gray-200 leading-[1.85] text-[15px] font-light tracking-wide text-justify">
-                        {movie.synopsis}
-                      </p>
+                      <div className="flex-1 mt-1 sm:mt-0 max-w-[800px]">
+                        <p className="text-gray-200 leading-[1.85] text-[15px] font-light tracking-wide text-left sm:text-justify">
+                          {movie.synopsis}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
