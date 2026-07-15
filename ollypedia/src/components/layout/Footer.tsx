@@ -487,13 +487,8 @@ export async function Footer() {
 
           {/* Brand — full width on mobile, spans 2 cols on md+ */}
           <div className="col-span-2 md:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-3 sm:mb-4" aria-label="Ollypedia home">
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center" aria-hidden="true">
-                <Film className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-display text-xl font-bold text-white">
-                Olly<span className="text-orange-500">pedia</span>
-              </span>
+            <Link href="/" className="flex items-center group shrink-0 mb-3 sm:mb-4" aria-label="Ollypedia home">
+              <img src="/logo.png" alt="Ollypedia Logo" className="h-12 md:h-14 w-auto object-contain scale-110 md:scale-125 origin-left mix-blend-screen" />
             </Link>
 
             <p className="text-gray-500 text-[13px] leading-relaxed max-w-sm">

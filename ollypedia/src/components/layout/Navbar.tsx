@@ -710,13 +710,8 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
 
           {/* ── Logo ──────────────────────────────────────────────────────── */}
-          <Link href="/" className="flex items-center gap-2.5 group shrink-0" aria-label="Ollypedia — Home">
-            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center group-hover:bg-orange-600 transition-colors">
-              <Film className="w-5 h-5 text-white" aria-hidden="true" />
-            </div>
-            <span className="font-bold text-[1.2rem] text-white tracking-wide select-none">
-              Olly<span className="text-orange-500">pedia</span>
-            </span>
+          <Link href="/" className="flex items-center group shrink-0" aria-label="Ollypedia — Home">
+            <img src="/logo.png" alt="Ollypedia Logo" className="h-12 md:h-14 w-auto object-contain scale-110 md:scale-125 origin-left mix-blend-screen" />
           </Link>
 
           {/* ── Desktop Nav ───────────────────────────────────────────────── */}
