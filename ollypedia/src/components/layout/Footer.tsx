@@ -186,6 +186,7 @@ const NAV_LINKS = {
     { label: "Movies", href: "/movies" },
     { label: "Trailers", href: "/trailers" },
     { label: "Songs", href: "/songs" },
+    { label: "OTT Releases", href: "/ott" },
     { label: "Cast & Crew", href: "/cast" },
     { label: "News", href: "/news" },
     { label: "Blog", href: "/blog" },

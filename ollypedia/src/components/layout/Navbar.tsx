@@ -34,6 +34,7 @@ const NAV_LINKS = [
   { label: "Songs",      href: "/songs",      hasDropdown: false        as const },
   { label: "Cast",       href: "/cast",       hasDropdown: false        as const },
   { label: "Box Office", href: "/box-office", hasDropdown: "boxoffice"  as const },
+  { label: "OTT",        href: "/ott",        hasDropdown: false        as const },
   { label: "Blog",       href: "/blog",       hasDropdown: false        as const },
 ];
 

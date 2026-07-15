@@ -69,6 +69,9 @@ export async function GET() {
     ["/movies/blockbuster",   "weekly",  "0.8"],
     ["/trailers",             "daily",   "0.9"],   // ← NEW
     ["/box-office",           "daily",   "0.9"],
+    ["/ott",                  "daily",   "0.9"],   // ← NEW OTT
+    ["/ott/upcoming",         "daily",   "0.85"],  // ← NEW OTT
+    ["/ott/now-streaming",    "daily",   "0.85"],  // ← NEW OTT
     ["/songs",                "weekly",  "0.8"],
     ["/cast",                 "weekly",  "0.8"],
     ["/news",                 "daily",   "0.8"],
@@ -145,7 +148,7 @@ export async function GET() {
     // ── Movies + Songs ─────────────────────────────────────────────────────
     const movies = await Movie.find(
       {},
-      "slug _id releaseDate updatedAt createdAt media.songs media.videos boxOfficeDays"
+      "slug _id releaseDate updatedAt createdAt media.songs media.videos boxOfficeDays ott streamingOn"
     ).lean() as any[];
 
     movies.forEach((m) => {
@@ -179,6 +182,16 @@ export async function GET() {
           lastmod,
           "daily",
           "0.9"
+        ));
+      }
+
+      // OTT movie page — support both new ott.platform and legacy streamingOn
+      if (m.ott?.platform || m.streamingOn) {
+        entries.push(urlEntry(
+          `${SITE_URL}/ott/${movieSlug}`,
+          lastmod,
+          "weekly",
+          "0.85"
         ));
       }
 
