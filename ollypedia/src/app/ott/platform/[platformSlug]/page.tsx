@@ -5,6 +5,7 @@ import Movie from "@/models/Movie";
 import { buildMeta, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { MonitorPlay, ExternalLink, Film, Play, Star, ChevronRight } from "lucide-react";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 
 export const revalidate = 600;
 
@@ -114,6 +115,9 @@ export default async function OttPlatformPage({ params }: { params: { platformSl
       {/* Hero Section */}
       <section className={`bg-gradient-to-b ${platform.gradient} pt-28 pb-16 border-b border-white/5`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-6">
+            <Breadcrumb crumbs={[{ label: "OTT", href: "/ott" }, { label: "Platforms", href: "/ott" }, { label: platform.name }]} />
+          </div>
           <div className="flex flex-col md:flex-row md:items-center gap-6 mb-10">
             {/* Platform Icon */}
             <div

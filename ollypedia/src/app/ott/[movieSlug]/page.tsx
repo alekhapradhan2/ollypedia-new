@@ -7,6 +7,7 @@ import Movie from "@/models/Movie";
 import { buildOttMeta, generateOttJsonLd, OTTMovie } from "@/lib/ottSeo";
 import { Play, Calendar, MonitorPlay, Film, Users, Languages, Clock, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { MovieCard } from "@/components/movie/MovieCard";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 
 export const revalidate = 600;
 
@@ -84,8 +85,8 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       
       {/* Hero Banner */}
-      <section className="relative w-full h-[60vh] min-h-[500px] border-b border-white/10">
-        <div className="absolute inset-0">
+      <section className="relative w-full h-[60vh] min-h-[500px] border-b border-white/10 pt-20">
+        <div className="absolute inset-0 pt-16">
           <Image
             src={m.bannerUrl || m.posterUrl || "/placeholder.jpg"}
             alt={m.title}
@@ -98,6 +99,9 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
         </div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative h-full flex flex-col justify-end pb-16">
+          <div className="mb-6">
+            <Breadcrumb crumbs={[{ label: "OTT", href: "/ott" }, { label: "Movies", href: "/ott" }, { label: m.title }]} />
+          </div>
           <div className="flex flex-col md:flex-row gap-8 items-end md:items-start">
             <div className="w-48 md:w-64 flex-shrink-0 rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl relative aspect-[2/3] mt-auto hidden md:block">
               <Image src={m.posterUrl || "/placeholder.jpg"} alt={m.title} fill className="object-cover" />

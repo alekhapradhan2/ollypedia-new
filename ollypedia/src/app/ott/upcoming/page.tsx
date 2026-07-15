@@ -5,6 +5,8 @@ import { buildMeta, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { Calendar } from "lucide-react";
 
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
+
 export const revalidate = 600;
 
 export const metadata: Metadata = buildMeta({
@@ -50,6 +52,9 @@ export default async function UpcomingOttPage() {
     <main className="min-h-screen bg-[#0a0a0a] pt-24 pb-20">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-6">
+          <Breadcrumb crumbs={[{ label: "OTT", href: "/ott" }, { label: "Upcoming" }]} />
+        </div>
         <div className="flex items-center gap-3 mb-10 border-b border-white/10 pb-6">
           <div className="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-500 flex items-center justify-center">
             <Calendar className="w-6 h-6" />
