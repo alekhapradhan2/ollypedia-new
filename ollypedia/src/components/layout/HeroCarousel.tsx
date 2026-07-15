@@ -102,7 +102,7 @@ export default function HeroCarousel({ movies }: { movies: HeroMovie[] }) {
   const movieHref = `/movie/${m.slug || m._id}`;
   const primaryVid = getPrimaryVideo(m);
   const trailerHref = primaryVid?.ytId
-    ? `/movie/${m.slug || m._id}#trailer`
+    ? `/trailers/${m.slug || m._id}`
     : null;
 
   // Dots element
@@ -165,7 +165,7 @@ export default function HeroCarousel({ movies }: { movies: HeroMovie[] }) {
           const mvc  = VS[movie.verdict || ""] || "#7aaae8";
           const mHref = `/movie/${movie.slug || movie._id}`;
           const primaryVid = getPrimaryVideo(movie);
-          const mTrailerHref = primaryVid ? `/movie/${movie.slug || movie._id}#trailer` : null;
+          const mTrailerHref = primaryVid ? `/trailers/${movie.slug || movie._id}` : null;
 
           if (!isAdjacentOrActive) return <div key={movie._id} className="hh-slide" />;
 
