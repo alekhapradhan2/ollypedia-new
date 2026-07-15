@@ -67,6 +67,7 @@ export async function GET() {
     ["/movies/upcoming",      "daily",   "0.9"],
     ["/movies/latest",        "daily",   "0.85"],
     ["/movies/blockbuster",   "weekly",  "0.8"],
+    ["/trailers",             "daily",   "0.9"],   // ← NEW
     ["/box-office",           "daily",   "0.9"],
     ["/songs",                "weekly",  "0.8"],
     ["/cast",                 "weekly",  "0.8"],
@@ -144,13 +145,14 @@ export async function GET() {
     // ── Movies + Songs ─────────────────────────────────────────────────────
     const movies = await Movie.find(
       {},
-      "slug _id releaseDate updatedAt createdAt media.songs boxOfficeDays"
+      "slug _id releaseDate updatedAt createdAt media.songs media.videos boxOfficeDays"
     ).lean() as any[];
 
     movies.forEach((m) => {
       const movieSlug   = m.slug || String(m._id);
       const lastmod     = safeDate(m.updatedAt ?? m.createdAt ?? m.releaseDate);
       const hasBoxOffice = m.boxOfficeDays?.length > 0;
+      const hasTrailerVideo = !!(m.media?.videos && m.media.videos.length > 0 && m.media.videos.some((v: any) => v.ytId));
 
       // Movie detail page — daily if actively tracked for box office
       entries.push(urlEntry(
@@ -159,6 +161,16 @@ export async function GET() {
         hasBoxOffice ? "daily"  : "weekly",
         hasBoxOffice ? "0.85"   : "0.8"
       ));
+
+      // Trailer page — added for all movies with any video content
+      if (hasTrailerVideo) {
+        entries.push(urlEntry(
+          `${SITE_URL}/trailers/${movieSlug}`,
+          lastmod,
+          "weekly",
+          "0.8"
+        ));
+      }
 
       // Box office page per movie — highest priority after homepage
       if (hasBoxOffice) {

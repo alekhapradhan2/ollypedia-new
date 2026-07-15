@@ -26,10 +26,11 @@ export default function HTMLSitemap() {
           <ul className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <li><Link href="/" className="text-blue-400 hover:underline">Home</Link></li>
             <li><Link href="/movies" className="text-blue-400 hover:underline">Odia Movies</Link></li>
+            <li><Link href="/trailers" className="text-blue-400 hover:underline">Odia Movie Trailers</Link></li>
             <li><Link href="/songs" className="text-blue-400 hover:underline">Odia Songs</Link></li>
-            <li><Link href="/cast" className="text-blue-400 hover:underline">Cast & Crew</Link></li>
+            <li><Link href="/cast" className="text-blue-400 hover:underline">Cast &amp; Crew</Link></li>
             <li><Link href="/box-office" className="text-blue-400 hover:underline">Box Office</Link></li>
-            <li><Link href="/blog" className="text-blue-400 hover:underline">Blog & News</Link></li>
+            <li><Link href="/blog" className="text-blue-400 hover:underline">Blog &amp; News</Link></li>
           </ul>
         </section>
 

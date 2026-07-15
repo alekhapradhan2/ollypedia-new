@@ -52,7 +52,7 @@ async function getRecentData(): Promise<{ movies: RecentMovie[]; blogs: RecentBl
       (Movie as any)
         .find({
           releaseDate: { $exists: true, $ne: null, $lte: today },
-          verdict:     { $nin: ["Upcoming", null, ""] },
+          verdict: { $nin: ["Upcoming", null, ""] },
         })
         .sort({ releaseDate: -1 })
         .limit(5)
@@ -60,34 +60,34 @@ async function getRecentData(): Promise<{ movies: RecentMovie[]; blogs: RecentBl
         .lean(),
       BlogModel
         ? BlogModel.find({ published: true })
-            .sort({ createdAt: -1 })
-            .limit(5)
-            .select("title slug category createdAt coverImage movieTitle readTime")
-            .lean()
+          .sort({ createdAt: -1 })
+          .limit(5)
+          .select("title slug category createdAt coverImage movieTitle readTime")
+          .lean()
         : [],
     ]);
 
     const movies = (rawMovies as any[]).map((m: any) => {
       const reviews: { rating?: number }[] = m.reviews ?? [];
-      const rated  = reviews.filter((r) => typeof r.rating === "number" && r.rating > 0);
-      const avg    = rated.length
+      const rated = reviews.filter((r) => typeof r.rating === "number" && r.rating > 0);
+      const avg = rated.length
         ? rated.reduce((s, r) => s + (r.rating as number), 0) / rated.length
         : 0;
       return {
-        _id:         String(m._id),
-        title:       m.title,
-        slug:        m.slug,
-        posterUrl:   m.posterUrl,
+        _id: String(m._id),
+        title: m.title,
+        slug: m.slug,
+        posterUrl: m.posterUrl,
         releaseDate: m.releaseDate,
-        verdict:     m.verdict,
-        avgRating:   Math.round(avg * 10) / 10,
+        verdict: m.verdict,
+        avgRating: Math.round(avg * 10) / 10,
         reviewCount: rated.length,
       };
     });
 
     return {
       movies: JSON.parse(JSON.stringify(movies)) as RecentMovie[],
-      blogs:  JSON.parse(JSON.stringify(blogs))  as RecentBlog[],
+      blogs: JSON.parse(JSON.stringify(blogs)) as RecentBlog[],
     };
   } catch {
     return { movies: [], blogs: [] };
@@ -97,22 +97,22 @@ async function getRecentData(): Promise<{ movies: RecentMovie[]; blogs: RecentBl
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function timeAgo(iso?: string): string {
   if (!iso) return "";
-  const diff  = Date.now() - new Date(iso).getTime();
-  const mins  = Math.floor(diff / 60000);
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
-  const days  = Math.floor(diff / 86400000);
-  if (mins  < 60) return `${mins}m ago`;
+  const days = Math.floor(diff / 86400000);
+  if (mins < 60) return `${mins}m ago`;
   if (hours < 24) return `${hours}h ago`;
-  if (days  < 30) return `${days}d ago`;
+  if (days < 30) return `${days}d ago`;
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function fullReleaseDate(iso?: string): string {
   if (!iso) return "";
   return new Date(iso).toLocaleDateString("en-IN", {
-    day:   "numeric",
+    day: "numeric",
     month: "short",
-    year:  "numeric",
+    year: "numeric",
   });
 }
 
@@ -151,74 +151,78 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
 
 const VERDICT_COLOR: Record<string, string> = {
   "Blockbuster": "text-green-400",
-  "Super Hit":   "text-green-400",
-  "Hit":         "text-green-400",
-  "Average":     "text-yellow-400",
-  "Flop":        "text-red-400",
-  "Disaster":    "text-red-400",
-  "Upcoming":    "text-sky-400",
+  "Super Hit": "text-green-400",
+  "Hit": "text-green-400",
+  "Average": "text-yellow-400",
+  "Flop": "text-red-400",
+  "Disaster": "text-red-400",
+  "Upcoming": "text-sky-400",
 };
 
 const VERDICT_BG: Record<string, string> = {
   "Blockbuster": "bg-green-500/10 border-green-500/20",
-  "Super Hit":   "bg-green-500/10 border-green-500/20",
-  "Hit":         "bg-green-500/10 border-green-500/20",
-  "Average":     "bg-yellow-500/10 border-yellow-500/20",
-  "Flop":        "bg-red-500/10 border-red-500/20",
-  "Disaster":    "bg-red-500/10 border-red-500/20",
-  "Upcoming":    "bg-sky-500/10 border-sky-500/20",
+  "Super Hit": "bg-green-500/10 border-green-500/20",
+  "Hit": "bg-green-500/10 border-green-500/20",
+  "Average": "bg-yellow-500/10 border-yellow-500/20",
+  "Flop": "bg-red-500/10 border-red-500/20",
+  "Disaster": "bg-red-500/10 border-red-500/20",
+  "Upcoming": "bg-sky-500/10 border-sky-500/20",
 };
 
 const CATEGORY_ICON: Record<string, string> = {
-  "Movie Review":      "🎬",
-  "Actor Spotlight":   "🌟",
-  "Top 10":            "🏆",
-  "Music":             "🎵",
+  "Movie Review": "🎬",
+  "Actor Spotlight": "🌟",
+  "Top 10": "🏆",
+  "Music": "🎵",
   "Behind the Scenes": "🎥",
-  "Industry News":     "📰",
-  "Opinion":           "💬",
-  "General":           "✍️",
+  "Industry News": "📰",
+  "Opinion": "💬",
+  "General": "✍️",
 };
 
 // ── Static link sets ──────────────────────────────────────────────────────────
 const NAV_LINKS = {
   Explore: [
-    { label: "Movies",      href: "/movies"  },
-    { label: "Songs",       href: "/songs"   },
-    { label: "Cast & Crew", href: "/cast"    },
-    { label: "News",        href: "/news"    },
-    { label: "Blog",        href: "/blog"    },
+    { label: "Movies", href: "/movies" },
+    { label: "Trailers", href: "/trailers" },
+    { label: "Songs", href: "/songs" },
+    { label: "Cast & Crew", href: "/cast" },
+    { label: "News", href: "/news" },
+    { label: "Blog", href: "/blog" },
   ],
   Company: [
-    { label: "About Us",          href: "/about"            },
-    { label: "Contact",           href: "/contact"          },
-    { label: "Privacy Policy",    href: "/privacy"          },
-    { label: "Terms of Service",  href: "/terms"            },
-    { label: "HTML Sitemap",      href: "/sitemap"          },
+    { label: "About Us", href: "/about" },
+    { label: "Contact", href: "/contact" },
+    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Terms of Service", href: "/terms" },
+    { label: "HTML Sitemap", href: "/sitemap" },
     { label: "Terms & Conditions", href: "/terms-and-conditions" },
   ],
 };
 
 const SEO_LINKS = {
   "Explore Movies & Songs": [
-    { label: "Odia Movies 2026",        href: "/movies"                   },
-    { label: "Odia Movies 2025",        href: "/movies"                   },
-    { label: "Odia Movies 2024",        href: "/movies"                   },
-    { label: "Upcoming Odia Movies",    href: "/movies"                   },
-    { label: "Latest Odia Movies",      href: "/movies"                   },
-    { label: "Blockbuster Odia Movies", href: "/movies"                   },
-    { label: "Odia Songs 2026",         href: "/songs/category/2026"      },
-    { label: "Latest Odia Songs",       href: "/songs/category/latest"    },
-    { label: "Trending Songs",          href: "/songs/category/trending"  },
-    { label: "Old Hit Songs",           href: "/songs/category/classics"  },
-    { label: "Top Singers",             href: "/songs/category/singers"   },
+    { label: "Odia Movies 2026", href: "/movies" },
+    { label: "Odia Movies 2025", href: "/movies" },
+    { label: "Odia Movies 2024", href: "/movies" },
+    { label: "Upcoming Odia Movies", href: "/movies" },
+    { label: "Latest Odia Movies", href: "/movies" },
+    { label: "Blockbuster Odia Movies", href: "/movies" },
+    { label: "Ollywood Trailers 2026", href: "/trailers" },
+    { label: "Upcoming Movie Trailers", href: "/trailers?status=upcoming" },
+    { label: "Official Odia Teasers", href: "/trailers?type=teaser" },
+    { label: "Odia Songs 2026", href: "/songs/category/2026" },
+    { label: "Latest Odia Songs", href: "/songs/category/latest" },
+    { label: "Trending Songs", href: "/songs/category/trending" },
+    { label: "Old Hit Songs", href: "/songs/category/classics" },
+    { label: "Top Singers", href: "/songs/category/singers" },
   ],
   "Learn / Discover": [
-    { label: "Know About Odia Movies",  href: "/blog/odia-guides/odia-movies"          },
-    { label: "History of Ollywood",     href: "/blog/odia-guides/history-of-ollywood"  },
-    { label: "Top 10 Odia Movies",      href: "/blog/odia-guides/top-10-odia-movies"   },
-    { label: "Best Odia Songs List",    href: "/blog/odia-guides/best-odia-songs"      },
-    { label: "Famous Odia Actors",      href: "/blog/odia-guides/odia-actors"          },
+    { label: "Know About Odia Movies", href: "/blog/odia-guides/odia-movies" },
+    { label: "History of Ollywood", href: "/blog/odia-guides/history-of-ollywood" },
+    { label: "Top 10 Odia Movies", href: "/blog/odia-guides/top-10-odia-movies" },
+    { label: "Best Odia Songs List", href: "/blog/odia-guides/best-odia-songs" },
+    { label: "Famous Odia Actors", href: "/blog/odia-guides/odia-actors" },
   ],
 };
 
@@ -280,7 +284,7 @@ export async function Footer() {
                 <ul className="space-y-2.5 sm:space-y-3">
                   {movies.map((movie) => {
                     const verdictColor = VERDICT_COLOR[movie.verdict ?? ""] ?? "text-gray-500";
-                    const verdictBg    = VERDICT_BG[movie.verdict ?? ""]    ?? "bg-gray-500/10 border-gray-500/20";
+                    const verdictBg = VERDICT_BG[movie.verdict ?? ""] ?? "bg-gray-500/10 border-gray-500/20";
                     return (
                       <li key={movie._id}>
                         <Link
@@ -521,7 +525,8 @@ export async function Footer() {
                 <Youtube className="w-4 h-4" aria-hidden="true" />
               </a>
               <a
-                href="#"
+                href="https://www.instagram.com/ollypedia.in/"
+                target="_blank"
                 className="p-2 text-gray-600 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg transition-colors"
                 aria-label="Ollypedia on Instagram"
                 rel="noopener noreferrer"

@@ -132,7 +132,7 @@ async function getHomeData() {
   // ── Hero movies ───────────────────────────────────────────────
   const heroMovies: HeroMovie[] = uniqueMovies
     .filter((m) => {
-      const hasImage = m.thumbnailUrl || m.media?.trailer?.ytId || m.posterUrl;
+      const hasImage = m.thumbnailUrl || (m.media?.videos && m.media.videos.length > 0) || m.posterUrl;
       if (!hasImage) return false;
       if (!m.verdict || m.verdict === "Upcoming") return true;
       const rd = m.isReRelease && m.reReleaseDate ? m.reReleaseDate : m.releaseDate;
@@ -171,9 +171,7 @@ async function getHomeData() {
       thumbnailUrl: m.thumbnailUrl || undefined,
       posterUrl:   m.posterUrl   || undefined,
       bannerUrl:   m.bannerUrl   || undefined,
-      media: m.media?.trailer?.ytId
-        ? { trailer: { ytId: m.media.trailer.ytId } }
-        : undefined,
+      videos:      m.media?.videos || undefined,
     }));
 
   // ── Latest released movies ────────────────────────────────────

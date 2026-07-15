@@ -12,13 +12,15 @@ import Blog from "@/models/Blog";
 import { buildMeta, movieJsonLd, breadcrumbJsonLd } from "@/lib/seo";
 import { YouTubeEmbed }  from "@/components/ui/YouTubeEmbed";
 import { Breadcrumb }    from "@/components/ui/Breadcrumb";
+import { getPrimaryVideo } from "@/lib/trailerSeo";
 import { VoteButtons }   from "@/components/ui/VoteButtons";
 import { ReviewForm }    from "@/components/movie/ReviewForm";
 import { MovieCard }         from "@/components/movie/MovieCard";
 import { ReleaseCountdown }  from "@/components/movie/ReleaseCountdown";
 import { ShareButtons }      from "@/components/movie/ShareButtons";
 import { StarRating }    from "@/components/ui/StarRating";
-import { SongRowClient } from "@/components/movie/SongRowClient";
+import { BlogCard } from "@/components/blog/BlogCard";
+import { SongCard } from "@/components/songs/SongCard";
 import { BoxOfficeDaysChart } from "@/components/movie/BoxOfficeDaysChart";
 import {
   Calendar, Clock, User, DollarSign, Film, Star,
@@ -615,7 +617,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
   const isUnreleased = movie.verdict === "Upcoming";
   const year      = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
   const songs     = movie.media?.songs || [];
-  const trailer   = movie.media?.trailer;
+  const trailer   = getPrimaryVideo(movie as any);
   const canonical = `${SITE_URL}/movie/${movie.slug || movie._id}`;
   const vs        = verdictStyle(movie.verdict);
 
@@ -1211,10 +1213,10 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
 
             {/* ── Trailer ── */}
             {trailer?.ytId && (
-              <section aria-label={`${movie.title} official trailer`}>
-                <SectionHeading icon={Play} title="Official Trailer" />
+              <section aria-label={`${movie.title} official ${trailer.type || "Video"}`}>
+                <SectionHeading icon={Play} title={`Official ${trailer.type || "Video"}`} />
                 <div className="rounded-2xl overflow-hidden border border-[#1f1f1f]">
-                  <YouTubeEmbed ytId={trailer.ytId} title={`${movie.title} Official Trailer`} />
+                  <YouTubeEmbed ytId={trailer.ytId} title={`${movie.title} Official ${trailer.type || "Video"}`} />
                 </div>
               </section>
             )}
@@ -1246,7 +1248,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   <div className="p-6">
                     <div className="flex gap-4">
                       <div className="w-1 bg-gradient-to-b from-orange-500 to-orange-500/0 rounded-full flex-shrink-0 self-stretch min-h-[40px]" />
-                      <p className="text-gray-200 leading-[1.85] text-[15px] font-light tracking-wide">
+                      <p className="text-gray-200 leading-[1.85] text-[15px] font-light tracking-wide text-justify">
                         {movie.synopsis}
                       </p>
                     </div>
@@ -1484,11 +1486,15 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
             {songs.length > 0 && (
               <section aria-label={`${movie.title} songs soundtrack`}>
                 <SectionHeading icon={Music} title="Songs" count={songs.length} />
-                <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl overflow-hidden">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {songs.map((song: any, i: number) => (
-                    <div key={i} className={i < songs.length - 1 ? "border-b border-[#1a1a1a]" : ""}>
-                      <SongRowClient song={song} index={i + 1} />
-                    </div>
+                    <Link
+                      key={i}
+                      href={`/songs/${movie.slug}/${i}/${toSlug(song.title) || String(i)}`}
+                      className="block no-underline"
+                    >
+                      <SongCard song={{ ...song, movieTitle: movie.title }} />
+                    </Link>
                   ))}
                 </div>
                 {/* SEO: song anchor links for Google — visually hidden, only for crawlers */}
@@ -1776,30 +1782,11 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
 
               {/* Related blog posts */}
               {blogs.length > 0 && (
-                <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-6">
+                <div className="pt-4">
                   <SectionHeading icon={FileText} title={`Articles about ${movie.title}`} count={blogs.length} />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-4">
                     {blogs.map((b: any) => (
-                      <Link key={b._id} href={`/blog/${b.slug}`}
-                        className="group flex gap-3 bg-[#0d0d0d] border border-[#1a1a1a] hover:border-orange-500/30 rounded-xl p-3 transition-all">
-                        {b.coverImage ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={b.coverImage} alt={b.title}
-                            className="w-16 h-11 object-cover rounded-lg flex-shrink-0 border border-[#222]" />
-                        ) : (
-                          <div className="w-16 h-11 flex-shrink-0 bg-[#1a1a1a] rounded-lg border border-[#222] flex items-center justify-center">
-                            <FileText className="w-4 h-4 text-gray-600" />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-gray-300 group-hover:text-orange-400 transition-colors line-clamp-2 leading-snug">
-                            {b.title}
-                          </p>
-                          {b.category && (
-                            <p className="text-[10px] text-gray-600 mt-1">{b.category}</p>
-                          )}
-                        </div>
-                      </Link>
+                      <BlogCard key={b._id} blog={b} variant="standard" />
                     ))}
                   </div>
                 </div>

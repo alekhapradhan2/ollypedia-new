@@ -62,8 +62,18 @@ const MovieSchema = new Schema(
     collaborators: [{ type: Schema.Types.ObjectId, ref: "Production" }],
     cast:          [CastEntrySchema],
     media: {
-      trailer: { ytId: String, url: String, thumbnailUrl: String },
-      songs:   [SongSchema],
+      trailer:            { ytId: String, url: String, thumbnailUrl: String },
+      teaser:             { ytId: String, url: String, thumbnailUrl: String },  // NEW – official teaser
+      motionPoster:       { ytId: String, url: String },                        // NEW – motion poster
+      firstLook:          { ytId: String, url: String },                        // NEW – first look video
+      songs:              [SongSchema],
+      videos: [{
+        ytId: { type: String, default: "" },
+        url: { type: String, default: "" },
+        thumbnailUrl: { type: String, default: "" },
+        type: { type: String, default: "Trailer" }, // "Trailer", "Teaser", "Glimpse", "First Look", "Motion Poster"
+        status: { type: String, default: "Released" }
+      }],
     },
     boxOffice: {
       opening:   { type: String, default: "TBA" },

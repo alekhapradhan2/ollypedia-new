@@ -6,6 +6,7 @@ import { connectDB } from "@/lib/db";
 import Cast from "@/models/Cast";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {

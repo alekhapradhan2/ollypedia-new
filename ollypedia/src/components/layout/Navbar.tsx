@@ -30,6 +30,7 @@ const BOX_OFFICE_YEARS: number[] = Array.from(
 
 const NAV_LINKS = [
   { label: "Movies",     href: "/movies",     hasDropdown: "movies"     as const },
+  { label: "Trailers",   href: "/trailers",   hasDropdown: false        as const },
   { label: "Songs",      href: "/songs",      hasDropdown: false        as const },
   { label: "Cast",       href: "/cast",       hasDropdown: false        as const },
   { label: "Box Office", href: "/box-office", hasDropdown: "boxoffice"  as const },
