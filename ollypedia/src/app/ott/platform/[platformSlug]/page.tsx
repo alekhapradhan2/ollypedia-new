@@ -114,7 +114,7 @@ export default async function OttPlatformPage({ params }: { params: { platformSl
 
       {/* Hero Section */}
       <section className={`bg-gradient-to-b ${platform.gradient} pt-28 pb-16 border-b border-white/5`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="mb-6">
             <Breadcrumb crumbs={[{ label: "OTT", href: "/ott" }, { label: "Platforms", href: "/ott" }, { label: platform.name }]} />
           </div>

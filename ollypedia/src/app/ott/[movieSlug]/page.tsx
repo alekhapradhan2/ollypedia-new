@@ -85,8 +85,8 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       
       {/* Hero Banner */}
-      <section className="relative w-full h-[60vh] min-h-[500px] border-b border-white/10 pt-20">
-        <div className="absolute inset-0 pt-16">
+      <section className="relative w-full min-h-[60vh] lg:min-h-[500px] border-b border-white/10 pt-32 flex items-end">
+        <div className="absolute inset-0">
           <Image
             src={m.bannerUrl || m.posterUrl || "/placeholder.jpg"}
             alt={m.title}
@@ -98,7 +98,7 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
           <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent" />
         </div>
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative h-full flex flex-col justify-end pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full pb-16">
           <div className="mb-6">
             <Breadcrumb crumbs={[{ label: "OTT", href: "/ott" }, { label: "Movies", href: "/ott" }, { label: m.title }]} />
           </div>

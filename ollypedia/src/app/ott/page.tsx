@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 import { buildMeta, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { ChevronRight, Play, Calendar, MonitorPlay } from "lucide-react";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { MovieCard } from "@/components/movie/MovieCard";
 
 export const revalidate = 600;
@@ -86,7 +87,10 @@ export default async function OttLandingPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-purple-600/10 pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-orange-500/20 blur-[120px] rounded-full pointer-events-none" />
         
-        <div className="max-w-7xl mx-auto relative z-10 text-center">
+        <div className="max-w-7xl mx-auto relative z-10 text-center flex flex-col items-center">
+          <div className="mb-6 self-start md:self-center">
+            <Breadcrumb crumbs={[{ label: "OTT" }]} />
+          </div>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 font-medium text-sm mb-6">
             <MonitorPlay className="w-4 h-4" />
             <span>Digital Premieres</span>
