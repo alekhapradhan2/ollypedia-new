@@ -15,10 +15,22 @@ const ytThumb = (id: string | null | undefined) => {
   const i = extractYtId(id);
   return i ? `https://img.youtube.com/vi/${i}/mqdefault.jpg` : null;
 };
-const heroImage = (m: HeroMovie) =>
-  m.thumbnailUrl || ytThumb(m.media?.trailer?.ytId) || m.posterUrl || null;
+const heroImage = (m: HeroMovie) => {
+  const primaryVid = getPrimaryVideo(m);
+  return m.thumbnailUrl || ytThumb(primaryVid?.ytId) || m.posterUrl || null;
+};
 const fmtDate = (d: string) =>
   d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "";
+
+function getPrimaryVideo(m: HeroMovie) {
+  const vids = m.videos || [];
+  const priority = ["Trailer", "Teaser", "Glimpse", "First Look", "Motion Poster"];
+  for (const type of priority) {
+    const v = vids.find((x) => x.type === type && x.ytId);
+    if (v) return v;
+  }
+  return vids.find((x) => !!x.ytId) || null;
+}
 
 // ── Verdict colours ──────────────────────────────────────────────────
 const VS: Record<string, string> = {
@@ -47,9 +59,7 @@ export interface HeroMovie {
   thumbnailUrl?: string;
   posterUrl?: string;
   bannerUrl?: string;
-  media?: {
-    trailer?: { ytId?: string };
-  };
+  videos?: { type?: string; ytId?: string; status?: string }[];
 }
 
 // ── CSS moved to src/styles/globals.css
@@ -90,8 +100,9 @@ export default function HeroCarousel({ movies }: { movies: HeroMovie[] }) {
   const img = heroImage(m);
   const vc = VS[m.verdict || ""] || "#7aaae8";
   const movieHref = `/movie/${m.slug || m._id}`;
-  const trailerHref = m.media?.trailer?.ytId
-    ? `/movie/${m._id}#trailer`
+  const primaryVid = getPrimaryVideo(m);
+  const trailerHref = primaryVid?.ytId
+    ? `/movie/${m.slug || m._id}#trailer`
     : null;
 
   // Dots element
@@ -133,7 +144,7 @@ export default function HeroCarousel({ movies }: { movies: HeroMovie[] }) {
                 🎬
               </div>
             )}
-            {sm.media?.trailer?.ytId && <div className="hh-strip-play">▶</div>}
+            {getPrimaryVideo(sm)?.ytId && <div className="hh-strip-play">▶</div>}
           </div>
         );
       })}
@@ -153,7 +164,8 @@ export default function HeroCarousel({ movies }: { movies: HeroMovie[] }) {
           const mImg = heroImage(movie);
           const mvc  = VS[movie.verdict || ""] || "#7aaae8";
           const mHref = `/movie/${movie.slug || movie._id}`;
-          const mTrailerHref = movie.media?.trailer?.ytId ? `/movie/${movie._id}#trailer` : null;
+          const primaryVid = getPrimaryVideo(movie);
+          const mTrailerHref = primaryVid ? `/movie/${movie.slug || movie._id}#trailer` : null;
 
           if (!isAdjacentOrActive) return <div key={movie._id} className="hh-slide" />;
 
@@ -217,9 +229,9 @@ export default function HeroCarousel({ movies }: { movies: HeroMovie[] }) {
 
                   {/* Buttons */}
                   <div className="hh-btns">
-                    {mTrailerHref && (
+                    {mTrailerHref && primaryVid && (
                       <Link href={mTrailerHref} className="hh-btn-play">
-                        ▶ Watch Trailer
+                        ▶ Watch {primaryVid.type || "Trailer"}
                       </Link>
                     )}
                     <Link 
