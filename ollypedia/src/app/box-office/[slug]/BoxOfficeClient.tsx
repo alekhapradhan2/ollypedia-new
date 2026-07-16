@@ -55,6 +55,9 @@ interface Movie {
   cast?:        { name: string; type: string; role?: string }[];
   synopsis?:    string;
   media?:       { songs?: Song[] };
+  isReRelease?: boolean;
+  reReleaseDate?: string;
+  reReleaseBoxOfficeDays?: BoxOfficeDay[];
 }
 
 interface CompetingMovie {
@@ -116,8 +119,8 @@ function toSongSlug(str?: string): string {
   return (str || "").toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/(^-|-$)/g, "");
 }
 
-function buildPerformanceSummary(movie: Movie, days: BoxOfficeDay[], totalNet: number, totalGross: number): string {
-  const title     = movie.title;
+function buildPerformanceSummary(movie: Movie, days: BoxOfficeDay[], totalNet: number, totalGross: number, isReRelease: boolean = false): string {
+  const title     = isReRelease ? `The re-release of ${movie.title}` : movie.title;
   const dayCount  = days.length;
   const netFmt    = fmtINR(totalNet);
   const grossFmt  = fmtINR(totalGross);
@@ -485,12 +488,22 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 
-export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGross, updatedAt, relatedBlogs = [], competingMovies = [] }: Props) {
+export default function BoxOfficeClient({ movie, initialDays, totalNet: initialTotalNet, totalGross: initialTotalGross, updatedAt, relatedBlogs = [], competingMovies = [] }: Props) {
+  const [activeTrack, setActiveTrack] = useState<"original" | "re-release">("original");
   const [showAll, setShowAll] = useState(false);
-  const days        = initialDays;
+
+  const hasReRelease = movie.reReleaseBoxOfficeDays && movie.reReleaseBoxOfficeDays.length > 0;
+  const rrDays = hasReRelease ? [...(movie.reReleaseBoxOfficeDays || [])].sort((a: any, b: any) => a.day - b.day) : [];
+  const rrNet = rrDays.reduce((s, d) => s + parseN(d.net), 0);
+  const rrGross = rrDays.reduce((s, d) => s + parseN(d.gross), 0);
+
+  const days        = activeTrack === "original" ? initialDays : rrDays;
+  const totalNet    = activeTrack === "original" ? initialTotalNet : rrNet;
+  const totalGross  = activeTrack === "original" ? initialTotalGross : rrGross;
   const visibleDays = showAll ? days : days.slice(0, 7);
   const maxNet      = Math.max(...days.map((d) => parseN(d.net)), 1);
-  const summary     = buildPerformanceSummary(movie, days, totalNet, totalGross);
+  const summary     = buildPerformanceSummary(movie, days, totalNet, totalGross, activeTrack === "re-release");
+  const trackTitle  = activeTrack === "re-release" ? `${movie.title} Re-Release` : movie.title;
   const cast        = (movie.cast || []).slice(0, 6);
   const songs       = movie.media?.songs || [];
   const year        = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
@@ -544,6 +557,11 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
               <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400 mb-4">
                 {movie.releaseDate && (
                   <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{fmtDate(movie.releaseDate)}</span>
+                )}
+                {movie.reReleaseDate && (
+                  <span className="flex items-center gap-1 text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-md text-xs">
+                    <Calendar className="w-3 h-3" /> Re-released: {fmtDate(movie.reReleaseDate)}
+                  </span>
                 )}
                 {movie.language && (
                   <span className="px-2 py-0.5 bg-white/5 rounded-md text-xs">{movie.language}</span>
@@ -601,8 +619,32 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
         </div>
       </div>
 
+      {/* ── Tabs for Original vs Re-Release ── */}
+      {hasReRelease && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2 mb-6">
+          <div className="flex items-center p-1 bg-[#111] border border-[#1f1f1f] rounded-lg w-fit">
+            <button
+              onClick={() => { setActiveTrack("original"); setShowAll(false); }}
+              className={`px-4 py-2 text-sm font-semibold rounded-md transition-all ${
+                activeTrack === "original" ? "bg-orange-500 text-white" : "text-gray-400 hover:text-white hover:bg-[#1a1a1a]"
+              }`}
+            >
+              Original Release
+            </button>
+            <button
+              onClick={() => { setActiveTrack("re-release"); setShowAll(false); }}
+              className={`px-4 py-2 text-sm font-semibold rounded-md transition-all ${
+                activeTrack === "re-release" ? "bg-orange-500 text-white" : "text-gray-400 hover:text-white hover:bg-[#1a1a1a]"
+              }`}
+            >
+              Re-Release
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Stats Cards ── */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-4 mb-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {[
             { label: "Total Net",    value: fmtINR(totalNet),   icon: <IndianRupee className="w-4 h-4" />, color: "#f97316" },
@@ -654,12 +696,12 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                   <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-6">
                     <h2 className="text-base font-bold text-white mb-3 flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-orange-400" />
-                      {movie.title} Box Office Performance
+                      {trackTitle} Box Office Performance
                     </h2>
                     <p className="text-gray-300 text-sm leading-relaxed">{summary}</p>
                     {days.length >= 2 && (
                       <p className="text-gray-400 text-sm leading-relaxed mt-3">
-                        The <strong className="text-gray-300">{movie.title} Odia movie</strong> released
+                        The <strong className="text-gray-300">{trackTitle} Odia movie</strong> released
                         {movie.releaseDate ? ` on ${fmtDate(movie.releaseDate)}` : ""} in Odia (Ollywood) cinemas.
                         {" "}Day-wise collection data is tracked and updated on Ollypedia, Odisha&apos;s dedicated Odia film database.
                       </p>
@@ -667,15 +709,15 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                     {/* Cross-links within SEO summary */}
                     <div className="mt-4 pt-4 border-t border-[#1a1a1a] flex flex-wrap gap-3 text-xs">
                       <Link href={`/movie/${movie.slug}`} className="text-orange-400 hover:underline font-semibold">
-                        📽️ {movie.title} Full Movie Details →
+                        📽️ {trackTitle} Full Movie Details →
                       </Link>
                       {songs.length > 0 && (
                         <Link href={`/songs/${movie.slug}/0/${toSongSlug(songs[0]?.title) || "0"}`} className="text-green-400 hover:underline font-semibold">
-                          🎵 {movie.title} Songs →
+                          🎵 {trackTitle} Songs →
                         </Link>
                       )}
                       <Link href={`/blog?movie=${encodeURIComponent(movie.title)}`} className="text-purple-400 hover:underline font-semibold">
-                        📝 {movie.title} Reviews &amp; Articles →
+                        📝 {trackTitle} Reviews &amp; Articles →
                       </Link>
                     </div>
                     <p className="text-xs text-gray-600 mt-3">
@@ -686,11 +728,11 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                   {/* ── SEO keyword-rich paragraph 1 — movie overview ── */}
                   <div className="bg-[#0d0d0d] border border-[#181818] rounded-xl p-5">
                     <p className="text-sm text-gray-400 leading-relaxed">
-                      The <strong className="text-gray-200">{movie.title} Odia movie</strong> is one of the notable
+                      The <strong className="text-gray-200">{trackTitle} Odia movie</strong> is one of the notable
                       {year ? ` Ollywood films of ${year}` : " Ollywood films"}.
-                      {" "}If you are searching for <em className="text-gray-300">{movie.title} box office collection</em>,{" "}
-                      <em className="text-gray-300">{movie.title} first day collection</em>, or the{" "}
-                      <em className="text-gray-300">{movie.title} total collection</em>, Ollypedia provides verified
+                      {" "}If you are searching for <em className="text-gray-300">{trackTitle} box office collection</em>,{" "}
+                      <em className="text-gray-300">{trackTitle} first day collection</em>, or the{" "}
+                      <em className="text-gray-300">{trackTitle} total collection</em>, Ollypedia provides verified
                       day-wise figures updated regularly.
                       {movie.director ? (
                         <>{" "}Directed by <strong className="text-gray-200">{movie.director}</strong>, this{" "}
@@ -702,24 +744,24 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                   {/* ── SEO keyword-rich paragraph 2 — intent content ── */}
                   <div className="bg-[#0d0d0d] border border-[#181818] rounded-xl p-5">
                     <p className="text-sm text-gray-400 leading-relaxed">
-                      Looking for the <em className="text-gray-300">{movie.title} movie review</em>,{" "}
-                      <em className="text-gray-300">{movie.title} cast and crew</em>, or{" "}
-                      <em className="text-gray-300">{movie.title} story details</em>?
-                      {" "}Ollypedia covers the complete <strong className="text-gray-200">{movie.title} Ollywood movie</strong> — from release date and trailer
+                      Looking for the <em className="text-gray-300">{trackTitle} movie review</em>,{" "}
+                      <em className="text-gray-300">{trackTitle} cast and crew</em>, or{" "}
+                      <em className="text-gray-300">{trackTitle} story details</em>?
+                      {" "}Ollypedia covers the complete <strong className="text-gray-200">{trackTitle} Ollywood movie</strong> — from release date and trailer
                       to songs and public reviews. This page specifically tracks the{" "}
-                      <em className="text-gray-300">{movie.title} day-wise box office collection</em>{" "}
+                      <em className="text-gray-300">{trackTitle} day-wise box office collection</em>{" "}
                       including net and gross earnings at Odia cinemas across Odisha.
                     </p>
                     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
                       <Link href={`/movie/${movie.slug}`} className="text-orange-400 hover:underline">
-                        → {movie.title} full movie details
+                        → {trackTitle} full movie details
                       </Link>
                       <Link href={`/blog?movie=${encodeURIComponent(movie.title)}`} className="text-purple-400 hover:underline">
-                        → {movie.title} movie review &amp; rating
+                        → {trackTitle} movie review &amp; rating
                       </Link>
                       {songs.length > 0 && (
                         <Link href={`/songs/${movie.slug}/0/${toSongSlug(songs[0]?.title) || "0"}`} className="text-green-400 hover:underline">
-                          → {movie.title} songs
+                          → {trackTitle} songs
                         </Link>
                       )}
                     </div>
@@ -730,7 +772,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                 <section>
                   <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
                     <BarChart3 className="w-5 h-5 text-orange-400" />
-                    Day-wise Net Collection — {movie.title}
+                    Day-wise Net Collection — {trackTitle}
                   </h2>
                   <BoxOfficeChart days={days} maxNet={maxNet} />
                 </section>
@@ -739,7 +781,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                 <section>
                   <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-orange-400" />
-                    {movie.title} Day-wise Box Office Collection
+                    {trackTitle} Day-wise Box Office Collection
                   </h2>
                   <div className="space-y-4">
                     <BoxOfficeDisclaimer />
@@ -814,14 +856,14 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                 <section className="space-y-5">
                   <h2 className="text-lg font-bold text-white flex items-center gap-2">
                     <Film className="w-5 h-5 text-orange-400" />
-                    About {movie.title} Box Office Collection
+                    About {trackTitle} Box Office Collection
                   </h2>
 
                   {days[0] && (
                     <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-5">
-                      <h3 className="text-sm font-bold text-orange-300 mb-2">{movie.title} Opening Day Collection</h3>
+                      <h3 className="text-sm font-bold text-orange-300 mb-2">{trackTitle} Opening Day Collection</h3>
                       <p className="text-sm text-gray-300 leading-relaxed">
-                        {movie.title} opened to {fmtINR(days[0].net)} net ({fmtINR(days[0].gross)} gross) on its first day in Odia cinemas
+                        {trackTitle} opened to {fmtINR(days[0].net)} net ({fmtINR(days[0].gross)} gross) on its first day in Odia cinemas
                         {days[0].date ? <> on <time dateTime={days[0].date}>{fmtDate(days[0].date)}</time></> : ""}.
                         {days[0].screens   ? ` The film ran across ${days[0].screens} screens` : ""}
                         {days[0].occupancy ? ` with ${days[0].occupancy} occupancy` : ""}.
@@ -836,9 +878,9 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                     const w1gross= week1.reduce((s, d) => s + parseN(d.gross), 0);
                     return (
                       <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-5">
-                        <h3 className="text-sm font-bold text-orange-300 mb-2">{movie.title} First Week Collection</h3>
+                        <h3 className="text-sm font-bold text-orange-300 mb-2">{trackTitle} First Week Collection</h3>
                         <p className="text-sm text-gray-300 leading-relaxed">
-                          In its first week (7 days), <strong className="text-white">{movie.title}</strong> collected{" "}
+                          In its first week (7 days), <strong className="text-white">{trackTitle}</strong> collected{" "}
                           <strong className="text-orange-400">{fmtINR(w1net)}</strong> net and{" "}
                           <strong className="text-sky-300">{fmtINR(w1gross)}</strong> gross at the Odia box office.
                           {days.length > 7 && ` The film continued its theatrical run beyond the first week, bringing its total to ${fmtINR(totalNet)} net.`}
@@ -848,10 +890,10 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                   })()}
 
                   <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-5">
-                    <h3 className="text-sm font-bold text-orange-300 mb-2">{movie.title} Total Collection — {days.length} Days</h3>
+                    <h3 className="text-sm font-bold text-orange-300 mb-2">{trackTitle} Total Collection — {days.length} Days</h3>
                     <p className="text-sm text-gray-300 leading-relaxed">
                       After {days.length} day{days.length !== 1 ? "s" : ""} in theatres,{" "}
-                      <strong className="text-white">{movie.title}</strong>{" "}
+                      <strong className="text-white">{trackTitle}</strong>{" "}
                       {movie.releaseDate ? <>(released <time dateTime={movie.releaseDate}>{fmtDate(movie.releaseDate)}</time>) </> : ""}
                       has earned a total of <strong className="text-orange-400">{fmtINR(totalNet)} net</strong> and{" "}
                       <strong className="text-sky-300">{fmtINR(totalGross)} gross</strong> at the worldwide box office.
@@ -861,7 +903,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Link href={`/movie/${movie.slug}`}
                         className="text-xs text-orange-400 hover:underline font-semibold">
-                        View {movie.title} full movie details →
+                        View {trackTitle} full movie details →
                       </Link>
                       {songs.length > 0 && (
                         <span className="text-gray-600 text-xs">·</span>
@@ -869,7 +911,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                       {songs.length > 0 && (
                         <Link href={`/songs/${movie.slug}/0/${toSongSlug(songs[0]?.title) || "0"}`}
                           className="text-xs text-green-400 hover:underline font-semibold">
-                          Listen to {movie.title} songs →
+                          Listen to {trackTitle} songs →
                         </Link>
                       )}
                     </div>
@@ -879,7 +921,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                     <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-5">
                       <h3 className="text-sm font-bold text-orange-300 mb-2">Cast & Director</h3>
                       <p className="text-sm text-gray-400 leading-relaxed">
-                        {movie.title} features{" "}
+                        {trackTitle} features{" "}
                         {cast.slice(0, 4).map((c, i) => (
                           <span key={i}>
                             <strong className="text-gray-300">{c.name}</strong>
@@ -915,7 +957,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                     <section>
                       <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
                         <Calendar className="w-5 h-5 text-orange-400" />
-                        {movie.title} Week-wise Box Office Collection
+                        {trackTitle} Week-wise Box Office Collection
                       </h2>
                       <div className={`grid gap-3 ${weeks.length >= 3 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2"}`}>
                         {weeks.map(w => (
@@ -929,7 +971,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                       </div>
                       {/* Crawlable keyword text for week-wise searches */}
                       <p className="text-[11px] text-gray-700 mt-3 leading-relaxed">
-                        {movie.title} week-wise net: {weeks.map((w, i) => (
+                        {trackTitle} week-wise net: {weeks.map((w, i) => (
                           <span key={w.label}>{w.label} ({w.range}) — {fmtINR(w.net)}{i < weeks.length - 1 ? " · " : ""}</span>
                         ))}. Total: {fmtINR(totalNet)} net.
                       </p>
@@ -956,7 +998,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                     <section>
                       <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
                         <TrendingUp className="w-5 h-5 text-orange-400" />
-                        {movie.title} Box Office Milestones
+                        {trackTitle} Box Office Milestones
                       </h2>
                       <div className="flex flex-wrap gap-2">
                         {milestones.map(m => (
@@ -970,7 +1012,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                         ))}
                       </div>
                       <p className="text-[11px] text-gray-700 mt-3">
-                        {movie.title} crossed {milestones.map((m, i) => (
+                        {trackTitle} crossed {milestones.map((m, i) => (
                           <span key={m.label}>{m.label} on Day {m.day}{i < milestones.length - 1 ? ", " : "."}</span>
                         ))}
                       </p>
@@ -983,7 +1025,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                   <section>
                     <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
                       <BookOpen className="w-5 h-5 text-purple-400" />
-                      {movie.title} — Articles &amp; Reviews
+                      {trackTitle} — Articles &amp; Reviews
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {relatedBlogs.map((b: BlogPost) => (
@@ -1005,7 +1047,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                     </div>
                     <Link href={`/blog?movie=${encodeURIComponent(movie.title)}`}
                       className="block mt-3 text-xs text-purple-400/60 hover:text-purple-400 transition-colors">
-                      View all {movie.title} articles →
+                      View all {trackTitle} articles →
                     </Link>
                   </section>
                 )}
@@ -1015,7 +1057,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                   <section>
                     <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
                       <Music className="w-5 h-5 text-green-400" />
-                      {movie.title} Songs &amp; Soundtrack
+                      {trackTitle} Songs &amp; Soundtrack
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {songs.slice(0, 4).map((s, i) => {
@@ -1081,7 +1123,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                     </div>
                     {/* Crawlable text — targets "Odia movies [year]" searches */}
                     <p className="text-[11px] text-gray-700 mt-3">
-                      Other Odia (Ollywood) films releasing around the same time as {movie.title}:{" "}
+                      Other Odia (Ollywood) films releasing around the same time as {trackTitle}:{" "}
                       {competingMovies.map((m, i) => (
                         <span key={m._id}>
                           <Link href={`/box-office/${m.slug}`} className="text-gray-600 hover:text-orange-400 transition-colors">
@@ -1098,43 +1140,43 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                 <section>
                   <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
                     <span className="text-orange-400">❓</span>
-                    {movie.title} — Frequently Asked Questions
+                    {trackTitle} — Frequently Asked Questions
                   </h2>
                   <div className="space-y-2">
                     {([
                       {
-                        q: `What is the total box office collection of ${movie.title}?`,
-                        a: `${movie.title} has collected a total of ${fmtINR(totalNet)} net and ${fmtINR(totalGross)} gross at the Odia (Ollywood) box office in ${days.length} day${days.length !== 1 ? "s" : ""}. Ollypedia tracks daily earnings for all Odia films.`,
+                        q: `What is the total box office collection of ${trackTitle}?`,
+                        a: `${trackTitle} has collected a total of ${fmtINR(totalNet)} net and ${fmtINR(totalGross)} gross at the Odia (Ollywood) box office in ${days.length} day${days.length !== 1 ? "s" : ""}. Ollypedia tracks daily earnings for all Odia films.`,
                       },
                       ...(days[0] ? [{
-                        q: `What was ${movie.title} Day 1 opening box office collection?`,
-                        a: `${movie.title} collected ${fmtINR(days[0].net)} net (${fmtINR(days[0].gross)} gross) on opening day${days[0].date ? ` (${fmtDate(days[0].date)})` : ""}. ${days[0].screens ? `The film opened across ${days[0].screens} screens.` : ""}`,
+                        q: `What was ${trackTitle} Day 1 opening box office collection?`,
+                        a: `${trackTitle} collected ${fmtINR(days[0].net)} net (${fmtINR(days[0].gross)} gross) on opening day${days[0].date ? ` (${fmtDate(days[0].date)})` : ""}. ${days[0].screens ? `The film opened across ${days[0].screens} screens.` : ""}`,
                       }] : []),
                       ...(days.length >= 7 ? [{
-                        q: `What is ${movie.title} first week collection?`,
-                        a: `In its first 7 days, ${movie.title} collected ${fmtINR(days.slice(0,7).reduce((s,d)=>s+parseN(d.net),0))} net at the Odia box office.`,
+                        q: `What is ${trackTitle} first week collection?`,
+                        a: `In its first 7 days, ${trackTitle} collected ${fmtINR(days.slice(0,7).reduce((s,d)=>s+parseN(d.net),0))} net at the Odia box office.`,
                       }] : []),
                       {
-                        q: `Is ${movie.title} a hit or flop?`,
+                        q: `Is ${trackTitle} a hit or flop?`,
                         a: movie.verdict && movie.verdict !== "Upcoming"
-                          ? `According to Ollypedia, ${movie.title} is classified as "${movie.verdict}" at the box office with a total of ${fmtINR(totalNet)} net.`
-                          : `The ${movie.title} box office verdict will be updated as collection data comes in. Visit Ollypedia for the latest.`,
+                          ? `According to Ollypedia, ${trackTitle} is classified as "${movie.verdict}" at the box office with a total of ${fmtINR(totalNet)} net.`
+                          : `The ${trackTitle} box office verdict will be updated as collection data comes in. Visit Ollypedia for the latest.`,
                       },
                       {
-                        q: `What is ${movie.title} story and cast?`,
-                        a: `${movie.title} is ${movie.genre?.length ? `a ${movie.genre.join("/")} ` : "an "}Odia film${movie.director ? ` directed by ${movie.director}` : ""}. ${cast.length > 0 ? `It stars ${cast.slice(0,3).map((c:any)=>c.name).join(", ")} in lead roles.` : ""} ${movie.synopsis ? movie.synopsis.slice(0,140)+"…" : "Visit the movie page for the full story and cast details."}`,
+                        q: `What is ${trackTitle} story and cast?`,
+                        a: `${trackTitle} is ${movie.genre?.length ? `a ${movie.genre.join("/")} ` : "an "}Odia film${movie.director ? ` directed by ${movie.director}` : ""}. ${cast.length > 0 ? `It stars ${cast.slice(0,3).map((c:any)=>c.name).join(", ")} in lead roles.` : ""} ${movie.synopsis ? movie.synopsis.slice(0,140)+"…" : "Visit the movie page for the full story and cast details."}`,
                       },
                       {
-                        q: `Where can I watch ${movie.title} trailer and songs?`,
-                        a: `The ${movie.title} trailer${songs.length > 0 ? ` and ${songs.length} song${songs.length>1?"s":""}` : ""} are available on Ollypedia. Visit the movie page for the official trailer, songs and lyrics.`,
+                        q: `Where can I watch ${trackTitle} trailer and songs?`,
+                        a: `The ${trackTitle} trailer${songs.length > 0 ? ` and ${songs.length} song${songs.length>1?"s":""}` : ""} are available on Ollypedia. Visit the movie page for the official trailer, songs and lyrics.`,
                       },
                       {
-                        q: `Where to find ${movie.title} day-wise box office data?`,
-                        a: `Ollypedia publishes verified day-wise box office for ${movie.title} at ollypedia.in/box-office/${movie.slug}. Data includes net, gross, screens and occupancy updated daily.`,
+                        q: `Where to find ${trackTitle} day-wise box office data?`,
+                        a: `Ollypedia publishes verified day-wise box office for ${trackTitle} at ollypedia.in/box-office/${movie.slug}. Data includes net, gross, screens and occupancy updated daily.`,
                       },
                       {
-                        q: `Where can I read ${movie.title} movie review?`,
-                        a: `Full ${movie.title} movie review, cast analysis and Ollywood articles are on Ollypedia's blog at ollypedia.in/blog. User ratings and public reviews are also on the movie page.`,
+                        q: `Where can I read ${trackTitle} movie review?`,
+                        a: `Full ${trackTitle} movie review, cast analysis and Ollywood articles are on Ollypedia's blog at ollypedia.in/blog. User ratings and public reviews are also on the movie page.`,
                       },
                     ] as {q:string;a:string}[]).map(({ q, a }, i) => (
                       <FaqItem key={i} q={q} a={a} />
@@ -1144,7 +1186,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
 
                 {/* ── Bottom cross-link bar ── */}
                 <section className="bg-gradient-to-r from-orange-500/5 via-transparent to-orange-500/5 border border-orange-500/15 rounded-xl p-5">
-                  <p className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-3">More about {movie.title}</p>
+                  <p className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-3">More about {trackTitle}</p>
                   <div className="flex flex-wrap gap-2">
                     <Link href={`/movie/${movie.slug}`}
                       className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 rounded-lg text-xs font-semibold text-orange-400 transition-all">
@@ -1153,7 +1195,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet, totalGro
                     {songs.length > 0 && (
                       <Link href={`/songs/${movie.slug}/0/${toSongSlug(songs[0]?.title) || "0"}`}
                         className="px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 rounded-lg text-xs font-semibold text-green-400 transition-all">
-                        🎵 {movie.title} Songs
+                        🎵 {trackTitle} Songs
                       </Link>
                     )}
                     <Link href={`/blog?movie=${encodeURIComponent(movie.title)}`}

@@ -573,6 +573,31 @@ export default async function BoxOfficePage({
             ))}
           </tbody>
         </table>
+        {movie.reReleaseBoxOfficeDays && movie.reReleaseBoxOfficeDays.length > 0 && (() => {
+          const rrDays = movie.reReleaseBoxOfficeDays.sort((a: any, b: any) => a.day - b.day);
+          const rrTotalNet = rrDays.reduce((s: number, d: any) => s + parseNum(d.net), 0);
+          const rrTotalGross = rrDays.reduce((s: number, d: any) => s + parseNum(d.gross), 0);
+          const rrLastDay = rrDays[rrDays.length - 1]?.day || 0;
+          return (
+            <>
+              <h2>{movie.title} (Re-Release) Box Office Collection — Total {fmtINR(rrTotalNet)} Net</h2>
+              <p>{movie.title} Re-Release has collected {fmtINR(rrTotalNet)} net and {fmtINR(rrTotalGross)} gross in {rrLastDay} days.</p>
+              <table>
+                <caption>{movie.title} (Re-Release) Day-wise Box Office Collection</caption>
+                <thead><tr><th>Day</th><th>Net Collection</th><th>Gross Collection</th></tr></thead>
+                <tbody>
+                  {rrDays.map((d: any) => (
+                    <tr key={d.day}>
+                      <td>Day {d.day}</td>
+                      <td>{fmtINR(d.net)}</td>
+                      <td>{fmtINR(d.gross)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          );
+        })()}
       </div>
       <BoxOfficeClient
         movie={movie}
