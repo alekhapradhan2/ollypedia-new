@@ -24,6 +24,7 @@ interface MovieCardProps {
     };
   };
   variant?: "portrait" | "landscape" | "ott";
+  hrefPrefix?: string;
 }
 
 function verdictColor(verdict: string) {
@@ -45,13 +46,14 @@ function CardLoadingOverlay() {
   );
 }
 
-export function MovieCard({ movie, variant = "portrait" }: MovieCardProps) {
+export function MovieCard({ movie, variant = "portrait", hrefPrefix }: MovieCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const handleNavigate = () => setIsLoading(true);
 
   const isOtt = variant === "ott";
-  const href  = isOtt ? `/ott/${movie.slug || movie._id}` : `/movie/${movie.slug || movie._id}`;
+  const defaultHref = isOtt ? `/ott/${movie.slug || movie._id}` : `/movie/${movie.slug || movie._id}`;
+  const href  = hrefPrefix ? `${hrefPrefix}/${movie.slug || movie._id}` : defaultHref;
   const image = movie.posterUrl || movie.thumbnailUrl || "/placeholder-movie.jpg";
   const displayDate = (() => {
     if (!movie.releaseDate || movie.releaseDate.trim() === "") return "TBA";

@@ -300,7 +300,7 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
               <h3 className="text-lg font-bold text-white mb-4">More on {ott.platform}</h3>
               <div className="grid grid-cols-2 gap-4">
                 {(relatedMovies as any[]).map((rm: any) => (
-                  <MovieCard key={rm._id} movie={rm} />
+                  <MovieCard key={rm._id} movie={rm} hrefPrefix="/ott" />
                 ))}
               </div>
               <Link href={`/ott/platform/${ott.platform.toLowerCase().replace(/\s+/g, "-")}`} className="block w-full text-center py-3 mt-4 rounded-xl bg-white/5 hover:bg-white/10 text-white text-sm font-semibold transition-colors">
