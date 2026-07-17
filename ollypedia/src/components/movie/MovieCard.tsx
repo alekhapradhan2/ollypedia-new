@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Calendar, Star, Loader2 } from "lucide-react";
+import { PlatformLogo } from "@/components/ui/PlatformLogo";
+import { getPlatformInfo } from "@/lib/platforms";
 
 interface MovieCardProps {
   movie: {
@@ -102,6 +104,7 @@ export function MovieCard({ movie, variant = "portrait", hrefPrefix }: MovieCard
   // Netflix-style layout for OTT variant
   if (isOtt) {
     const platformName = (movie as any)._platform || "";
+    const pInfo = platformName ? getPlatformInfo(platformName) : null;
     const trailerId = movie.media?.trailer?.ytId || movie.media?.videos?.find(v => v.ytId)?.ytId;
 
     return (
@@ -134,9 +137,23 @@ export function MovieCard({ movie, variant = "portrait", hrefPrefix }: MovieCard
           )}
           
           {/* Top Platform Badge */}
-          {platformName && (
+          {platformName && pInfo && (
+            <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5 bg-black/60 backdrop-blur-md border border-white/10 px-1.5 py-1 rounded shadow-lg">
+              <PlatformLogo 
+                name={pInfo.name} 
+                domain={pInfo.domain} 
+                slug={pInfo.slug} 
+                color={pInfo.color} 
+                className="w-4 h-4 rounded-full object-contain" 
+              />
+              <span className="text-white text-[10px] font-bold uppercase tracking-wider pr-1">
+                {platformName}
+              </span>
+            </div>
+          )}
+          {platformName && !pInfo && (
             <div className="absolute top-2 left-2 z-10">
-              <span className="bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold px-2 py-1 rounded-sm uppercase tracking-wider drop-shadow-md">
+              <span className="bg-black/60 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold px-2 py-1 rounded-sm uppercase tracking-wider drop-shadow-md">
                 {platformName}
               </span>
             </div>

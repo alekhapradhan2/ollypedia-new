@@ -6,43 +6,59 @@ import { buildMeta, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { MonitorPlay, ExternalLink, Film, Play, Star, ChevronRight } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { PlatformLogo } from "@/components/ui/PlatformLogo";
 
 export const revalidate = 600;
 
 const PLATFORMS: Record<string, {
   name: string; slug: string; color: string; gradient: string;
   visitUrl: string; tagline: string; description: string;
-  features: string[]; about: string;
+  features: string[]; about: string; domain: string;
+  plans?: { name: string; price: string; duration: string; features: string[] }[];
 }> = {
   "aao-nxt": {
-    name: "AAO NXT", slug: "aao-nxt", color: "#1B4FD8",
+    name: "AAO NXT", slug: "aao-nxt", color: "#1B4FD8", domain: "aaonxt.com",
     gradient: "from-blue-900/40 to-[#0a0a0a]",
     visitUrl: "https://www.aaonxt.com",
     tagline: "The Home of Ollywood on OTT",
     description: "AAO NXT is the premier Odia OTT platform dedicated exclusively to Ollywood content. Stream the latest and greatest Odia movies, web series, and original content on AAO NXT.",
     features: ["Exclusive Odia Content", "HD Streaming", "Latest Ollywood Movies", "Odia Web Series", "Mobile & Smart TV Apps"],
     about: "AAO NXT is the go-to destination for Odia entertainment, offering a massive library of Odia movies, TV shows, and original web series. As the largest dedicated Odia OTT platform, AAO NXT brings the best of Ollywood directly to your screen.",
+    plans: [
+      { name: "Yearly", price: "₹499", duration: "365 days", features: ["Watch on any device", "Watch content up to 4K", "No extra payment"] },
+      { name: "Quarterly", price: "₹299", duration: "90 days", features: ["Watch on any device", "Watch content up to 4K", "No extra payment"] }
+    ]
   },
   "tarang-plus": {
-    name: "Tarang Plus", slug: "tarang-plus", color: "#ED1C24",
+    name: "Tarang Plus", slug: "tarang-plus", color: "#ED1C24", domain: "tarangplus.in",
     gradient: "from-red-900/40 to-[#0a0a0a]",
     visitUrl: "https://www.tarangplus.in",
     tagline: "Your Favourite Odia Entertainment",
     description: "Tarang Plus is Odisha's leading OTT platform from the Tarang TV network. Watch Odia movies, serials, and exclusive digital content anytime, anywhere.",
     features: ["Odia Movies & Serials", "Live TV Streaming", "Exclusive Digital Shows", "Tarang TV Content", "Free & Premium Plans"],
     about: "Tarang Plus is the official OTT extension of Tarang TV, one of Odisha's most popular television channels. The platform offers an extensive collection of Odia movies, popular serials, and exclusive digital-first content, making it a must-have for Odia entertainment lovers.",
+    plans: [
+      { name: "Premium Plan (12 months)", price: "₹365", duration: "1 Year", features: ["Enjoy seamless ad-free content", "Full Access to Premium Library"] },
+      { name: "Premium Plan (1 month)", price: "₹49", duration: "1 Month", features: ["Enjoy seamless ad-free content", "Full Access to Premium Library"] },
+      { name: "LiveTV pack", price: "₹150", duration: "1 Year", features: ["Live TV streaming only", "Standard quality"] }
+    ]
   },
   "kancha-lanka": {
-    name: "Kancha Lanka", slug: "kancha-lanka", color: "#F7931E",
+    name: "Kancha Lanka", slug: "kancha-lanka", color: "#F7931E", domain: "kanchalanka.com",
     gradient: "from-orange-900/40 to-[#0a0a0a]",
     visitUrl: "https://www.kanchalanka.com",
     tagline: "Odia Movies. Anytime. Anywhere.",
     description: "Kancha Lanka is a dedicated Odia streaming platform offering a curated library of Ollywood films, folk content, and regional entertainment.",
     features: ["Odia Movie Library", "Folk & Regional Content", "HD Quality Streams", "Multi-device Support", "Exclusive Ollywood Titles"],
     about: "Kancha Lanka is a growing Odia OTT platform that has quickly become a favourite among Odia movie lovers. It offers an ever-growing library of Odia films from blockbusters to independent cinema, along with folk, devotional, and cultural content.",
+    plans: [
+      { name: "Annual Plan", price: "₹399", duration: "1 Year", features: ["1 Simultaneous streaming", "1 Connected Device", "Video Quality Full HD (1080p)", "High Quality Audio", "Cancel anytime"] },
+      { name: "3 Months Plan", price: "₹199", duration: "3 Months", features: ["1 Simultaneous streaming", "1 Connected Device", "Video Quality Full HD (1080p)", "High Quality Audio", "Cancel anytime"] },
+      { name: "Annual599", price: "₹599", duration: "1 Year", features: ["1 Simultaneous streaming", "2 Connected Devices", "Video Quality Full HD (1080p)", "High Quality Audio"] }
+    ]
   },
   "youtube": {
-    name: "YouTube", slug: "youtube", color: "#FF0000",
+    name: "YouTube", slug: "youtube", color: "#FF0000", domain: "youtube.com",
     gradient: "from-red-900/30 to-[#0a0a0a]",
     visitUrl: "https://www.youtube.com",
     tagline: "Free Odia Movies on YouTube",
@@ -131,10 +147,16 @@ export default async function OttPlatformPage({ params }: { params: { platformSl
           <div className="flex flex-col md:flex-row md:items-center gap-6 mb-10">
             {/* Platform Icon */}
             <div
-              className="w-20 h-20 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-2xl"
-              style={{ backgroundColor: `${platform.color}22`, border: `2px solid ${platform.color}44` }}
+              className="w-24 h-24 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-2xl bg-white border-2 border-transparent p-2"
+              style={{ boxShadow: `0 10px 30px ${platform.color}40` }}
             >
-              <MonitorPlay className="w-10 h-10" style={{ color: platform.color }} />
+              <PlatformLogo 
+                name={platform.name}
+                domain={platform.domain}
+                slug={platform.slug}
+                color={platform.color}
+                className="w-full h-full object-contain" 
+              />
             </div>
 
             <div className="flex-1">
@@ -225,7 +247,6 @@ export default async function OttPlatformPage({ params }: { params: { platformSl
           {/* Right — Sidebar */}
           <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
 
-            {/* About Platform */}
             <div className="bg-[#111] border border-white/5 rounded-2xl p-6">
               <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
                 <MonitorPlay className="w-5 h-5" style={{ color: platform.color }} />
@@ -243,6 +264,43 @@ export default async function OttPlatformPage({ params }: { params: { platformSl
                 Visit {platform.name}
               </a>
             </div>
+
+            {/* Subscription Plans */}
+            {platform.plans && platform.plans.length > 0 && (
+              <div className="bg-[#111] border border-white/5 rounded-2xl p-6">
+                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <Star className="w-5 h-5 text-orange-500" />
+                  Subscription Plans
+                </h2>
+                <div className="space-y-4">
+                  {platform.plans.map((plan) => (
+                    <div key={plan.name} className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 hover:border-white/20 transition-colors">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-white font-bold text-sm">{plan.name}</h3>
+                        <span className="text-orange-500 font-black text-lg">{plan.price}</span>
+                      </div>
+                      <p className="text-gray-500 text-xs mb-3 font-medium tracking-wide uppercase">{plan.duration}</p>
+                      <ul className="space-y-2 mb-4">
+                        {plan.features.map((f, i) => (
+                          <li key={i} className="text-xs text-gray-300 flex items-start gap-2 leading-tight">
+                            <span className="text-orange-500 font-bold">✓</span> {f}
+                          </li>
+                        ))}
+                      </ul>
+                      <a
+                        href={platform.visitUrl}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow"
+                        className="block w-full text-center py-2.5 rounded-lg text-xs font-bold text-white border transition-colors hover:bg-white/5"
+                        style={{ borderColor: `${platform.color}40` }}
+                      >
+                        Subscribe
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Features */}
             <div className="bg-[#111] border border-white/5 rounded-2xl p-6">
@@ -274,10 +332,15 @@ export default async function OttPlatformPage({ params }: { params: { platformSl
                     className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group"
                   >
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: `${p.color}22` }}
+                      className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-white shadow-sm p-1"
                     >
-                      <Play className="w-4 h-4" style={{ color: p.color }} />
+                      <PlatformLogo 
+                        name={p.name}
+                        domain={p.domain}
+                        slug={p.slug}
+                        color={p.color}
+                        className="w-full h-full object-contain" 
+                      />
                     </div>
                     <span className="text-gray-300 group-hover:text-white text-sm font-medium transition-colors">{p.name}</span>
                     <ChevronRight className="w-4 h-4 text-gray-600 ml-auto group-hover:text-gray-400 transition-colors" />

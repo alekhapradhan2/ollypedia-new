@@ -7,7 +7,10 @@ import Movie from "@/models/Movie";
 import { buildOttMeta, generateOttJsonLd, OTTMovie } from "@/lib/ottSeo";
 import { Play, Calendar, MonitorPlay, Film, Users, Languages, Clock, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { MovieCard } from "@/components/movie/MovieCard";
+import { OttMovieActions } from "@/components/movie/OttMovieActions";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { PlatformLogo } from "@/components/ui/PlatformLogo";
+import { getPlatformInfo } from "@/lib/platforms";
 
 export const revalidate = 600;
 
@@ -61,6 +64,8 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
     runtime: m.ott?.runtime || m.runtime || "",
   };
 
+  const pInfo = ott.platform ? getPlatformInfo(ott.platform) : null;
+
   const jsonLd = generateOttJsonLd({ ...m, ott } as unknown as OTTMovie);
   
   // Find related movies on same platform (supports legacy + new)
@@ -111,44 +116,52 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
           <div className="mb-6">
             <Breadcrumb crumbs={[{ label: "OTT", href: "/ott" }, { label: "Movies", href: "/ott" }, { label: m.title }]} />
           </div>
-          <div className="flex flex-col md:flex-row gap-8 items-end md:items-start">
-            <div className="w-48 md:w-64 flex-shrink-0 rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl relative aspect-[2/3] mt-auto hidden md:block">
+          <div className="grid grid-cols-[112px_1fr] sm:grid-cols-[128px_1fr] md:grid-cols-[256px_1fr] gap-x-4 md:gap-x-8 gap-y-4 md:gap-y-6 items-start w-full">
+            
+            {/* Poster */}
+            <div className="col-span-1 row-span-1 md:row-span-2 w-full flex-shrink-0 rounded-xl md:rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl relative aspect-[2/3] block">
               <Image src={m.posterUrl || "/placeholder.jpg"} alt={m.title} fill className="object-cover" />
             </div>
             
-            <div className="flex-1 mt-auto">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-sm font-medium mb-4">
-                <MonitorPlay className="w-4 h-4 text-orange-500" />
+            {/* Info */}
+            <div className="col-span-1 flex flex-col items-start text-left min-w-0 w-full pt-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-sm font-medium mb-3">
+                {pInfo ? (
+                  <PlatformLogo 
+                    name={pInfo.name} 
+                    domain={pInfo.domain} 
+                    slug={pInfo.slug} 
+                    color={pInfo.color} 
+                    className="w-4 h-4 object-contain" 
+                  />
+                ) : (
+                  <MonitorPlay className="w-4 h-4 text-orange-500" />
+                )}
                 {ott.platform}
               </div>
-              <h1 className="text-4xl md:text-6xl font-black text-white mb-2">{m.title}</h1>
               
-              <div className="flex flex-wrap items-center gap-4 text-gray-300 text-sm mb-8">
+              <h1 className="text-2xl sm:text-4xl md:text-6xl font-black text-white mb-2 leading-tight break-words">{m.title}</h1>
+              
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-gray-300 text-xs sm:text-sm md:mb-2">
                 {m.genre?.map((g: string) => (
                   <span key={g} className="px-2 py-1 rounded-md bg-white/5">{g}</span>
                 ))}
                 {ott.runtime && <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {ott.runtime}</span>}
                 {m.contentRating && <span className="px-2 py-0.5 border border-gray-600 rounded text-xs">{m.contentRating}</span>}
               </div>
-              
-              <div className="flex flex-wrap items-center gap-4">
-                {ott.watchUrl && isStreaming ? (
-                  <a href={ott.watchUrl} target="_blank" rel="noopener noreferrer" className="px-8 py-3.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-bold transition-all flex items-center gap-2 text-lg">
-                    <Play className="w-5 h-5 fill-current" />
-                    Watch on {ott.platform}
-                  </a>
-                ) : (
-                  <button disabled className="px-8 py-3.5 rounded-full bg-white/10 text-gray-400 font-bold flex items-center gap-2 text-lg cursor-not-allowed">
-                    <Calendar className="w-5 h-5" />
-                    {isStreaming ? "Currently Unavailable" : "Coming Soon"}
-                  </button>
-                )}
-                
-                <Link href={`/movie/${m.slug || m._id}`} className="px-8 py-3.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold transition-all flex items-center gap-2 text-lg">
-                  <Film className="w-5 h-5" />
-                  Full Movie Details
-                </Link>
-              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="col-span-2 md:col-span-1 w-full flex justify-start mt-2">
+              <OttMovieActions 
+                watchUrl={ott.watchUrl}
+                isStreaming={isStreaming}
+                platformName={ott.platform}
+                pInfo={pInfo}
+                trailerId={m.media?.trailer?.ytId || m.media?.videos?.find((v: any) => v.ytId)?.ytId}
+                movieSlug={m.slug || m._id}
+                movieTitle={m.title}
+              />
             </div>
           </div>
         </div>
@@ -167,11 +180,21 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
           <section>
             <h2 className="text-2xl font-bold text-white mb-6">OTT Streaming Information</h2>
             <div className="bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+              <div className="grid grid-cols-2 gap-4 sm:gap-8">
                 <div>
                   <h3 className="text-gray-500 text-sm font-semibold uppercase tracking-wider mb-2">Platform</h3>
                   <p className="text-white font-medium text-lg flex items-center gap-2">
-                    <MonitorPlay className="w-5 h-5 text-orange-500" />
+                    {pInfo ? (
+                      <PlatformLogo 
+                        name={pInfo.name} 
+                        domain={pInfo.domain} 
+                        slug={pInfo.slug} 
+                        color={pInfo.color} 
+                        className="w-6 h-6 object-contain" 
+                      />
+                    ) : (
+                      <MonitorPlay className="w-6 h-6 text-orange-500" />
+                    )}
                     {ott.platform}
                   </p>
                 </div>

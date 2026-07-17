@@ -6,6 +6,7 @@ import { buildMeta, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { ChevronRight, Play, Calendar, MonitorPlay } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { MovieCard } from "@/components/movie/MovieCard";
+import { PlatformLogo } from "@/components/ui/PlatformLogo";
 
 export const revalidate = 600;
 
@@ -22,10 +23,10 @@ export const metadata: Metadata = buildMeta({
 });
 
 const PLATFORMS = [
-  { name: "AAO NXT", slug: "aao-nxt", color: "#1B4FD8" },
-  { name: "Tarang Plus", slug: "tarang-plus", color: "#ED1C24" },
-  { name: "Kancha Lanka", slug: "kancha-lanka", color: "#F7931E" },
-  { name: "YouTube", slug: "youtube", color: "#FF0000" },
+  { name: "AAO NXT", slug: "aao-nxt", color: "#1B4FD8", domain: "aaonxt.com" },
+  { name: "Tarang Plus", slug: "tarang-plus", color: "#ED1C24", domain: "tarangplus.in" },
+  { name: "Kancha Lanka", slug: "kancha-lanka", color: "#F7931E", domain: "kanchalanka.com" },
+  { name: "YouTube", slug: "youtube", color: "#FF0000", domain: "youtube.com" },
 ];
 
 // Normalize both legacy (streamingOn) and new (ott.platform) fields
@@ -214,10 +215,16 @@ export default async function OttLandingPage() {
               <Link 
                 key={p.slug} 
                 href={`/ott/platform/${p.slug}`}
-                className="bg-[#111] hover:bg-[#1a1a1a] border border-white/5 hover:border-white/10 transition-all rounded-xl p-6 flex flex-col items-center justify-center text-center gap-3 group"
+                className="bg-[#111] hover:bg-[#1a1a1a] border border-white/5 hover:border-white/10 transition-all rounded-xl p-6 flex flex-col items-center justify-center text-center gap-4 group"
               >
-                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: `${p.color}22`, color: p.color }}>
-                  <MonitorPlay className="w-6 h-6" />
+                <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-white shadow-lg border-2 border-transparent group-hover:border-white/20 transition-all" style={{ boxShadow: `0 4px 20px ${p.color}20` }}>
+                  <PlatformLogo 
+                    name={p.name}
+                    domain={p.domain}
+                    slug={p.slug}
+                    color={p.color}
+                    className="w-10 h-10 object-contain transition-transform group-hover:scale-110" 
+                  />
                 </div>
                 <span className="font-semibold text-gray-300 group-hover:text-white transition-colors">{p.name}</span>
               </Link>
