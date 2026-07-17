@@ -4,6 +4,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Film, ChevronRight, Shield, Eye, FileText, AlertCircle, Scale, Mail } from "lucide-react";
+import { SITE_URL } from "@/lib/seo";
 
 // ── SEO Metadata ──────────────────────────────────────────────────────────────
 export const metadata: Metadata = {
@@ -18,13 +19,13 @@ export const metadata: Metadata = {
     "no data collection policy",
   ],
   alternates: {
-    canonical: "https://ollypedia.com/terms-and-conditions",
+    canonical: `${SITE_URL}/terms-and-conditions`,
   },
   openGraph: {
     title: "Terms & Conditions | Ollypedia",
     description:
       "Our Terms & Conditions are simple: use the site freely, we respect your privacy and collect no personal data.",
-    url: "https://ollypedia.com/terms-and-conditions",
+    url: `${SITE_URL}/terms-and-conditions`,
     siteName: "Ollypedia",
     type: "website",
   },
@@ -37,7 +38,7 @@ const sections = [
     icon: FileText,
     title: "1. Acceptance of Terms",
     content: [
-      "By accessing and using Ollypedia (ollypedia.com), you agree to be bound by these Terms and Conditions. If you do not agree to any part of these terms, please discontinue using the website.",
+      "By accessing and using Ollypedia (www.ollypedia.in), you agree to be bound by these Terms and Conditions. If you do not agree to any part of these terms, please discontinue using the website.",
       "These terms apply to all visitors, users, and anyone else who accesses or uses Ollypedia. We may update these terms from time to time; continued use of the site after changes constitutes your acceptance of the new terms.",
     ],
   },

@@ -5,8 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Star, Calendar, TrendingUp } from "lucide-react";
 import { connectDB } from "@/lib/db";
-import Movie from "@/models/Movie"; // ← same pattern as your Blog model
-import { buildMeta } from "@/lib/seo";
+import Movie from "@/models/Movie";
+import { buildMeta, SITE_URL } from "@/lib/seo";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -183,7 +183,7 @@ function JsonLd({
   category: string;
   cfg: (typeof CATEGORY_CONFIG)[string];
 }) {
-  const base = "https://ollypedia.com";
+  const base = SITE_URL;
 
   const itemList = {
     "@context": "https://schema.org",

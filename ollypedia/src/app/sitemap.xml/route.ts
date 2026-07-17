@@ -80,7 +80,8 @@ export async function GET() {
     ["/contact",              "monthly", "0.4"],
     ["/privacy",              "monthly", "0.3"],
     ["/disclaimer",           "monthly", "0.3"],
-    ["/search",               "monthly", "0.3"],
+    // NOTE: /search is intentionally excluded — blocked by robots.txt (Disallow: /search)
+    // Including a robots-blocked URL in the sitemap sends contradictory signals to Google.
   ];
 
   const entries: string[] = statics.map(([p, f, pr]) =>

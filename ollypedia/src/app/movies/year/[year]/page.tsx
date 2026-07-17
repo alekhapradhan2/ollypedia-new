@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 import Cast from "@/models/Cast";
-import { buildMeta } from "@/lib/seo";
+import { buildMeta, SITE_URL } from "@/lib/seo";
 import {
   Film, Calendar, ChevronRight, Clapperboard,
   TrendingUp, Star, Flame, Clock, Zap, User, ExternalLink,
@@ -90,7 +90,7 @@ function MovieListJsonLd({ movies, year }: { movies: any[]; year: number }) {
     item: {
       "@type": "Movie",
       name: m.title,
-      url: `https://ollypedia.com/movie/${m.slug}`,
+      url: `${SITE_URL}/movie/${m.slug}`,
       datePublished: m.releaseDate,
       director: m.director
         ? { "@type": "Person", name: m.director }
@@ -103,7 +103,7 @@ function MovieListJsonLd({ movies, year }: { movies: any[]; year: number }) {
     "@type": "ItemList",
     name: `Odia Movies ${year}`,
     description: `Complete list of Ollywood (Odia) films released in ${year}`,
-    url: `https://ollypedia.com/movies/year/${year}`,
+    url: `${SITE_URL}/movies/year/${year}`,
     numberOfItems: movies.length,
     itemListElement: itemList,
   };
@@ -123,9 +123,9 @@ function WebPageJsonLd({ year, total }: { year: number; total: number }) {
     "@type": "WebPage",
     name: `Odia Movies ${year} – Complete A to Z Ollywood Films List`,
     description: `Full list of ${total} Odia movies released in ${year}. Browse all Ollywood films with director, release date, box office verdict, cast and songs.`,
-    url: `https://ollypedia.com/movies/year/${year}`,
+    url: `${SITE_URL}/movies/year/${year}`,
     inLanguage: "en-IN",
-    isPartOf: { "@type": "WebSite", name: "Ollypedia", url: "https://ollypedia.com" },
+    isPartOf: { "@type": "WebSite", name: "Ollypedia", url: SITE_URL },
     about: {
       "@type": "Thing",
       name: "Ollywood",
@@ -147,9 +147,9 @@ function BreadcrumbJsonLd({ year }: { year: number }) {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://ollypedia.com" },
-      { "@type": "ListItem", position: 2, name: "Movies", item: "https://ollypedia.com/movies" },
-      { "@type": "ListItem", position: 3, name: `Odia Movies ${year}`, item: `https://ollypedia.com/movies/year/${year}` },
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Movies", item: `${SITE_URL}/movies` },
+      { "@type": "ListItem", position: 3, name: `Odia Movies ${year}`, item: `${SITE_URL}/movies/year/${year}` },
     ],
   };
   return (

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 import { SongsClient } from "./SongsClient";
+import { SITE_URL } from "@/lib/seo";
 import {
   Music, Mic2, Radio, ChevronRight, Headphones,
   Star, Film, TrendingUp,
@@ -43,7 +44,7 @@ export async function generateMetadata({
   if (page > 1) queryParams.set("page", String(page));
   const queryString = queryParams.toString();
 
-  const url = queryString ? `https://ollypedia.com/songs?${queryString}` : "https://ollypedia.com/songs";
+  const url = queryString ? `${SITE_URL}/songs?${queryString}` : `${SITE_URL}/songs`;
 
   return {
     title,
@@ -53,8 +54,8 @@ export async function generateMetadata({
       "Odia movie songs", "Odia music", "new Odia songs", "Odia romantic songs",
       "Human Sagar songs", "Odia devotional songs", "Odia dance songs",
     ],
-    alternates: { canonical: "https://ollypedia.com/songs" },
-    openGraph: { title, description, url: "https://ollypedia.com/songs", type: "website" },
+    alternates: { canonical: `${SITE_URL}/songs` },
+    openGraph: { title, description, url: `${SITE_URL}/songs`, type: "website" },
   };
 }
 
@@ -205,7 +206,7 @@ export default async function SongsPage({
       name: s.title,
       byArtist: { "@type": "Person", name: s.singer },
       inAlbum: { "@type": "MusicAlbum", name: s.movieTitle },
-      url: `https://ollypedia.com/songs/${s.movieSlug}/${s.songIndex}`,
+      url: `${SITE_URL}/songs/${s.movieSlug}/${s.songIndex}`,
     })),
   };
 

@@ -9,7 +9,7 @@ import Link from "next/link";
 import { Music, Play, TrendingUp } from "lucide-react";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
-import { buildMeta } from "@/lib/seo";
+import { buildMeta, SITE_URL } from "@/lib/seo";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 
 interface SongDoc {
@@ -159,7 +159,7 @@ export async function generateMetadata({
 
 // ── JSON-LD ───────────────────────────────────────────────────────────────────
 function JsonLd({ songs, category, cfg }: { songs: SongDoc[]; category: string; cfg: any }) {
-  const base = "https://ollypedia.com";
+  const base = SITE_URL;
   const itemList = {
     "@context": "https://schema.org", "@type": "ItemList",
     name: cfg.h1, url: `${base}/songs/category/${category}`, numberOfItems: songs.length,

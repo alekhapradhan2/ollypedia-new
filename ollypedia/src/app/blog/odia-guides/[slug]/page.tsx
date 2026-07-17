@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { BookOpen, ChevronRight } from "lucide-react";
-import { buildMeta } from "@/lib/seo";
+import { buildMeta, SITE_URL } from "@/lib/seo";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 
 interface GuideConfig {
@@ -184,7 +184,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 function JsonLd({ slug, cfg }: { slug: string; cfg: GuideConfig }) {
-  const base = "https://ollypedia.com";
+  const base = SITE_URL;
   const article = {
     "@context": "https://schema.org", "@type": "Article",
     headline: cfg.h1, url: `${base}/blog/odia-guides/${slug}`,

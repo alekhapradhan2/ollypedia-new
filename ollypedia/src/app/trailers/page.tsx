@@ -21,12 +21,13 @@ import {
 } from "@/lib/trailerSeo";
 import { TrailersClient } from "@/components/trailers/TrailersClient";
 import { TrailerCard }    from "@/components/trailers/TrailerCard";
+import { AnimatedWord, AnimatedWordSection } from "@/components/trailers/AnimatedWord";
 import {
   Film, Play, Calendar, TrendingUp, Clock, Star,
   ChevronRight, Clapperboard, Zap, Eye,
 } from "lucide-react";
 
-export const revalidate = 0; // Temporarily disable cache to bust stale dev cache
+export const revalidate = 600; // Revalidate every 10 minutes
 
 export async function generateMetadata(): Promise<Metadata> {
   return buildTrailerMeta();
@@ -249,7 +250,7 @@ function TrailersHero() {
               style={{ background: "linear-gradient(135deg, #f97316 0%, #ef4444 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               Ollywood
             </span>
-            <br />Movie Trailers
+            <br />Movie{" "}<AnimatedWord />
           </h1>
 
           <p className="mt-5 text-lg text-gray-400 leading-relaxed max-w-2xl">
@@ -293,10 +294,14 @@ function TrailersHero() {
 // ─── Section header ─────────────────────────────────────────────────────────
 
 function SectionHeader({
-  icon: Icon, title, subtitle, count, color = "text-orange-400",
+  icon: Icon, title, subtitle, count, color = "text-orange-400", animateWord = false,
 }: {
-  icon: React.ElementType; title: string; subtitle?: string; count?: number; color?: string;
+  icon: React.ElementType; title: string; subtitle?: string; count?: number; color?: string; animateWord?: boolean;
 }) {
+  // Split title so the last word can be animated
+  const words     = title.split(" ");
+  const restTitle = words.slice(0, -1).join(" ");
+
   return (
     <div className="flex items-start gap-3 mb-6">
       <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -304,7 +309,14 @@ function SectionHeader({
       </div>
       <div className="min-w-0">
         <h2 className="text-xl md:text-2xl font-black text-white leading-tight">
-          {title}
+          {animateWord ? (
+            <span style={{ display: "inline-flex", alignItems: "baseline", gap: "0.25ch", lineHeight: "inherit" }}>
+              <span>{restTitle}{" "}</span>
+              <AnimatedWordSection />
+            </span>
+          ) : (
+            title
+          )}
           {count !== undefined && (
             <span className="ml-2 text-sm font-semibold text-gray-600">({count})</span>
           )}
@@ -431,6 +443,7 @@ export default async function TrailersPage() {
               subtitle="Future releases & TBA movies with official trailers or teasers"
               count={upcoming.length}
               color="text-sky-400"
+              animateWord
             />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4">
               {upcoming.map((m) => (
@@ -449,6 +462,7 @@ export default async function TrailersPage() {
               subtitle="Official trailers of recently released Ollywood movies, newest first"
               count={latestTrailers.length}
               color="text-red-400"
+              animateWord
             />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4">
               {latestTrailers.map((m) => (
@@ -466,6 +480,7 @@ export default async function TrailersPage() {
             subtitle="Every Odia movie with a trailer, teaser, motion poster, or first look"
             count={totalAll}
             color="text-orange-400"
+            animateWord
           />
           <TrailersClient initialMovies={allFirst} totalCount={totalAll} />
         </section>

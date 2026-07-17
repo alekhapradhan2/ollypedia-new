@@ -20,7 +20,7 @@ import Blog from "@/models/Blog";
 import Movie from "@/models/Movie";
 import BlogDetailClient from "./BlogDetailClient";
 
-export const revalidate    = 60;   // ★ was 3600 — lowered to 1 min for news freshness
+export const revalidate    = 600;  // 10 min — balances freshness with crawl performance
 export const dynamicParams = true;
 
 // ─── helpers ───────────────────────────────────────────────────
