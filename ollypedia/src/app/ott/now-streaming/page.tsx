@@ -32,6 +32,16 @@ export default async function NowStreamingPage() {
     .lean()
     .exec();
 
+  const normalizeMovie = (m: any) => {
+    const p = m.ott?.platform || m.streamingOn || "";
+    const watchUrl = m.ott?.watchUrl || m.streamingUrl || "";
+    const releaseDate = m.ott?.releaseDate || m.ottReleaseDate || "";
+    const status = m.ott?.status || (watchUrl ? "Streaming" : releaseDate ? "Upcoming" : "");
+    return { ...m, _id: m._id.toString(), _platform: p, _watchUrl: watchUrl, _ottReleaseDate: releaseDate, _ottStatus: status };
+  };
+
+  const movies = (rawMovies as any[]).map(normalizeMovie);
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -59,7 +69,7 @@ export default async function NowStreamingPage() {
 
         {rawMovies.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
-            {rawMovies.map((movie: any) => (
+            {movies.map((movie: any) => (
               <MovieCard key={movie._id} movie={movie} variant="ott" />
             ))}
           </div>

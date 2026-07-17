@@ -82,35 +82,120 @@ export default async function OttLandingPage() {
     <main className="min-h-screen bg-[#0a0a0a] pb-20">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-6 lg:px-12 border-b border-white/5 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-purple-600/10 pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-orange-500/20 blur-[120px] rounded-full pointer-events-none" />
+      {/* ── OTT Hero Section ── */}
+      <section className="relative overflow-hidden pt-12 pb-12 md:pt-20 md:pb-20 border-b border-white/5">
         
-        <div className="max-w-7xl mx-auto relative z-10 text-center flex flex-col items-center">
-          <div className="mb-6 self-start md:self-center">
-            <Breadcrumb crumbs={[{ label: "OTT" }]} />
-          </div>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 font-medium text-sm mb-6">
-            <MonitorPlay className="w-4 h-4" />
-            <span>Digital Premieres</span>
-          </div>
-          <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">
-            Watch Ollywood Movies <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">on OTT</span>
-          </h1>
-          <p className="text-gray-400 text-lg md:text-xl max-w-3xl mx-auto mb-10 leading-relaxed">
-            Discover the latest Odia movies streaming on platforms like AAO NXT, Tarang Plus, Kancha Lanka, and more.
-          </p>
-          
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/ott/now-streaming" className="px-8 py-3.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-bold transition-all flex items-center gap-2">
-              <Play className="w-5 h-5 fill-current" />
-              Now Streaming
-            </Link>
-            <Link href="/ott/upcoming" className="px-8 py-3.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold transition-all flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Upcoming Releases
-            </Link>
+        {/* Background Effects */}
+        <div className="absolute inset-0 pointer-events-none">
+           {/* Glows */}
+           <div className="absolute top-0 right-0 w-[800px] h-[600px] bg-red-600/10 blur-[120px] rounded-full translate-x-1/3 -translate-y-1/4" />
+           <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-orange-600/10 blur-[120px] rounded-full -translate-x-1/3 translate-y-1/3" />
+           {/* Grid */}
+           <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+            
+            {/* Left Content */}
+            <div className="space-y-8 text-center lg:text-left flex flex-col items-center lg:items-start">
+              
+              <div className="w-full flex justify-center lg:justify-start">
+                 <Breadcrumb crumbs={[{ label: "OTT" }]} />
+              </div>
+
+              <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border text-xs font-bold uppercase tracking-widest"
+                style={{ color: "#f97316", borderColor: "rgba(249,115,22,0.3)", background: "rgba(249,115,22,0.08)" }}>
+                {/* Pulsing dot */}
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500" />
+                </span>
+                <MonitorPlay className="w-3.5 h-3.5" />
+                Digital Premieres
+              </div>
+
+              <h1 className="font-black text-white leading-[1.1]" style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)" }}>
+                Watch Ollywood Movies <br className="hidden md:block" />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-red-500 to-pink-500">
+                  on OTT
+                </span>
+              </h1>
+
+              <p className="text-gray-400 leading-relaxed max-w-lg mx-auto lg:mx-0" style={{ fontSize: "clamp(1rem, 1.5vw, 1.15rem)" }}>
+                Discover the latest Odia movies streaming on platforms like AAO NXT, Tarang Plus, Kancha Lanka, and more. 
+                <strong className="text-white font-semibold"> Your ultimate guide to digital releases.</strong>
+              </p>
+
+              <div className="flex flex-wrap justify-center lg:justify-start gap-4">
+                <Link href="/ott/now-streaming" className="group px-8 py-4 rounded-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:shadow-[0_0_30px_rgba(249,115,22,0.6)] flex items-center gap-2">
+                  <Play className="w-5 h-5 fill-current group-hover:scale-110 transition-transform" />
+                  Now Streaming
+                </Link>
+                <Link href="/ott/upcoming" className="group px-8 py-4 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold transition-all flex items-center gap-2">
+                  <Calendar className="w-5 h-5 group-hover:text-orange-400 transition-colors" />
+                  Upcoming Releases
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Visual Panel */}
+            <div className="relative hidden lg:flex items-center justify-center h-[400px]">
+               <div className="relative w-full h-full perspective-[1000px] flex items-center justify-center">
+                 
+                 {/* Back Glow */}
+                 <div className="absolute w-64 h-64 bg-red-600/20 blur-[100px] rounded-full animate-pulse" />
+
+                 {/* Screen 3 (Back left) */}
+                 <div className="absolute w-64 h-40 rounded-2xl border border-white/10 bg-black/80 backdrop-blur-md shadow-2xl -translate-x-24 -translate-y-8 -rotate-12 opacity-50 flex flex-col overflow-hidden transition-transform duration-700 hover:-translate-y-12 hover:-rotate-6 hover:opacity-80">
+                   <div className="h-6 border-b border-white/10 bg-white/5 flex items-center px-3 gap-1.5">
+                     <div className="w-2 h-2 rounded-full bg-white/20" />
+                     <div className="w-2 h-2 rounded-full bg-white/20" />
+                     <div className="w-2 h-2 rounded-full bg-white/20" />
+                   </div>
+                   <div className="flex-1 bg-gradient-to-br from-blue-600/20 to-transparent flex items-center justify-center">
+                     <MonitorPlay className="w-10 h-10 text-blue-500/40" />
+                   </div>
+                 </div>
+
+                 {/* Screen 2 (Back right) */}
+                 <div className="absolute w-64 h-40 rounded-2xl border border-white/10 bg-black/80 backdrop-blur-md shadow-2xl translate-x-24 -translate-y-4 rotate-12 opacity-60 flex flex-col overflow-hidden transition-transform duration-700 hover:-translate-y-8 hover:rotate-6 hover:opacity-90">
+                   <div className="h-6 border-b border-white/10 bg-white/5 flex items-center px-3 gap-1.5">
+                     <div className="w-2 h-2 rounded-full bg-white/20" />
+                     <div className="w-2 h-2 rounded-full bg-white/20" />
+                     <div className="w-2 h-2 rounded-full bg-white/20" />
+                   </div>
+                   <div className="flex-1 bg-gradient-to-br from-orange-600/20 to-transparent flex items-center justify-center">
+                     <MonitorPlay className="w-10 h-10 text-orange-500/40" />
+                   </div>
+                 </div>
+
+                 {/* Screen 1 (Front center) */}
+                 <div className="absolute w-80 h-48 rounded-2xl border border-orange-500/40 bg-black/90 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-10 translate-y-8 hover:-translate-y-2 transition-all duration-500 hover:shadow-[0_20px_60px_rgba(249,115,22,0.2)] hover:border-orange-400/60 cursor-default">
+                   <div className="h-8 border-b border-white/10 bg-gradient-to-r from-orange-500/10 to-transparent flex items-center px-4 gap-2">
+                     <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                     <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+                     <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                   </div>
+                   <div className="flex-1 relative overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-orange-900/30 via-black to-black flex items-center justify-center">
+                     {/* Play Button */}
+                     <div className="w-16 h-16 rounded-full bg-orange-600/20 border border-orange-500/50 flex items-center justify-center shadow-[0_0_30px_rgba(249,115,22,0.3)] animate-pulse">
+                        <Play className="w-6 h-6 text-orange-400 fill-orange-400 ml-1" />
+                     </div>
+                     
+                     {/* Floating mini chips */}
+                     <div className="absolute bottom-4 left-4 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white flex items-center gap-1.5 shadow-lg">
+                       <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> 4K Streaming
+                     </div>
+                     <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/30 text-[10px] font-bold text-orange-300 flex items-center gap-1.5 shadow-lg">
+                       Latest Drops
+                     </div>
+                   </div>
+                 </div>
+
+               </div>
+            </div>
+
           </div>
         </div>
       </section>

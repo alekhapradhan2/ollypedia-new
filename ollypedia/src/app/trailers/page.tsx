@@ -20,7 +20,7 @@ import {
   type TrailerMovieDoc,
 } from "@/lib/trailerSeo";
 import { TrailersClient } from "@/components/trailers/TrailersClient";
-import { TrailerCard }    from "@/components/trailers/TrailerCard";
+import { TrailerCard } from "@/components/trailers/TrailerCard";
 import { AnimatedWord, AnimatedWordSection } from "@/components/trailers/AnimatedWord";
 import {
   Film, Play, Calendar, TrendingUp, Clock, Star,
@@ -37,12 +37,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 // Section 1 — This Month: movies releasing this month (any video OR no video)
 async function fetchThisMonth(): Promise<TrailerMovieDoc[]> {
-  const now     = new Date();
-  const year    = now.getFullYear();
-  const month   = String(now.getMonth() + 1).padStart(2, "0");
-  const start   = `${year}-${month}-01`;
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const start = `${year}-${month}-01`;
   const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
-  const end     = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
+  const end = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
 
   return Movie.find(
     { releaseDate: { $gte: start, $lte: end } },
@@ -146,7 +146,7 @@ async function fetchLatestTrailers(): Promise<TrailerMovieDoc[]> {
 // Sort: released movies by releaseDate DESC (most recent release first),
 //       then upcoming/TBA movies (no past release date) at the end.
 async function fetchAllWithVideo(page = 1, limit = 20): Promise<{ movies: TrailerMovieDoc[]; total: number }> {
-  const skip  = (page - 1) * limit;
+  const skip = (page - 1) * limit;
   const today = new Date().toISOString().split("T")[0];
 
   const videoMatch = {
@@ -209,87 +209,200 @@ function monthName() {
 
 function TrailersHero() {
   const year = new Date().getFullYear();
-  const chips = [
-    { icon: Play,         label: "Latest Trailers",   color: "text-red-400 bg-red-500/10 border-red-500/20" },
-    { icon: Clapperboard, label: "Official Teasers",   color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
-    { icon: Film,         label: "Motion Posters",     color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
-    { icon: Eye,          label: "First Looks",        color: "text-purple-400 bg-purple-500/10 border-purple-500/20" },
-    { icon: Calendar,     label: "Upcoming Movies",    color: "text-green-400 bg-green-500/10 border-green-500/20" },
-    { icon: Star,         label: "Release Dates",      color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20" },
+
+  const stats = [
+    { value: "500+", label: "Trailers" },
+    { value: "100+", label: "Movies" },
+    { value: year, label: "Latest" },
+    { value: "Free", label: "Watch" },
   ];
+
+
   return (
     <section
       className="relative overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #0a0a0a 0%, #120a00 50%, #0a0a0a 100%)" }}
+      style={{ background: "linear-gradient(135deg, #050505 0%, #0f0500 40%, #080010 100%)" }}
       aria-label="Trailers hero banner"
     >
-      {/* Glows */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-orange-500/5 rounded-full blur-[120px]" />
-        <div className="absolute top-20 left-10 w-[300px] h-[300px] bg-red-600/5 rounded-full blur-[80px]" />
-        <div className="absolute top-10 right-10 w-[200px] h-[200px] bg-amber-500/5 rounded-full blur-[60px]" />
+      {/* ── Cinematic background layers ── */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Large center glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[900px] h-[600px] rounded-full"
+          style={{ background: "radial-gradient(ellipse, rgba(249,115,22,0.08) 0%, transparent 70%)" }} />
+        {/* Left accent glow */}
+        <div className="absolute -left-20 top-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full"
+          style={{ background: "radial-gradient(ellipse, rgba(239,68,68,0.07) 0%, transparent 70%)" }} />
+        {/* Right accent glow */}
+        <div className="absolute -right-20 bottom-0 w-[500px] h-[400px] rounded-full"
+          style={{ background: "radial-gradient(ellipse, rgba(168,85,247,0.06) 0%, transparent 70%)" }} />
+
+
+        {/* Subtle grid overlay */}
+        <div className="absolute inset-0 opacity-[0.025]"
+          style={{
+            backgroundImage: "linear-gradient(rgba(249,115,22,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(249,115,22,0.5) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }} />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-xs text-gray-600 mb-8" aria-label="Breadcrumb">
+        <nav className="flex items-center gap-2 text-xs text-gray-600 mb-10" aria-label="Breadcrumb">
           <Link href="/" className="hover:text-orange-400 transition-colors">Home</Link>
           <ChevronRight className="w-3 h-3" />
           <span className="text-gray-400">Trailers</span>
         </nav>
 
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 text-xs font-bold text-orange-400 uppercase tracking-widest mb-4 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20">
-            <Clapperboard className="w-3.5 h-3.5" />
-            Ollywood Trailers Hub
+        {/* ── Two-column layout ── */}
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+
+          {/* ── LEFT: Text content ── */}
+          <div className="space-y-8">
+
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border text-xs font-bold uppercase tracking-widest"
+              style={{ color: "#f97316", borderColor: "rgba(249,115,22,0.3)", background: "rgba(249,115,22,0.08)" }}>
+              {/* Pulsing dot */}
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+              </span>
+              <Clapperboard className="w-3.5 h-3.5" />
+              Ollywood Trailers Hub
+            </div>
+
+            {/* Heading */}
+            <div>
+              <h1 className="font-black text-white leading-[1.05]" style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)" }}>
+                <span className="block text-gray-300 font-extrabold" style={{ fontSize: "0.55em", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "0.3em", color: "rgba(249,115,22,0.7)" }}>
+                  Ollywood Cinema
+                </span>
+                Watch{" "}
+                <span style={{
+                  background: "linear-gradient(135deg, #f97316 0%, #ef4444 60%, #ec4899 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}>
+                  Movie
+                </span>
+                <br />
+                <AnimatedWord />
+              </h1>
+            </div>
+
+            {/* Description */}
+            <p className="text-gray-400 leading-relaxed max-w-lg" style={{ fontSize: "clamp(0.95rem, 1.5vw, 1.1rem)" }}>
+              Official trailers, teasers, motion posters &amp; first looks of every{" "}
+              <strong className="text-white font-semibold">Odia movie in {year}</strong>.
+              Cast, crew, release dates &amp; more — only on Ollypedia.
+            </p>
+
+            {/* Stats row */}
+            <div className="flex flex-wrap gap-6 pt-6 border-t border-white/[0.06]">
+              {stats.map(({ value, label }) => (
+                <div key={label} className="text-center">
+                  <div className="text-2xl font-black text-white">{value}</div>
+                  <div className="text-xs text-gray-600 font-medium mt-0.5">{label}</div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white leading-tight">
-            Latest{" "}
-            <span className="text-transparent"
-              style={{ background: "linear-gradient(135deg, #f97316 0%, #ef4444 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              Ollywood
-            </span>
-            <br />Movie{" "}<AnimatedWord />
-          </h1>
+          {/* ── RIGHT: Visual panel ── */}
+          <div className="relative hidden lg:flex items-center justify-center">
 
-          <p className="mt-5 text-lg text-gray-400 leading-relaxed max-w-2xl">
-            Watch official trailers, teasers, motion posters &amp; first looks of every{" "}
-            <strong className="text-white font-semibold">Odia movie in {year}</strong>.
-            Complete cast, crew, release dates &amp; production details — only on Ollypedia.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2 mt-8">
-          {chips.map(({ icon: Icon, label, color }) => (
-            <span key={label} className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${color}`}>
-              <Icon className="w-3.5 h-3.5" />{label}
-            </span>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap gap-6 mt-10 pt-8 border-t border-white/[0.05]">
-          {[
-            { icon: Play,       value: "Official", label: "HD Trailers" },
-            { icon: Calendar,   value: year,        label: "New Releases" },
-            { icon: TrendingUp, value: "100+",      label: "Odia Movies" },
-            { icon: Zap,        value: "Free",      label: "Watch Online" },
-          ].map(({ icon: Icon, value, label }) => (
-            <div key={label} className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-                <Icon className="w-4 h-4 text-orange-400" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white leading-tight">{value}</p>
-                <p className="text-xs text-gray-600">{label}</p>
-              </div>
+            {/* Outer ring glow */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-80 h-80 rounded-full border border-orange-500/10 animate-pulse" />
+              <div className="absolute w-64 h-64 rounded-full border border-orange-500/15" />
             </div>
-          ))}
+
+            {/* Center clapperboard icon */}
+            <div className="relative z-10 flex flex-col items-center gap-6">
+
+              {/* Main visual: big clapperboard */}
+              <div className="relative">
+                <div className="w-40 h-40 rounded-3xl flex items-center justify-center shadow-2xl"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(239,68,68,0.15) 100%)",
+                    border: "1px solid rgba(249,115,22,0.25)",
+                    boxShadow: "0 0 80px rgba(249,115,22,0.12), inset 0 1px 0 rgba(255,255,255,0.05)",
+                  }}>
+                  <Clapperboard className="w-20 h-20 text-orange-400" strokeWidth={1.2} />
+                </div>
+                {/* Play badge */}
+                <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full flex items-center justify-center shadow-lg"
+                  style={{ background: "linear-gradient(135deg, #ef4444, #f97316)" }}>
+                  <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                </div>
+              </div>
+
+              {/* Floating cards around the center */}
+              {/* Top-left card */}
+              <div className="absolute -top-16 -left-24 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 animate-bounce"
+                style={{
+                  animationDuration: "3s",
+                  background: "rgba(15,15,15,0.95)",
+                  border: "1px solid rgba(239,68,68,0.3)",
+                  color: "#ef4444",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                }}>
+                <Play className="w-3.5 h-3.5 fill-red-500 text-red-500" />
+                New Trailer
+              </div>
+
+              {/* Top-right card */}
+              <div className="absolute -top-8 -right-28 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2"
+                style={{
+                  animationDuration: "4s",
+                  background: "rgba(15,15,15,0.95)",
+                  border: "1px solid rgba(168,85,247,0.3)",
+                  color: "#a855f7",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                }}>
+                <Eye className="w-3.5 h-3.5" />
+                First Look
+              </div>
+
+              {/* Bottom-left card */}
+              <div className="absolute -bottom-10 -left-28 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2"
+                style={{
+                  background: "rgba(15,15,15,0.95)",
+                  border: "1px solid rgba(249,115,22,0.3)",
+                  color: "#f97316",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                }}>
+                <Clapperboard className="w-3.5 h-3.5" />
+                Official Teaser
+              </div>
+
+              {/* Bottom-right card */}
+              <div className="absolute -bottom-16 -right-24 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 animate-bounce"
+                style={{
+                  animationDuration: "3.5s",
+                  background: "rgba(15,15,15,0.95)",
+                  border: "1px solid rgba(59,130,246,0.3)",
+                  color: "#3b82f6",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                }}>
+                <Film className="w-3.5 h-3.5" />
+                Glimpse
+              </div>
+
+            </div>
+
+          </div>
+
+
+
         </div>
       </div>
     </section>
   );
 }
+
 
 // ─── Section header ─────────────────────────────────────────────────────────
 
@@ -299,7 +412,7 @@ function SectionHeader({
   icon: React.ElementType; title: string; subtitle?: string; count?: number; color?: string; animateWord?: boolean;
 }) {
   // Split title so the last word can be animated
-  const words     = title.split(" ");
+  const words = title.split(" ");
   const restTitle = words.slice(0, -1).join(" ");
 
   return (
@@ -330,10 +443,10 @@ function SectionHeader({
 // ─── This Month card (simplified, navigates to trailer page) ─────────────────
 
 function ThisMonthCard({ movie }: { movie: TrailerMovieDoc }) {
-  const slug      = movie.slug || movie._id;
-  const poster    = movie.posterUrl || movie.thumbnailUrl || "/placeholder-movie.jpg";
-  const relDate   = fmtDate(movie.releaseDate);
-  const hasVid    = hasAnyVideo(movie);
+  const slug = movie.slug || movie._id;
+  const poster = movie.posterUrl || movie.thumbnailUrl || "/placeholder-movie.jpg";
+  const relDate = fmtDate(movie.releaseDate);
+  const hasVid = hasAnyVideo(movie);
 
   return (
     <Link href={`/trailers/${slug}`} className="group block" aria-label={`${movie.title} trailer page`}>
@@ -394,7 +507,7 @@ export default async function TrailersPage() {
 
   const collectionLd = trailerCollectionJsonLd([...latestTrailers, ...upcoming, ...allFirst]);
   const breadcrumbLd = trailerBreadcrumbJsonLd();
-  const seoIntro     = getTrailerPageSeoIntro();
+  const seoIntro = getTrailerPageSeoIntro();
   const currentMonth = monthName();
 
   return (
@@ -489,11 +602,11 @@ export default async function TrailersPage() {
         <section aria-label="Explore more on Ollypedia">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
             {[
-              { href: "/movies",                   label: "All Odia Movies",    icon: Film },
-              { href: "/movies?verdict=Upcoming",  label: "Upcoming Movies",    icon: Calendar },
-              { href: "/cast",                     label: "Cast & Crew",         icon: Star },
-              { href: "/songs",                    label: "Odia Songs",          icon: TrendingUp },
-              { href: "/box-office",               label: "Box Office",          icon: Zap },
+              { href: "/movies", label: "All Odia Movies", icon: Film },
+              { href: "/movies?verdict=Upcoming", label: "Upcoming Movies", icon: Calendar },
+              { href: "/cast", label: "Cast & Crew", icon: Star },
+              { href: "/songs", label: "Odia Songs", icon: TrendingUp },
+              { href: "/box-office", label: "Box Office", icon: Zap },
             ].map(({ href, label, icon: Icon }) => (
               <Link key={href} href={href}
                 className="flex flex-col items-center gap-2 p-4 bg-[#141414] border border-[#252525] rounded-xl hover:border-orange-500/30 hover:bg-orange-500/5 text-center transition-all group">

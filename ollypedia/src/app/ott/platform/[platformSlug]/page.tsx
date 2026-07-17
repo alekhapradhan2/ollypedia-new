@@ -84,7 +84,7 @@ export default async function OttPlatformPage({ params }: { params: { platformSl
     );
   }
 
-  const movies = await Movie.find({
+  const rawMovies = await Movie.find({
     $or: [
       { "ott.platform": { $regex: new RegExp(`^${platform.name}$`, "i") } },
       { streamingOn: { $regex: new RegExp(`^${platform.name}$`, "i") } },
@@ -94,6 +94,16 @@ export default async function OttPlatformPage({ params }: { params: { platformSl
     .sort({ updatedAt: -1 })
     .lean()
     .exec();
+
+  const normalizeMovie = (m: any) => {
+    const p = m.ott?.platform || m.streamingOn || "";
+    const watchUrl = m.ott?.watchUrl || m.streamingUrl || "";
+    const releaseDate = m.ott?.releaseDate || m.ottReleaseDate || "";
+    const status = m.ott?.status || (watchUrl ? "Streaming" : releaseDate ? "Upcoming" : "");
+    return { ...m, _id: m._id.toString(), _platform: p, _watchUrl: watchUrl, _ottReleaseDate: releaseDate, _ottStatus: status };
+  };
+
+  const movies = (rawMovies as any[]).map(normalizeMovie);
 
   const streamingCount = (movies as any[]).filter((m: any) =>
     m.ott?.status === "Streaming" || m.streamingUrl

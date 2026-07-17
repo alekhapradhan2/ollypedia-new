@@ -309,16 +309,17 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const yearStr   = year ? ` (${year})` : "";
 
   // OTT helpers for title/description
-  const ottDate     = movie.ottReleaseDate || "";
+  const ottPlatform = movie.ott?.platform || movie.streamingOn || "";
+  const ottDate     = movie.ott?.releaseDate || movie.ottReleaseDate || "";
   const isTBA       = ottDate === "TBA";
   const isOttLive   = !isTBA && (!ottDate || new Date(ottDate) <= new Date());
   const isOttComing = !isTBA && !!ottDate && new Date(ottDate) > new Date();
   const ottFmtDate  = (ottDate && ottDate !== "TBA") ? new Date(ottDate).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"}) : "";
 
   // Dynamic title: append OTT info when available
-  const ottTitleSuffix = movie.streamingOn
+  const ottTitleSuffix = ottPlatform
     ? isOttLive
-      ? ` | Now on ${movie.streamingOn}`
+      ? ` | Now on ${ottPlatform}`
       : isOttComing
       ? ` | OTT ${ottFmtDate}`
       : isTBA
@@ -328,13 +329,13 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const title = `${movie.title}${yearStr} – Cast, Songs & Review${ottTitleSuffix} | Ollypedia`;
 
   // Dynamic description: weave in OTT info
-  const ottDescPart = movie.streamingOn
+  const ottDescPart = ottPlatform
     ? isOttLive
-      ? ` Now streaming on ${movie.streamingOn}.`
+      ? ` Now streaming on ${ottPlatform}.`
       : isOttComing
-      ? ` OTT release on ${movie.streamingOn} from ${ottFmtDate}.`
+      ? ` OTT release on ${ottPlatform} from ${ottFmtDate}.`
       : isTBA
-      ? ` OTT release on ${movie.streamingOn} — date to be announced.`
+      ? ` OTT release on ${ottPlatform} — date to be announced.`
       : ""
     : "";
   const description = (
@@ -347,7 +348,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const canonical = `${SITE_URL}/movie/${movie.slug || movie._id}`;
 
   // ── OTT keyword matrix ──────────────────────────────────────────────────────
-  const ottKw: string[] = movie.streamingOn ? [
+  const ottKw: string[] = ottPlatform ? [
     // Generic OTT search patterns
     `${movie.title} ott`,
     `${movie.title} ott release`,
@@ -363,15 +364,15 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     `${movie.title} available online`,
     `${movie.title} full movie online`,
     // Platform-specific
-    `${movie.title} ${movie.streamingOn}`,
-    `${movie.title} ${movie.streamingOn} release date`,
-    `${movie.title} ${movie.streamingOn} watch`,
-    `watch ${movie.title} on ${movie.streamingOn}`,
-    `${movie.title} on ${movie.streamingOn}`,
+    `${movie.title} ${ottPlatform}`,
+    `${movie.title} ${ottPlatform} release date`,
+    `${movie.title} ${ottPlatform} watch`,
+    `watch ${movie.title} on ${ottPlatform}`,
+    `${movie.title} on ${ottPlatform}`,
     // With year
     year ? `${movie.title} ${year} ott` : "",
     year ? `${movie.title} ${year} ott release date` : "",
-    year ? `${movie.title} ${year} ${movie.streamingOn}` : "",
+    year ? `${movie.title} ${year} ${ottPlatform}` : "",
     year ? `${movie.title} ${year} streaming` : "",
     year ? `${movie.title} ${year} digital release` : "",
     // Odia-specific OTT queries
@@ -384,7 +385,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       `${movie.title} now streaming`,
       `${movie.title} now available online`,
       `watch ${movie.title} online now`,
-      `${movie.title} ${movie.streamingOn} available`,
+      `${movie.title} ${ottPlatform} available`,
     ] : []),
     ...(isOttComing ? [
       `${movie.title} ott release ${ottFmtDate}`,

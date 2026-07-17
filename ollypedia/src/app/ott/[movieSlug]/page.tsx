@@ -21,7 +21,16 @@ export async function generateMetadata({ params }: { params: { movieSlug: string
     ]
   }).lean().exec();
   if (!movie) return {};
-  return buildOttMeta(movie as unknown as OTTMovie);
+  
+  const m = movie as any;
+  const ott = {
+    platform: m.ott?.platform || m.streamingOn || "",
+    releaseDate: m.ott?.releaseDate || m.ottReleaseDate || "",
+    status: m.ott?.status || (m.streamingUrl ? "Streaming" : "Upcoming"),
+    watchUrl: m.ott?.watchUrl || m.streamingUrl || "",
+  };
+  
+  return buildOttMeta({ ...m, ott } as unknown as OTTMovie);
 }
 
 export default async function OttMovieDetailPage({ params }: { params: { movieSlug: string } }) {
