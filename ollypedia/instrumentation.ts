@@ -1,7 +1,7 @@
 // ollypedia/instrumentation.ts
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-    const { startKeepAlive } = await import('./src/lib/keep-alive');
-    startKeepAlive();
+    // const { startKeepAlive } = await import('./src/lib/keep-alive');
+    // startKeepAlive(); // Disabled to conserve Render free-tier hours
   }
 }
