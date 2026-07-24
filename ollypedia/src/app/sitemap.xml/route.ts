@@ -182,7 +182,7 @@ export async function GET() {
           `${SITE_URL}/box-office/${movieSlug}`,
           lastmod,
           "daily",
-          "0.9"
+          "1.0" // Boosted to 1.0 to force Google to index for Sitelinks
         ));
       }
 
@@ -215,7 +215,7 @@ export async function GET() {
       if (!c.name?.trim()) return;
       const lastmod = safeDate(c.updatedAt ?? c.createdAt);
       // Route is /cast/[id] — always use MongoDB _id, never slug
-      entries.push(urlEntry(`${SITE_URL}/cast/${String(c._id)}`, lastmod, "monthly", "0.7"));
+      entries.push(urlEntry(`${SITE_URL}/cast/${String(c._id)}`, lastmod, "weekly", "0.9")); // Boosted for Sitelinks
     });
 
     // ── Blogs ──────────────────────────────────────────────────────────────

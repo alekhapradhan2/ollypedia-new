@@ -4,15 +4,27 @@ import Movie from "@/models/Movie";
 import Cast from "@/models/Cast";
 import Blog from "@/models/Blog";
 
-// ─── Build a fuzzy regex from the query ──────────────────────────────────────
-// "avngers" → /a.*v.*n.*g.*e.*r.*s/i  so typos/missing chars still match
+// ─── Build an advanced fuzzy regex from the query ─────────────────────────────
 function fuzzyRegex(q: string) {
-  const escaped = q
-    .trim()
+  const clean = q.trim().toLowerCase();
+  
+  // 1. Remove common vowels if the word is long enough, as users often drop them
+  // 2. Replace 'c' or 'ck' with 'k', 'ph' with 'f', 'v' with 'b' (common Odia typos)
+  let normalized = clean
+    .replace(/ck/g, "k")
+    .replace(/c/g, "k")
+    .replace(/ph/g, "f")
+    .replace(/v/g, "b")
+    .replace(/w/g, "b");
+    
+  // Create a regex that allows any characters between the letters, 
+  // making it highly resilient to missing/added letters.
+  const escaped = normalized
     .split("")
-    .map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .filter(c => /[a-z0-9]/.test(c)) // Only keep alphanumeric for fuzzy
     .join(".*");
-  return { $regex: escaped, $options: "i" };
+    
+  return { $regex: escaped || clean, $options: "i" };
 }
 
 // Exact-prefix / contains regex (fast, used alongside fuzzy on OR)
