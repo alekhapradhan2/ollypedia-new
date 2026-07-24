@@ -42,7 +42,7 @@ export async function generateStaticParams() {
   await connectDB();
   const blogs = await Blog.find({ published: true }, "slug")
     .sort({ createdAt: -1 })
-    .limit(500) // ★ was 50 — raised so more pages are pre-rendered at deploy time
+    .limit(15) // Reduced limit to 15 to avoid build-time memory exhaustion on Hostinger
     .lean();
   return blogs.map((b: any) => ({ slug: b.slug }));
 }

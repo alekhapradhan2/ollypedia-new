@@ -119,7 +119,7 @@ export async function generateStaticParams() {
     "slug"
   )
     .sort({ updatedAt: -1 })
-    .limit(100)
+    .limit(15) // Reduced limit to 15 to prevent memory overflow on Hostinger
     .lean();
 
   return movies.map((m: any) => ({ movieSlug: m.slug }));

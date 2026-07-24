@@ -2,11 +2,11 @@
 const nextConfig = {
   experimental: {
     instrumentationHook: true, // remove if you're on Next.js 15+
+    isrMemoryCacheSize: 10,    // Limit in-memory cache to 10 pages to save RAM on Hostinger (512MB limit)
   },
 
   images: {
-    // unoptimized removed — enable Next.js automatic WebP/AVIF conversion
-    // for better Core Web Vitals (was serving full-size images before)
+    unoptimized: true,         // Disable server-side image optimization to prevent RAM spikes from 'sharp'
     remotePatterns: [
       { protocol: "https", hostname: "**" },
       { protocol: "http", hostname: "**" },
