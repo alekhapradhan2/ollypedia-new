@@ -181,7 +181,10 @@ function splitCastCrew(castList: any[]): { crew: any[]; cast: any[] } {
 
 // Gets the pure Director name (not Music Director, Art Director)
 function getDirectorFromCast(castList: any[]): string | undefined {
-  const found = (castList || []).find((m: any) => isPureDirector(m.role) || isPureDirector(m.type));
+  const found = (castList || []).find((m: any) => {
+    const roleStr = m.role?.trim() || m.type?.trim();
+    return isPureDirector(roleStr);
+  });
   return found?.name;
 }
 
@@ -194,7 +197,10 @@ function getProducerFromCast(castList: any[]): string | undefined {
   });
   if (exact) return exact.name;
   // Then try isPureProducer
-  const found = (castList || []).find((m: any) => isPureProducer(m.role) || isPureProducer(m.type));
+  const found = (castList || []).find((m: any) => {
+    const roleStr = m.role?.trim() || m.type?.trim();
+    return isPureProducer(roleStr);
+  });
   return found?.name;
 }
 
