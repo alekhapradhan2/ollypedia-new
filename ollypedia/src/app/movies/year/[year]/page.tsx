@@ -41,7 +41,7 @@ export async function generateMetadata({
   const pageLabel = page > 1 ? ` | Page ${page}` : "";
 
   return buildMeta({
-    title: `Odia Movies ${year} A to Z – Complete Ollywood Films List${pageLabel} | Ollypedia`,
+    title: `Odia Movies ${year} A to Z – Complete Ollywood Films List${pageLabel}`,
     description: `${year} Odia Movies A to Z full list${page > 1 ? ` (Page ${page})` : ""} – Browse all Ollywood films released in ${year} with movie names, directors, release dates, box office collection, cast, songs, and reviews. Complete ${year} Odia movie list.`,
     keywords: [
       // A-to-Z / list variants

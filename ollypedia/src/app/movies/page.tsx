@@ -25,7 +25,7 @@ export async function generateMetadata({
   const pageLabel = page > 1 ? ` | Page ${page}` : "";
 
   return buildMeta({
-    title: `Odia Movies – Complete Ollywood Film Database${pageLabel} | Ollypedia`,
+    title: `Odia Movies – Complete Ollywood Film Database${pageLabel}`,
     description:
       `Browse the complete list of Odia (Ollywood) movies${page > 1 ? ` (Page ${page})` : ""}. Filter by genre, year, verdict and more. Find your favourite Odia films with full cast, songs, box office collection, trailers and reviews.`,
     keywords: [

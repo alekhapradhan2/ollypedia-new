@@ -11,7 +11,7 @@ import { SongsClient } from "@/components/songs/SongsClient";
 export const revalidate = 600;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title       = `Odia Movie Songs & Albums – Listen to Latest Ollywood Music | Ollypedia`;
+  const title       = `Odia Movie Songs & Albums – Listen to Latest Ollywood Music`;
   const description = `Browse all Odia movie music albums. Listen to the latest Ollywood songs, mp3 audio tracks, and music videos.`;
 
   return {

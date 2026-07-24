@@ -8,7 +8,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Ollypedia",
+  title: "Privacy Policy",
   description:
     "Read Ollypedia's Privacy Policy to learn how we collect, use, and protect your information while you browse Odisha's most complete Odia cinema encyclopedia.",
   alternates: {

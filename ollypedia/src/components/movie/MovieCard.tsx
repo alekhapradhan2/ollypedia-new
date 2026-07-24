@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { LoadingCard } from "@/components/ui/LoadingCard";
 import Image from "next/image";
 import { Calendar, Star, Loader2 } from "lucide-react";
 import { PlatformLogo } from "@/components/ui/PlatformLogo";
@@ -39,19 +39,10 @@ function verdictColor(verdict: string) {
   return "badge-gray";
 }
 
-function CardLoadingOverlay() {
-  return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center gap-2 bg-black/80 backdrop-blur-[2px] rounded-[inherit]">
-      <Loader2 className="w-4 h-4 text-orange-400 animate-spin" />
-      <span className="text-xs font-medium text-gray-300">Opening...</span>
-    </div>
-  );
-}
+
 
 export function MovieCard({ movie, variant = "portrait", hrefPrefix }: MovieCardProps) {
-  const [isLoading, setIsLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const handleNavigate = () => setIsLoading(true);
 
   const isOtt = variant === "ott";
   const defaultHref = isOtt ? `/ott/${movie.slug || movie._id}` : `/movie/${movie.slug || movie._id}`;
@@ -69,7 +60,7 @@ export function MovieCard({ movie, variant = "portrait", hrefPrefix }: MovieCard
 
   if (variant === "landscape") {
     return (
-      <Link href={href} className="card relative flex gap-3 p-3 group" onClick={handleNavigate}>
+      <LoadingCard href={href} className="card relative flex gap-3 p-3 group">
         <div className="relative w-16 h-24 rounded-lg overflow-hidden flex-shrink-0">
           <Image src={image} alt={movie.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
         </div>
@@ -96,8 +87,7 @@ export function MovieCard({ movie, variant = "portrait", hrefPrefix }: MovieCard
             )}
           </div>
         </div>
-        {isLoading && <CardLoadingOverlay />}
-      </Link>
+      </LoadingCard>
     );
   }
 
@@ -108,10 +98,9 @@ export function MovieCard({ movie, variant = "portrait", hrefPrefix }: MovieCard
     const trailerId = movie.media?.trailer?.ytId || movie.media?.videos?.find(v => v.ytId)?.ytId;
 
     return (
-      <Link 
+      <LoadingCard 
         href={href} 
         className="group block relative rounded-xl overflow-visible transition-transform duration-300 hover:scale-[1.03] hover:shadow-orange-500/20 hover:shadow-2xl hover:z-10" 
-        onClick={handleNavigate}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -204,14 +193,13 @@ export function MovieCard({ movie, variant = "portrait", hrefPrefix }: MovieCard
             </div>
           </div>
 
-          {isLoading && <CardLoadingOverlay />}
         </div>
-      </Link>
+      </LoadingCard>
     );
   }
 
   return (
-    <Link href={href} className="group block" onClick={handleNavigate}>
+    <LoadingCard href={href} className="group block">
       <div className="card relative overflow-hidden">
         <div className="relative aspect-[2/3] overflow-hidden">
           <Image
@@ -260,8 +248,7 @@ export function MovieCard({ movie, variant = "portrait", hrefPrefix }: MovieCard
               </span>
             </p>
         </div>
-        {isLoading && <CardLoadingOverlay />}
       </div>
-    </Link>
+    </LoadingCard>
   );
 }

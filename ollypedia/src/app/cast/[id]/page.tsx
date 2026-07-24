@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { LoadingCard } from "@/components/ui/LoadingCard";
 import { connectDB } from "@/lib/db";
 import Cast from "@/models/Cast";
 import Movie from "@/models/Movie";
@@ -108,31 +109,8 @@ function getDerivedRoles(person: any, movies: any[]): string[] {
   return roles;
 }
 
-function getMisspellings(title: string): string[] {
-  if (!title) return [];
-  const variants = new Set<string>();
-  const words = title.trim().split(/\s+/);
-  for (const word of words) {
-    if (word.length < 3) continue;
-    const w = word.toLowerCase();
-    variants.add(w.replace(/([aeiou])\1+/g, "$1"));
-    variants.add(w.replace(/([aeiou])(?!\1)/g, "$1$1"));
-    variants.add(w.slice(0, -1));
-    variants.add(w.replace(/a/g, "e"));
-    variants.add(w.replace(/a/g, "o"));
-    variants.add(w.replace(/h/g, ""));
-    variants.add(w.replace(/ph/g, "f"));
-  }
-  const result: string[] = [];
-  variants.forEach((v) => {
-    if (v && v !== title.toLowerCase() && v.length > 2) {
-      result.push(v);
-      result.push(`${v} odia actor`);
-      result.push(`${v} odia actress`);
-    }
-  });
-  return result;
-}
+// getMisspellings REMOVED — Google handles misspelling matching automatically.
+// Intentional misspellings in <meta keywords> trigger spam/keyword-stuffing penalties.
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
@@ -148,7 +126,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     : null;
   const genres = [...new Set(movies.flatMap((m: any) => m.genre || []))].slice(0, 3).join(", ");
 
-  const title = `${person.name} – Odia ${roles} | Biography, Movies & Career | Ollypedia`;
+  const title = `${person.name} – Odia ${roles} | Biography, Movies & Career`;
   const description =
     person.bio?.slice(0, 155) ||
     `${person.name} is a celebrated Odia ${roles.toLowerCase()} in Ollywood with ${movies.length} films${debutYear ? `, active since ${debutYear}` : ""}. Discover their full biography, filmography, songs and career on Ollypedia.`;
@@ -164,7 +142,6 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
       `${person.name} Ollywood`, `${person.name} odia film`,
       `Odia ${person.type?.toLowerCase() || "artist"}`,
       "Ollywood cast", "Odia cinema", genres,
-      ...getMisspellings(person.name),
     ].filter(Boolean),
     alternates: { canonical },
     robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
@@ -699,7 +676,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
 
                             {/* Poster + Title */}
                             <td className="px-4 py-3 align-middle">
-                              <Link href={`/movie/${m.slug || String(m._id)}`}
+                              <LoadingCard href={`/movie/${m.slug || String(m._id)}`}
                                 className="flex items-center gap-3 group/link">
                                 <div className="relative w-8 h-11 rounded-md overflow-hidden flex-shrink-0 border border-[#2a2a2a]">
                                   {m.posterUrl ? (
@@ -717,7 +694,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                                     <p className="text-[10px] text-gray-600 mt-0.5">{m.genre[0]}</p>
                                   )}
                                 </div>
-                              </Link>
+                              </LoadingCard>
                             </td>
 
                             {/* Release Date */}
@@ -774,7 +751,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                             {byYear[yr].map((m: any) => {
                               const style = vs(m.verdict);
                               return (
-                                <Link key={String(m._id)} href={`/movie/${m.slug || String(m._id)}`}
+                                <LoadingCard key={String(m._id)} href={`/movie/${m.slug || String(m._id)}`}
                                   className="flex items-center gap-2 px-2.5 py-1 bg-[#0d0d0d] border border-[#1f1f1f] hover:border-orange-500/30 rounded-full text-xs text-white hover:text-orange-400 transition-all">
                                   {m.posterUrl && (
                                     <Image src={m.posterUrl} alt={`${m.title} Odia movie poster`} width={14} height={18}
@@ -784,7 +761,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                                   {m.verdict && m.verdict !== "Upcoming" && (
                                     <span className={`text-[9px] font-black ${style.text}`}>{m.verdict}</span>
                                   )}
-                                </Link>
+                                </LoadingCard>
                               );
                             })}
                           </div>
@@ -869,7 +846,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                 <SectionHeading icon={Play} title="Trailers" count={trailers.length} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {trailers.slice(0, 4).map((t: any, i: number) => (
-                    <Link key={i} href={`https://youtube.com/watch?v=${t.ytId}`}
+                    <a key={i} href={`https://youtube.com/watch?v=${t.ytId}`}
                       target="_blank" rel="noopener noreferrer"
                       className="group bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl overflow-hidden transition-all">
                       <div className="relative aspect-video bg-[#1a1a1a]">
@@ -889,7 +866,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                       <div className="p-2.5">
                         <p className="text-xs font-semibold text-white group-hover:text-orange-400 transition-colors line-clamp-1">{t.movieTitle}</p>
                       </div>
-                    </Link>
+                    </a>
                   ))}
                 </div>
               </section>

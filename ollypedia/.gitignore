@@ -12,3 +12,7 @@ yarn-error.log*
 
 .vercel
 .env*.local
+
+# Sensitive credential files — never commit these
+google-service-account.json
+env.production

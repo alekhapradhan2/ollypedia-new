@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Music, Play, TrendingUp } from "lucide-react";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
@@ -187,7 +188,7 @@ function JsonLd({ songs, category, cfg }: { songs: SongDoc[]; category: string; 
 // ── Song Card (UI from doc 1) ─────────────────────────────────────────────────
 function SongCard({ song }: { song: SongDoc }) {
   return (
-    <Link
+    <LoadingCard
       href={`/songs/${song.movieSlug}/${song.songIndex}`}
       className="group flex gap-3 items-center card p-3 hover:-translate-y-0.5 transition-all duration-300"
     >
@@ -214,7 +215,7 @@ function SongCard({ song }: { song: SongDoc }) {
         {song.ytId && <p className="text-gray-600 text-xs mt-0.5">▶ YouTube</p>}
       </div>
       <Music className="w-4 h-4 text-gray-600 group-hover:text-orange-500 transition-colors flex-shrink-0" />
-    </Link>
+    </LoadingCard>
   );
 }
 

@@ -46,68 +46,9 @@ function fmtINR(val: unknown): string {
 }
 
 // Misspelling generator for movie title — helps capture common typos in search
-// ── Expanded fuzzy keyword generator ────────────────────────────────────────
-// Generates typo variants + intent-based phrase combinations for each word
-// in the movie title.  Result is a flat list of long-tail keyword strings.
-function getMisspellings(title: string): string[] {
-  if (!title) return [];
-
-  // --- Suffix sets ---
-  const intentSuffixes = [
-    "movie", "film", "odia", "odia film", "odia movie", "ollywood",
-    "review", "story", "cast", "songs", "trailer", "box office",
-    "collection", "rating", "release date", "full movie",
-    "movie review", "public review", "movie story", "movie cast",
-    "movie trailer", "movie details", "worth watching",
-    "movie rating ollypedia", "movie in odisha", "bhubaneswar release",
-    "odia cinema", "odia movie review", "ollywood movie",
-  ];
-
-  const variants = new Set<string>();
-  const words    = title.trim().split(/\s+/);
-
-  for (const word of words) {
-    if (word.length < 3) continue;
-    const w = word.toLowerCase();
-
-    // Phonetic swaps
-    const typos: string[] = [
-      w.replace(/([aeiou])\1+/g, "$1"),   // double vowel removal
-      w.replace(/a/g, "e"),
-      w.replace(/a/g, "o"),
-      w.replace(/e/g, "i"),
-      w.replace(/u/g, "o"),
-      w.replace(/i/g, "e"),
-      w.replace(/h/g, ""),                 // silent-h drop
-      w.replace(/ck/g, "k"),
-      w.replace(/ph/g, "f"),
-      w + "a", w + "i", w + "u",          // trailing vowel additions
-      w.slice(0, -1),                      // drop last char
-      w.slice(1),                          // drop first char
-    ];
-
-    // Transpositions (adjacent letter swap)
-    for (let i = 0; i < w.length - 1; i++) {
-      typos.push(w.slice(0, i) + w[i + 1] + w[i] + w.slice(i + 2));
-    }
-
-    for (const typo of typos) {
-      if (!typo || typo === w || typo.length < 3) continue;
-      // Pair each typo with all intent suffixes
-      for (const suffix of intentSuffixes) {
-        variants.add(`${typo} ${suffix}`);
-      }
-    }
-  }
-
-  // Also add clean title + all intent suffixes (no typo — just phrasing)
-  const cleanTitle = title.toLowerCase();
-  for (const suffix of intentSuffixes) {
-    variants.add(`${cleanTitle} ${suffix}`);
-  }
-
-  return [...variants].filter(v => v.length > 4).slice(0, 60); // cap at 60
-}
+// getMisspellings REMOVED — Google handles misspelling matching automatically.
+// The box-office version was the worst offender: up to 60 typos × 23 intent
+// suffixes = 1,380 spam keywords per page. This triggers SpamBrain penalties.
 
 // ─── Static params ────────────────────────────────────────────────────────────
 
@@ -193,8 +134,8 @@ export async function generateMetadata({
 
   // SEO title: movie name first → highest relevance signal
   const title = lastDay
-    ? `${movie.title} Box Office Collection Day ${lastDay} — ${fmtINR(totalNet)} Net | Ollypedia`
-    : `${movie.title} Box Office Collection | Odia Film | Ollypedia`;
+    ? `${movie.title} Box Office Collection Day ${lastDay} — ${fmtINR(totalNet)} Net`
+    : `${movie.title} Box Office Collection | Odia Film`;
 
   const description = totalNet
     ? `${movie.title}${year ? ` (${year})` : ""} box office: ₹ ${fmtINR(totalNet)} net, ${fmtINR(totalGross)} gross in ${lastDay} days. Day 1 collection: ${fmtINR(day1Net)}. Full day-wise Odia (Ollywood) box office data on Ollypedia.`
@@ -292,9 +233,6 @@ export async function generateMetadata({
     // ── Genre-based ──────────────────────────────────────────────────────
     ...(movie.genre || []).map((g: string) => `${g} odia film box office`),
     ...(movie.genre || []).map((g: string) => `${g} ollywood movie`),
-
-    // ── Fuzzy typo variants with intent phrases ───────────────────────────
-    ...getMisspellings(movie.title),
   ].filter(Boolean) as string[];
 
   return {

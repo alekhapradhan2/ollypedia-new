@@ -8,7 +8,7 @@ import { SITE_URL } from "@/lib/seo";
 
 // ── SEO Metadata ──────────────────────────────────────────────────────────────
 export const metadata: Metadata = {
-  title: "Terms & Conditions | Ollypedia — Odia Cinema Encyclopedia",
+  title: "Terms & Conditions — Odia Cinema Encyclopedia",
   description:
     "Read the Terms and Conditions for using Ollypedia, the most complete online encyclopedia for Odia movies and the Ollywood film industry. We do not collect any personal user data.",
   keywords: [
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     canonical: `${SITE_URL}/terms-and-conditions`,
   },
   openGraph: {
-    title: "Terms & Conditions | Ollypedia",
+    title: "Terms & Conditions",
     description:
       "Our Terms & Conditions are simple: use the site freely, we respect your privacy and collect no personal data.",
     url: `${SITE_URL}/terms-and-conditions`,

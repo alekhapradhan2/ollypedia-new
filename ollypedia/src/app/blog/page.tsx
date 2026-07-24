@@ -47,9 +47,9 @@ export async function generateMetadata({
   const catLabel  = category ? ` | ${category}` : "";
 
   const title = query
-    ? `Search: "${query}" | Ollypedia Blog`
+    ? `Search: "${query}" | Blog`
     : category
-    ? `${category} Articles${pageLabel} | Ollypedia Blog`
+    ? `${category} Articles${pageLabel} | Blog`
     : `Ollywood Blog${catLabel}${pageLabel} | Odia Cinema News, Reviews & Guides`;
 
   const description = category && CATEGORY_DESCRIPTIONS[category]

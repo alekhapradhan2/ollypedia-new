@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { Disc, Play } from "lucide-react";
+import { LoadingCard } from "@/components/ui/LoadingCard";
 
 interface AlbumCardProps {
   movie: {
@@ -35,7 +35,7 @@ export function AlbumCard({ movie, hrefPrefix = "/songs" }: AlbumCardProps) {
   }
 
   return (
-    <Link href={url} className="group relative flex flex-col gap-3 w-full">
+    <LoadingCard href={url} className="group relative flex flex-col gap-3 w-full">
       {/* 1:1 Aspect Ratio Cover */}
       <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-[#111] border border-[#222] shadow-xl group-hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all duration-300">
         
@@ -80,6 +80,6 @@ export function AlbumCard({ movie, hrefPrefix = "/songs" }: AlbumCardProps) {
           {subtitle}
         </p>
       </div>
-    </Link>
+    </LoadingCard>
   );
 }

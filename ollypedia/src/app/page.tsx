@@ -24,7 +24,7 @@ export const metadata: Metadata = buildMeta({
   description:
     "Ollypedia is Odisha's most comprehensive Odia film database. Discover latest Ollywood movies, songs, actor biographies, box office collection, reviews and Odia film blogs.",
   keywords: [
-    "Odia movies 2025", "Ollywood", "Odia cinema", "Odia films", "Babushaan",
+    "Odia movies 2026", "Ollywood", "Odia cinema", "Odia films", "Babushaan",
     "Elina Samantray", "Odia actor", "Odia songs", "Odia movie reviews",
     "Ollywood box office", "Odia film blog", "official Odia cinema database",
     "legal Odia movie streaming info",
@@ -328,6 +328,35 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen">
+
+      {/* ══ WebSite + Organization JSON-LD (Sitelinks Searchbox eligibility) ══ */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify([
+            {
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "Ollypedia",
+              url: "https://www.ollypedia.in",
+              description: "Ollypedia is the ultimate encyclopedia for Odia (Ollywood) cinema. Discover movies, actors, songs, reviews, box office, and news.",
+              potentialAction: {
+                "@type": "SearchAction",
+                target: "https://www.ollypedia.in/search?q={search_term_string}",
+                "query-input": "required name=search_term_string",
+              },
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "Ollypedia",
+              url: "https://www.ollypedia.in",
+              logo: "https://www.ollypedia.in/logo.png",
+              sameAs: [],
+            },
+          ]),
+        }}
+      />
 
       {/* ══ HERO CAROUSEL ══ */}
       {heroMovies.length > 0 ? (

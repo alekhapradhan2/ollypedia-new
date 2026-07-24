@@ -15,9 +15,12 @@ interface SongCardProps {
     movieSlug?: string;
   };
   onClick?: () => void;
+  href?: string;
 }
 
-export function SongCard({ song, onClick }: SongCardProps) {
+import { LoadingCard } from "@/components/ui/LoadingCard";
+
+export function SongCard({ song, onClick, href }: SongCardProps) {
   const thumb =
     song.thumbnailUrl ||
     (song.ytId
@@ -171,16 +174,14 @@ export function SongCard({ song, onClick }: SongCardProps) {
         .sc:hover .sc-bar-fill { width: 100%; }
       `}</style>
 
-      <div
-        className="sc"
-        onClick={onClick}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick?.()}
-        aria-label={`Play ${song.title}${song.singer ? ` by ${song.singer}` : ""}`}
-      >
-        {/* Thumbnail */}
-        <div className="sc-thumb">
+      {href ? (
+        <LoadingCard
+          href={href}
+          className="sc"
+          aria-label={`Play ${song.title}${song.singer ? ` by ${song.singer}` : ""}`}
+        >
+          {/* Thumbnail */}
+          <div className="sc-thumb">
           {thumb ? (
             <Image
               src={thumb}
@@ -236,8 +237,70 @@ export function SongCard({ song, onClick }: SongCardProps) {
           <div className="sc-bar">
             <div className="sc-bar-fill" aria-hidden="true" />
           </div>
+          </div>
+        </LoadingCard>
+      ) : (
+        <div
+          className="sc"
+          onClick={onClick}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick?.()}
+          aria-label={`Play ${song.title}${song.singer ? ` by ${song.singer}` : ""}`}
+        >
+          {/* Thumbnail */}
+          <div className="sc-thumb">
+            {thumb ? (
+              <Image
+                src={thumb}
+                alt={song.title || "Odia Song"}
+                fill
+                className="sc-thumb-img"
+                sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, 200px"
+              />
+            ) : (
+              <div className="sc-thumb-ph">
+                <svg
+                  width="32" height="32"
+                  viewBox="0 0 32 32"
+                  fill="none"
+                  style={{ color: "#2a2a2a" }}
+                >
+                  <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="1.5" />
+                  <circle cx="16" cy="16" r="8"  stroke="currentColor" strokeWidth="1"   />
+                  <circle cx="16" cy="16" r="3"  stroke="currentColor" strokeWidth="1"   />
+                </svg>
+              </div>
+            )}
+            <div className="sc-overlay" aria-hidden="true">
+              <div className="sc-play-btn">
+                <div className="sc-play-tri" />
+              </div>
+            </div>
+          </div>
+          {/* Body */}
+          <div className="sc-body">
+            <div className="sc-title">{song.title || "Untitled"}</div>
+            {song.singer && (
+              <div className="sc-singer">
+                <Mic2 width={10} height={10} />
+                <span>{song.singer}</span>
+              </div>
+            )}
+            {song.movieTitle && (
+              <div className="sc-movie">
+                <span style={{ fontSize: 9, opacity: 0.4, flexShrink: 0 }}>▶</span>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {song.movieTitle}
+                </span>
+              </div>
+            )}
+            <div className="sc-bar">
+              <div className="sc-bar-fill" aria-hidden="true" />
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }  

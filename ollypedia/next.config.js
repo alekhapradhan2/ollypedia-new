@@ -5,7 +5,8 @@ const nextConfig = {
   },
 
   images: {
-    unoptimized: true,
+    // unoptimized removed — enable Next.js automatic WebP/AVIF conversion
+    // for better Core Web Vitals (was serving full-size images before)
     remotePatterns: [
       { protocol: "https", hostname: "**" },
       { protocol: "http", hostname: "**" },

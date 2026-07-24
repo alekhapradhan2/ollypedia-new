@@ -14,6 +14,7 @@ import { YouTubeEmbed }  from "@/components/ui/YouTubeEmbed";
 import { Breadcrumb }    from "@/components/ui/Breadcrumb";
 import { getPrimaryVideo } from "@/lib/trailerSeo";
 import { VoteButtons }   from "@/components/ui/VoteButtons";
+import { LoadingCard } from "@/components/ui/LoadingCard";
 import { ReviewForm }    from "@/components/movie/ReviewForm";
 import { MovieCard }         from "@/components/movie/MovieCard";
 import { ReleaseCountdown }  from "@/components/movie/ReleaseCountdown";
@@ -299,31 +300,9 @@ async function getMovieBlogs(movieTitle: string) {
   return JSON.parse(JSON.stringify(blogs));
 }
 
-// ─── Misspelling generator ──────────────────────────────────────────────────
-function getMisspellings(title: string): string[] {
-  if (!title) return [];
-  const variants = new Set<string>();
-  const words = title.trim().split(/\s+/);
-  for (const word of words) {
-    if (word.length < 3) continue;
-    const w = word.toLowerCase();
-    variants.add(w.replace(/([aeiou])\1+/g, "$1"));
-    variants.add(w.replace(/([aeiou])(?!\1)/g, "$1$1"));
-    variants.add(w.slice(0, -1));
-    variants.add(w.replace(/a/g, "e"));
-    variants.add(w.replace(/a/g, "o"));
-    variants.add(w.replace(/h/g, ""));
-    variants.add(w.replace(/ph/g, "f"));
-  }
-  const result: string[] = [];
-  variants.forEach((v) => {
-    if (v && v !== title.toLowerCase() && v.length > 2) {
-      result.push(v);
-      result.push(`${v} odia movie`);
-    }
-  });
-  return result;
-}
+// ─── Misspelling generator REMOVED ──────────────────────────────────────────
+// getMisspellings was removed — Google handles misspelling matching automatically.
+// Intentional misspellings in <meta keywords> trigger spam/keyword-stuffing penalties.
 
 // ─── Metadata ─────────────────────────────────────────────────────────────
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
@@ -352,7 +331,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       ? ` | OTT Release Soon`
       : ""
     : "";
-  const title = `${movie.title}${yearStr} – Cast, Songs & Review${ottTitleSuffix} | Ollypedia`;
+  const title = `${movie.title}${yearStr} – Cast, Songs & Review${ottTitleSuffix}`;
 
   // Dynamic description: weave in OTT info
   const ottDescPart = ottPlatform
@@ -373,109 +352,37 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const image     = movie.posterUrl || movie.thumbnailUrl || `${SITE_URL}/default.jpg`;
   const canonical = `${SITE_URL}/movie/${movie.slug || movie._id}`;
 
-  // ── OTT keyword matrix ──────────────────────────────────────────────────────
-  const ottKw: string[] = ottPlatform ? [
-    // Generic OTT search patterns
-    `${movie.title} ott`,
-    `${movie.title} ott release`,
-    `${movie.title} ott release date`,
-    `${movie.title} ott platform`,
-    `${movie.title} streaming`,
-    `${movie.title} streaming platform`,
-    `${movie.title} where to watch`,
-    `${movie.title} digital release`,
-    `${movie.title} digital release date`,
-    `${movie.title} web release`,
-    `${movie.title} web release date`,
-    `${movie.title} available online`,
-    `${movie.title} full movie online`,
-    // Platform-specific
-    `${movie.title} ${ottPlatform}`,
-    `${movie.title} ${ottPlatform} release date`,
-    `${movie.title} ${ottPlatform} watch`,
-    `watch ${movie.title} on ${ottPlatform}`,
-    `${movie.title} on ${ottPlatform}`,
-    // With year
-    year ? `${movie.title} ${year} ott` : "",
-    year ? `${movie.title} ${year} ott release date` : "",
-    year ? `${movie.title} ${year} ${ottPlatform}` : "",
-    year ? `${movie.title} ${year} streaming` : "",
-    year ? `${movie.title} ${year} digital release` : "",
-    // Odia-specific OTT queries
-    `${movie.title} odia movie ott`,
-    `${movie.title} odia film ott`,
-    `${movie.title} odia movie streaming`,
-    `${movie.title} odia movie digital release`,
-    // Status-specific keywords
-    ...(isOttLive ? [
-      `${movie.title} now streaming`,
-      `${movie.title} now available online`,
-      `watch ${movie.title} online now`,
-      `${movie.title} ${ottPlatform} available`,
-    ] : []),
-    ...(isOttComing ? [
-      `${movie.title} ott release ${ottFmtDate}`,
-      `when is ${movie.title} on ott`,
-      `${movie.title} ott date`,
-    ] : []),
-    ...(isTBA ? [
-      `${movie.title} ott date tba`,
-      `when will ${movie.title} release on ott`,
-      `${movie.title} ott announced`,
-    ] : []),
-    // Odia OTT platform generics (helps rank for category searches)
-    `aao nxt odia movies`, `tarang plus odia movies`, `kanccha lannka movies`,
-    `odia movie ott release ${year || ""}`.trim(),
-    `ollywood ott release ${year || ""}`.trim(),
-    `odia film streaming platform`,
-  ].filter(Boolean) as string[] : [
-    // No platform yet — rank for "where to watch" queries anyway
-    `${movie.title} ott`,
-    `${movie.title} streaming`,
-    `${movie.title} ott release date`,
-    `${movie.title} where to watch`,
-    `${movie.title} digital release date`,
-    `odia movie ott release`,
-    `ollywood ott`,
-  ];
+  // ── OTT keywords (trimmed — Google ignores meta keywords but SpamBrain
+  //    penalises excessive stuffing; keep only 3 essential OTT terms) ────────
+  const ottKw: string[] = ottPlatform
+    ? [
+        `${movie.title} ott release date`,
+        `${movie.title} ${ottPlatform}`,
+        `${movie.title} where to watch`,
+      ]
+    : [
+        `${movie.title} ott release date`,
+        `${movie.title} where to watch`,
+      ];
 
   // ── Core keyword matrix ─────────────────────────────────────────────────────
   const directorName = getDirectorFromCast(movie.cast || []) || movie.director;
   const producerName = getProducerFromCast(movie.cast || []) || movie.producer;
 
+  // ── Trimmed keyword list (~15 terms max) ─────────────────────────────────
+  // Google ignores <meta keywords> for ranking. Keep a short, clean list
+  // to avoid SpamBrain penalties from keyword stuffing.
   const keywords = [
     movie.title,
     `${movie.title} odia movie`,
-    `${movie.title} odia film`,
-    `${movie.title} ollywood`,
-    `${movie.title} review`,
-    `${movie.title} songs`,
     `${movie.title} cast`,
-    `${movie.title} trailer`,
-    `watch ${movie.title} legally`,
-    `${movie.title} official release`,
-    `${movie.title} box office`,
+    `${movie.title} songs`,
     `${movie.title} box office collection`,
-    `${movie.title} collection`,
     year ? `${movie.title} ${year}` : null,
-    year ? `${movie.title} odia movie ${year}` : null,
-    year ? `${movie.title} ${year} release` : null,
-    directorName ? `${movie.title} directed by ${directorName}` : null,
-    directorName ? `${directorName} movie` : null,
     directorName ? `${directorName} odia film` : null,
-    directorName ? `${directorName} new movie` : null,
-    producerName ? `${producerName} production` : null,
-    producerName ? `${producerName} odia film` : null,
-    "Odia movie", "Ollywood", "Odia film", "Odia cinema", "Ollywood movies",
-    year ? `Odia movie ${year}` : null,
+    "Odia movie", "Ollywood", "Odia cinema",
     year ? `Ollywood ${year}` : null,
-    `${movie.title} rating`,
-    `${movie.title} hit or flop`,
-    movie.verdict ? `${movie.title} ${movie.verdict.toLowerCase()}` : null,
-    ...(movie.genre || []).flatMap((g: string) => [`${g} Odia film`, `${g} Ollywood movie`, `Odia ${g} film ${year || ""}`.trim()]),
-    ...(movie.cast || []).slice(0, 5).map((c: any) => c.name).filter(Boolean).flatMap((n: string) => [n, `${n} odia movie`, `${n} new movie`]),
-    ...getMisspellings(movie.title),
-    // OTT keyword matrix
+    ...(movie.genre || []).slice(0, 2).map((g: string) => `${g} Odia film`),
     ...ottKw,
   ].filter(Boolean) as string[];
 
@@ -727,9 +634,9 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
   const structuredData = [
     enrichedMovieSchema,
     breadcrumbJsonLd([
-      { name: "Home",   url: `${SITE_URL}/` },
-      { name: "Movies", url: `${SITE_URL}/movies` },
-      { name: movie.title, url: canonical },
+      { name: "Home",   url: "/" },
+      { name: "Movies", url: "/movies" },
+      { name: movie.title, url: `/movie/${movie.slug || movie._id}` },
     ]),
     buildFaqJsonLd(movie, year, avgRating, songs, directorName, producerName),
     ...(avgRating !== null ? [buildAggregateRatingJsonLd(movie, avgRating as number)] : []),
@@ -1478,7 +1385,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                                 </td>
                                 {/* Photo + Name */}
                                 <td className="px-4 py-2.5 align-middle">
-                                  <Link href={member.castId ? `/cast/${member.castId}` : "#"}
+                                  <LoadingCard href={member.castId ? `/cast/${member.castId}` : "#"}
                                     className="flex items-start gap-2.5 group/link"
                                     aria-disabled={!member.castId}>
                                     <div className="relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0 border border-[#333]">
@@ -1491,7 +1398,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                                     <span className="text-sm font-semibold text-white group-hover/link:text-orange-400 transition-colors break-words min-w-0">
                                       {member.name}
                                     </span>
-                                  </Link>
+                                  </LoadingCard>
                                 </td>
                               </tr>
                             ))}
@@ -1519,7 +1426,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                               <tr key={i} className="group border-b border-[#1a1a1a] last:border-0 hover:bg-orange-500/3 transition-colors">
                                 {/* Photo + Name */}
                                 <td className="px-4 py-2.5 align-middle">
-                                  <Link href={member.castId ? `/cast/${member.castId}` : "#"}
+                                  <LoadingCard href={member.castId ? `/cast/${member.castId}` : "#"}
                                     className="flex items-start gap-2.5 group/link"
                                     aria-disabled={!member.castId}>
                                     <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-[#333]">
@@ -1533,7 +1440,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                                     <span className="text-sm font-semibold text-white group-hover/link:text-orange-400 transition-colors break-words min-w-0">
                                       {member.name}
                                     </span>
-                                  </Link>
+                                  </LoadingCard>
                                 </td>
                                 {/* Role / Type */}
                                 <td className="px-4 py-2.5 align-middle">
@@ -1564,13 +1471,11 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 <SectionHeading icon={Music} title="Songs" count={songs.length} />
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {songs.map((song: any, i: number) => (
-                    <Link
+                    <SongCard 
                       key={i}
                       href={`/songs/${movie.slug}/${i}/${toSlug(song.title) || String(i)}`}
-                      className="block no-underline"
-                    >
-                      <SongCard song={{ ...song, movieTitle: movie.title }} />
-                    </Link>
+                      song={{ ...song, movieTitle: movie.title }} 
+                    />
                   ))}
                 </div>
                 {/* SEO: song anchor links for Google — visually hidden, only for crawlers */}
