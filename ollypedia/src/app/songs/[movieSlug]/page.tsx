@@ -92,10 +92,10 @@ export default async function MovieSongsPage({ params }: Props) {
       
       {/* ══ HEADER / ALBUM COVER ══ */}
       <section className="relative overflow-hidden bg-[#111] border-b border-[#1f1f1f]">
-        <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] to-transparent z-10" />
           {movie.posterUrl && (
-            <Image src={movie.posterUrl} alt={movie.title} fill className="object-cover opacity-20 blur-2xl" />
+            <Image src={movie.posterUrl} alt={movie.title} fill className="object-cover opacity-60 blur-sm scale-105" />
           )}
         </div>
 
@@ -108,43 +108,43 @@ export default async function MovieSongsPage({ params }: Props) {
             <span className="text-gray-300">{movie.title}</span>
           </nav>
 
-          <div className="flex flex-col sm:flex-row gap-8 items-center sm:items-start">
-            <div className="w-48 sm:w-64 aspect-[2/3] relative rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 border border-[#333]">
+          <div className="flex flex-row gap-4 sm:gap-8 items-start">
+            <div className="w-28 sm:w-64 aspect-[2/3] relative rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 border border-[#333]">
               <Image src={movie.posterUrl || "/placeholder-movie.jpg"} alt={movie.title} fill className="object-cover" priority />
             </div>
 
-            <div className="flex-1 text-center sm:text-left mt-4 sm:mt-0">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold rounded-full uppercase tracking-widest mb-4">
-                <Disc className="w-3.5 h-3.5" />
+            <div className="flex-1 text-left sm:mt-0">
+              <div className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[10px] sm:text-xs font-bold rounded-full uppercase tracking-widest mb-2 sm:mb-4">
+                <Disc className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 Original Soundtrack
               </div>
-              <h1 className="text-3xl sm:text-5xl font-black text-white mb-3 font-display">
+              <h1 className="text-xl sm:text-5xl font-black text-white mb-1 sm:mb-3 font-display">
                 {movie.title} Songs
               </h1>
-              <p className="text-gray-400 text-sm sm:text-base max-w-xl">
+              <p className="text-gray-400 text-xs sm:text-base max-w-xl line-clamp-3 sm:line-clamp-none">
                 Listen to the complete Odia music album of <Link href={`/movie/${movie.slug || movie._id}`} className="text-white hover:text-orange-400 underline decoration-[#333] underline-offset-4">{movie.title}</Link>. Featuring {songs.length} tracks{allSingers.length > 0 ? ` by ${allSingers.slice(0,3).join(", ")}${allSingers.length > 3 ? " and more" : ""}` : ""}.
               </p>
               
-              <div className="mt-8 flex flex-wrap gap-3 justify-center sm:justify-start">
+              <div className="mt-3 sm:mt-8 flex flex-wrap gap-2 sm:gap-3 justify-start">
                 <Link href={`/songs/${movie.slug || movie._id}/0/${songs[0]?.slug || 'play'}`}
-                  className="bg-orange-500 hover:bg-orange-400 text-black px-6 sm:px-8 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:shadow-[0_0_30px_rgba(249,115,22,0.5)]">
-                  <Play className="w-4 h-4 fill-black" />
+                  className="bg-orange-500 hover:bg-orange-400 text-black px-4 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold text-[11px] sm:text-sm transition-all flex items-center gap-1.5 sm:gap-2 shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:shadow-[0_0_30px_rgba(249,115,22,0.5)]">
+                  <Play className="w-3 h-3 sm:w-4 sm:h-4 fill-black" />
                   Play All
                 </Link>
                 
                 {hasVideos && (
                   <Link href={`/trailers/${movie.slug || movie._id}`}
-                    className="bg-[#1f1f1f] hover:bg-[#2a2a2a] text-white border border-[#333] px-6 sm:px-8 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2">
-                    <Film className="w-4 h-4 text-orange-400" />
+                    className="bg-[#1f1f1f] hover:bg-[#2a2a2a] text-white border border-[#333] px-3 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold text-[11px] sm:text-sm transition-all flex items-center gap-1.5 sm:gap-2">
+                    <Film className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
                     Trailer
                   </Link>
                 )}
 
                 {hasOtt && (
                   <Link href={`/ott/${movie.slug || movie._id}`}
-                    className="bg-[#1f1f1f] hover:bg-[#2a2a2a] text-white border border-[#333] px-6 sm:px-8 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2">
-                    <Tv className="w-4 h-4 text-orange-400" />
-                    Watch on OTT
+                    className="bg-[#1f1f1f] hover:bg-[#2a2a2a] text-white border border-[#333] px-3 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold text-[11px] sm:text-sm transition-all flex items-center gap-1.5 sm:gap-2">
+                    <Tv className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
+                    Watch
                   </Link>
                 )}
               </div>

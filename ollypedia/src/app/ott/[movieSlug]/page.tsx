@@ -100,12 +100,12 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
       
       {/* Hero Banner */}
       <section className="relative w-full min-h-[60vh] lg:min-h-[500px] border-b border-white/10 pt-32 flex items-end">
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <Image
             src={m.bannerUrl || m.posterUrl || "/placeholder.jpg"}
             alt={m.title}
             fill
-            className="object-cover object-top opacity-30 blur-sm"
+            className="object-cover object-top opacity-60 blur-sm scale-105"
             priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent" />
@@ -116,15 +116,15 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
           <div className="mb-6">
             <Breadcrumb crumbs={[{ label: "OTT", href: "/ott" }, { label: "Movies", href: "/ott" }, { label: m.title }]} />
           </div>
-          <div className="grid grid-cols-[112px_1fr] sm:grid-cols-[128px_1fr] md:grid-cols-[256px_1fr] gap-x-4 md:gap-x-8 gap-y-4 md:gap-y-6 items-start w-full">
+          <div className="flex flex-row gap-4 sm:gap-6 md:gap-8 items-start w-full">
             
-            {/* Poster */}
-            <div className="col-span-1 row-span-1 md:row-span-2 w-full flex-shrink-0 rounded-xl md:rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl relative aspect-[2/3] block">
+            {/* Poster (Left Side) */}
+            <div className="w-28 sm:w-32 md:w-64 aspect-[2/3] relative rounded-xl md:rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl flex-shrink-0">
               <Image src={m.posterUrl || "/placeholder.jpg"} alt={m.title} fill className="object-cover" />
             </div>
             
-            {/* Info */}
-            <div className="col-span-1 flex flex-col items-start text-left min-w-0 w-full pt-1">
+            {/* Info (Left Side) */}
+            <div className="flex-1 flex flex-col items-start text-left min-w-0 w-full pt-1">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-sm font-medium mb-3">
                 {pInfo ? (
                   <PlatformLogo 
@@ -149,19 +149,19 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
                 {ott.runtime && <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {ott.runtime}</span>}
                 {m.contentRating && <span className="px-2 py-0.5 border border-gray-600 rounded text-xs">{m.contentRating}</span>}
               </div>
-            </div>
 
-            {/* Buttons */}
-            <div className="col-span-2 md:col-span-1 w-full flex justify-start mt-2">
-              <OttMovieActions 
-                watchUrl={ott.watchUrl}
-                isStreaming={isStreaming}
-                platformName={ott.platform}
-                pInfo={pInfo}
-                trailerId={m.media?.trailer?.ytId || m.media?.videos?.find((v: any) => v.ytId)?.ytId}
-                movieSlug={m.slug || m._id}
-                movieTitle={m.title}
-              />
+              <div className="w-full flex justify-start mt-4 sm:mt-6">
+                <OttMovieActions 
+                  watchUrl={ott.watchUrl}
+                  isStreaming={isStreaming}
+                  platformName={ott.platform}
+                  pInfo={pInfo}
+                  trailerId={m.media?.trailer?.ytId || m.media?.videos?.find((v: any) => v.ytId)?.ytId}
+                  movieSlug={m.slug || m._id}
+                  movieTitle={m.title}
+                  hasSongs={m.media?.songs && m.media.songs.length > 0}
+                />
+              </div>
             </div>
           </div>
         </div>

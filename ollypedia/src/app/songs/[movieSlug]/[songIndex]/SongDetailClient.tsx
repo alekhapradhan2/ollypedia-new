@@ -469,14 +469,14 @@ export function SongDetailClient({ movie, initialSongIndex, relatedMovies }: Pro
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] pt-[58px]">
+    <div className="min-h-screen bg-[#0a0a0a] pb-20">
 
       {/* ── Hero section with blurred banner ─── */}
-      <div className="relative bg-[#0a0a0a] overflow-hidden pt-4">
+      <div className="relative bg-[#0a0a0a] overflow-hidden pt-20 sm:pt-24">
         {bannerImg && (
           <>
             <div className="absolute inset-0 bg-cover bg-center scale-[1.06]"
-              style={{ backgroundImage: `url(${bannerImg})`, filter: "blur(22px) brightness(0.16)" }} />
+              style={{ backgroundImage: `url(${bannerImg})`, filter: "blur(4px) brightness(0.4)" }} />
             <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-[#0a0a0a]" />
           </>
         )}
@@ -499,7 +499,7 @@ export function SongDetailClient({ movie, initialSongIndex, relatedMovies }: Pro
         </div>
 
         {/* Main 2-col grid */}
-        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_320px] gap-5 px-4 sm:px-6 lg:px-10 pb-10 max-w-[1380px]">
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_320px] gap-5 px-4 sm:px-6 lg:px-10 pb-10 max-w-[1380px] items-start">
 
           {/* ── LEFT: Player + Info ─── */}
           <div className="min-w-0">
@@ -676,7 +676,7 @@ export function SongDetailClient({ movie, initialSongIndex, relatedMovies }: Pro
           </div>
 
           {/* ── RIGHT SIDEBAR: Playlist + Lyrics ─── */}
-          <div className="bg-black/40 border border-white/[0.07] rounded-xl overflow-hidden flex flex-col lg:sticky lg:top-[70px] lg:self-start lg:max-h-[calc(100vh-90px)]">
+          <div className="bg-black/40 border border-white/[0.07] rounded-xl overflow-hidden flex flex-col lg:sticky lg:top-[70px] lg:max-h-[calc(100vh-90px)]">
             {/* Movie header */}
             <div className="p-3 border-b border-white/[0.07] flex-shrink-0">
               <div className="flex gap-2.5 items-start mb-2">

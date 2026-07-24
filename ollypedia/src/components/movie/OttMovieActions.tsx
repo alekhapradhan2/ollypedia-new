@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Play, Calendar, Film, MonitorPlay } from "lucide-react";
+import { Play, Calendar, Film, MonitorPlay, Music } from "lucide-react";
 import { PlatformLogo } from "@/components/ui/PlatformLogo";
 
 interface OttMovieActionsProps {
@@ -13,9 +13,10 @@ interface OttMovieActionsProps {
   trailerId?: string;
   movieSlug: string;
   movieTitle: string;
+  hasSongs?: boolean;
 }
 
-export function OttMovieActions({ watchUrl, isStreaming, platformName, pInfo, trailerId, movieSlug, movieTitle }: OttMovieActionsProps) {
+export function OttMovieActions({ watchUrl, isStreaming, platformName, pInfo, trailerId, movieSlug, movieTitle, hasSongs }: OttMovieActionsProps) {
   const [showStickyBar, setShowStickyBar] = useState(false);
 
   useEffect(() => {
@@ -37,13 +38,13 @@ export function OttMovieActions({ watchUrl, isStreaming, platformName, pInfo, tr
       {/* Main Hero Buttons */}
       <div className="flex flex-wrap items-center justify-start gap-2 sm:gap-3">
         {watchUrl && isStreaming ? (
-          <a href={watchUrl} target="_blank" rel="noopener noreferrer" className="px-5 py-2.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-bold transition-all flex items-center gap-2 text-sm md:text-base shadow-lg shadow-orange-500/20 hover:scale-105">
-            <Play className="w-4 h-4 md:w-5 md:h-5 fill-current" />
+          <a href={watchUrl} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 md:px-5 md:py-2.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-bold transition-all flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base shadow-lg shadow-orange-500/20 hover:scale-105">
+            <Play className="w-3 h-3 md:w-5 md:h-5 fill-current" />
             Watch on {platformName}
           </a>
         ) : (
-          <button disabled className="px-5 py-2.5 rounded-full bg-white/10 text-gray-400 font-bold flex items-center gap-2 text-sm md:text-base cursor-not-allowed">
-            <Calendar className="w-4 h-4 md:w-5 md:h-5" />
+          <button disabled className="px-3 py-1.5 md:px-5 md:py-2.5 rounded-full bg-white/10 text-gray-400 font-bold flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base cursor-not-allowed">
+            <Calendar className="w-3 h-3 md:w-5 md:h-5" />
             {isStreaming ? "Currently Unavailable" : "Coming Soon"}
           </button>
         )}
@@ -51,15 +52,22 @@ export function OttMovieActions({ watchUrl, isStreaming, platformName, pInfo, tr
         {trailerId && (
           <Link 
             href={`/trailers/${movieSlug}`}
-            className="px-5 py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold transition-all flex items-center gap-2 text-sm md:text-base hover:scale-105"
+            className="px-3 py-1.5 md:px-5 md:py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold transition-all flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base hover:scale-105"
           >
-            <Film className="w-4 h-4 md:w-5 md:h-5" />
+            <Film className="w-3 h-3 md:w-5 md:h-5" />
             Watch Trailer
           </Link>
         )}
 
-        <Link href={`/movie/${movieSlug}`} className="px-5 py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold transition-all flex items-center gap-2 text-sm md:text-base hover:scale-105">
-          <Film className="w-4 h-4 md:w-5 md:h-5" />
+        {hasSongs && (
+          <Link href={`/songs/${movieSlug}`} className="px-3 py-1.5 md:px-5 md:py-2.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 font-bold transition-all flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base hover:scale-105">
+            <Music className="w-3 h-3 md:w-5 md:h-5" />
+            Playlist
+          </Link>
+        )}
+
+        <Link href={`/movie/${movieSlug}`} className="px-3 py-1.5 md:px-5 md:py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold transition-all flex items-center gap-1.5 md:gap-2 text-[11px] md:text-base hover:scale-105">
+          <Film className="w-3 h-3 md:w-5 md:h-5" />
           Full Movie Details
         </Link>
       </div>
