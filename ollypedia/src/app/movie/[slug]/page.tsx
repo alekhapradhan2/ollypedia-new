@@ -3,7 +3,7 @@
 import { SITE_URL } from "@/lib/seo";
 
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { connectDB } from "@/lib/db";
@@ -205,38 +205,58 @@ export async function generateStaticParams() {
 
 // ─── Data helpers ─────────────────────────────────────────────────────────
 async function getMovie(slug: string) {
-  await connectDB();
-  const isOid = /^[a-f0-9]{24}$/i.test(slug);
-  const raw = isOid
-    ? await Movie.findById(slug)
-        .populate("productionId", "name logo")
-        .populate("collaborators", "name logo")
-        .lean()
-    : await Movie.findOne({ slug })
-        .populate("productionId", "name logo")
-        .populate("collaborators", "name logo")
-        .lean();
-  if (!raw) return null;
-  const serialized = JSON.parse(JSON.stringify(raw));
-  // Normalize productionId after serialization so name is always accessible
-  if (serialized.productionId && typeof serialized.productionId === "object") {
-    serialized._productionName = serialized.productionId.name || null;
-    serialized._productionLogo = serialized.productionId.logo || null;
-  } else {
-    serialized._productionName = null;
-    serialized._productionLogo = null;
+  try {
+    await connectDB();
+    const isOid = /^[a-f0-9]{24}$/i.test(slug);
+    let raw = isOid
+      ? await Movie.findById(slug)
+          .populate("productionId", "name logo")
+          .populate("collaborators", "name logo")
+          .lean()
+      : await Movie.findOne({ slug })
+          .populate("productionId", "name logo")
+          .populate("collaborators", "name logo")
+          .lean();
+          
+    // Smart 301 Fallback Search if not found
+    if (!raw && !isOid) {
+      // Try to find a movie where the title or slug loosely matches the broken slug
+      // e.g. "daman-2022" -> searches for "daman.*2022"
+      const fuzzyRegex = new RegExp(slug.split('-').join('.*'), 'i');
+      const fallback = await Movie.findOne({
+        $or: [
+          { slug: fuzzyRegex },
+          { title: fuzzyRegex }
+        ]
+      }).select("slug").lean() as any;
+      
+      if (fallback && fallback.slug) {
+        return { isRedirect: true, redirectSlug: fallback.slug };
+      }
+      return null;
+    }
+
+    if (!raw) return null;
+    
+    const serialized = JSON.parse(JSON.stringify(raw));
+    if (serialized.productionId && typeof serialized.productionId === "object") {
+      serialized._productionName = serialized.productionId.name || null;
+      serialized._productionLogo = serialized.productionId.logo || null;
+    } else {
+      serialized._productionName = null;
+      serialized._productionLogo = null;
+    }
+    const collaboratorNames: string[] = (serialized.collaborators || [])
+      .filter((c: any) => c && typeof c === "object" && c.name)
+      .map((c: any) => c.name);
+    serialized._allProductionNames = Array.from(
+      new Set([...(serialized._productionName ? [serialized._productionName] : []), ...collaboratorNames])
+    );
+    return serialized;
+  } catch (err) {
+    console.error("getMovie Error:", err);
+    return null;
   }
-  // Co-production houses (collaborators) — populate() leaves any unresolved
-  // refs as plain ObjectId strings, so filter those out defensively.
-  const collaboratorNames: string[] = (serialized.collaborators || [])
-    .filter((c: any) => c && typeof c === "object" && c.name)
-    .map((c: any) => c.name);
-  // Full presentation line: primary production house + every collaborator,
-  // de-duplicated in case the same house is listed both ways.
-  serialized._allProductionNames = Array.from(
-    new Set([...(serialized._productionName ? [serialized._productionName] : []), ...collaboratorNames])
-  );
-  return serialized;
 }
 
 async function getRelated(movie: any) {
@@ -605,6 +625,11 @@ function StatChip({ label, value, accent = false }: { label: string; value: stri
 export default async function MovieDetailPage({ params }: { params: { slug: string } }) {
   const movie = await getMovie(params.slug);
   if (!movie) notFound();
+  
+  if (movie.isRedirect && movie.redirectSlug) {
+    redirect(`/movie/${movie.redirectSlug}`);
+  }
+
   if (!movie.title?.trim()) notFound();
 
   const [related, blogs] = await Promise.all([getRelated(movie), getMovieBlogs(movie.title)]);
@@ -686,6 +711,11 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
         },
       },
     } : {}),
+    subjectOf: [
+      { "@type": "WebPage", name: `${movie.title} Box Office Collection`, url: `${SITE_URL}/box-office/${movie.slug || movie._id}` },
+      { "@type": "WebPage", name: `${movie.title} Songs & Audio`, url: `${SITE_URL}/songs/${movie.slug || movie._id}` },
+      { "@type": "WebPage", name: `${movie.title} Reviews & News`, url: `${SITE_URL}/blog?q=${encodeURIComponent(movie.title)}` }
+    ]
   };
 
   const structuredData = [
@@ -1028,6 +1058,43 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
           )}
 
         </div>
+      </div>
+
+      {/* ── SITELINKS NAVIGATION (Sacnilk Style SEO) ── */}
+      <div className="sticky top-14 md:top-16 z-40 w-full bg-[#0a0a0a]/95 backdrop-blur-md border-y border-[#1a1a1a] shadow-lg mb-6">
+        <nav aria-label="Movie Sections" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ul className="flex items-center gap-1 sm:gap-6 overflow-x-auto scrollbar-none py-2 sm:py-3">
+            <li>
+              <Link href={`/movie/${movie.slug || movie._id}`} className="block px-3 py-1.5 text-[11px] sm:text-sm font-bold text-white bg-[#1f1f1f] rounded-lg whitespace-nowrap">
+                Overview
+              </Link>
+            </li>
+            {(movie.boxOffice?.opening || movie.boxOffice?.total || movie.boxOfficeDays?.length > 0) && (
+              <li>
+                <Link href={`/box-office/${movie.slug || movie._id}`} className="block px-3 py-1.5 text-[11px] sm:text-sm font-semibold text-gray-400 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg whitespace-nowrap transition-colors">
+                  Box Office
+                </Link>
+              </li>
+            )}
+            <li>
+              <a href="#cast" className="block px-3 py-1.5 text-[11px] sm:text-sm font-semibold text-gray-400 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg whitespace-nowrap transition-colors">
+                Cast & Crew
+              </a>
+            </li>
+            {(movie.media?.songs?.length > 0) && (
+              <li>
+                <Link href={`/songs/${movie.slug || movie._id}`} className="block px-3 py-1.5 text-[11px] sm:text-sm font-semibold text-gray-400 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg whitespace-nowrap transition-colors">
+                  Songs
+                </Link>
+              </li>
+            )}
+            <li>
+              <Link href={`/blog?q=${encodeURIComponent(movie.title)}`} className="block px-3 py-1.5 text-[11px] sm:text-sm font-semibold text-gray-400 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg whitespace-nowrap transition-colors">
+                Blogs/Reviews
+              </Link>
+            </li>
+          </ul>
+        </nav>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">

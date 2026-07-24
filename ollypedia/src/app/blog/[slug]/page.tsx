@@ -127,6 +127,30 @@ async function getRelatedBlogs(currentSlug: string, category?: string) {
   return JSON.parse(JSON.stringify([...sameCat, ...others]));
 }
 
+function getMisspellings(title: string): string[] {
+  if (!title) return [];
+  const variants = new Set<string>();
+  const words = title.trim().split(/\s+/);
+  for (const word of words) {
+    if (word.length < 3) continue;
+    const w = word.toLowerCase();
+    variants.add(w.replace(/([aeiou])\1+/g, "$1"));
+    variants.add(w.replace(/([aeiou])(?!\1)/g, "$1$1"));
+    variants.add(w.slice(0, -1));
+    variants.add(w.replace(/a/g, "e"));
+    variants.add(w.replace(/a/g, "o"));
+    variants.add(w.replace(/h/g, ""));
+    variants.add(w.replace(/ph/g, "f"));
+  }
+  const result: string[] = [];
+  variants.forEach((v) => {
+    if (v && v !== title.toLowerCase() && v.length > 2) {
+      result.push(v);
+    }
+  });
+  return result;
+}
+
 // ─── Metadata ─────────────────────────────────────────────────
 export async function generateMetadata({
   params,
@@ -149,8 +173,6 @@ const description = (
   const image     = blog.coverImage || `${SITE_URL}/default.jpg`;
   const canonical = `${SITE_URL}/blog/${blog.slug}`;
 
-  // ★ Keyword set — no misspellings (Google ignores <meta keywords>).
-  // Focus on real long-tail terms only.
   const movieName = blog.movieTitle || "";
   const year      = blog.createdAt ? new Date(blog.createdAt).getFullYear() : "";
   const keywords  = [
@@ -176,7 +198,10 @@ const description = (
     "Odisha film",
     "Odia movie blog",
     ...(blog.tags || []),
+    ...getMisspellings(blog.title),
+    ...(movieName ? getMisspellings(movieName) : []),
   ].filter(Boolean) as string[];
+
 
   return {
     title,

@@ -108,6 +108,32 @@ function getDerivedRoles(person: any, movies: any[]): string[] {
   return roles;
 }
 
+function getMisspellings(title: string): string[] {
+  if (!title) return [];
+  const variants = new Set<string>();
+  const words = title.trim().split(/\s+/);
+  for (const word of words) {
+    if (word.length < 3) continue;
+    const w = word.toLowerCase();
+    variants.add(w.replace(/([aeiou])\1+/g, "$1"));
+    variants.add(w.replace(/([aeiou])(?!\1)/g, "$1$1"));
+    variants.add(w.slice(0, -1));
+    variants.add(w.replace(/a/g, "e"));
+    variants.add(w.replace(/a/g, "o"));
+    variants.add(w.replace(/h/g, ""));
+    variants.add(w.replace(/ph/g, "f"));
+  }
+  const result: string[] = [];
+  variants.forEach((v) => {
+    if (v && v !== title.toLowerCase() && v.length > 2) {
+      result.push(v);
+      result.push(`${v} odia actor`);
+      result.push(`${v} odia actress`);
+    }
+  });
+  return result;
+}
+
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const person = await getCastMember(params.id);
@@ -138,6 +164,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
       `${person.name} Ollywood`, `${person.name} odia film`,
       `Odia ${person.type?.toLowerCase() || "artist"}`,
       "Ollywood cast", "Odia cinema", genres,
+      ...getMisspellings(person.name),
     ].filter(Boolean),
     alternates: { canonical },
     robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
