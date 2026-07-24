@@ -54,10 +54,11 @@ function fmtINR(val: unknown): string {
 
 export async function generateStaticParams() {
   await connectDB();
-  // Fetch ALL box-office movies, not just 30 — pages beyond 30 were ISR cold-starts
+  // Fetch the 15 most recent box-office movies to prevent memory overflow during build
   const movies = await (Movie as any)
     .find({ "boxOfficeDays.0": { $exists: true } }, "slug title")
     .sort({ updatedAt: -1 })
+    .limit(15)
     .lean();
   return movies.map((m: any) => ({
     slug: m.slug || String(m.title || "").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),

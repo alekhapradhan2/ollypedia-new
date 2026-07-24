@@ -12,19 +12,18 @@ export const dynamicParams = true;
 
 export async function generateStaticParams() {
   await connectDB();
-  // Use aggregate to cap total song params at 200 regardless of songs-per-movie
   const rows: { movieSlug: string; songIndex: string }[] = [];
   const movies = await (Movie as any)
     .find({ "media.songs.0": { $exists: true } }, "slug media.songs._id")
     .sort({ releaseDate: -1 })
-    .limit(20)
+    .limit(5)
     .lean();
   for (const m of movies) {
     const count = m.media?.songs?.length || 0;
-    for (let i = 0; i < count && rows.length < 100; i++) {
+    for (let i = 0; i < count && rows.length < 15; i++) {
       rows.push({ movieSlug: m.slug || String(m._id), songIndex: String(i) });
     }
-    if (rows.length >= 100) break;
+    if (rows.length >= 15) break;
   }
   return rows;
 }
