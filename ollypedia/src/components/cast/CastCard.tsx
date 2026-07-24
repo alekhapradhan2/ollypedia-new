@@ -4,7 +4,7 @@
 // Design: editorial magazine style — clean portrait card with gold accent
 
 import Image from "next/image";
-import Link from "next/link";
+import { LoadingCard } from "@/components/ui/LoadingCard";
 import type { PlainPerson } from "@/app/cast/page";
 
 interface CastCardProps {
@@ -38,7 +38,7 @@ export default function CastCard({ person, priority = false }: CastCardProps) {
       itemType="https://schema.org/Person"
       className="group"
     >
-      <Link
+      <LoadingCard
         href={`/cast/${_id}`}
         className="block no-underline"
         aria-label={`View profile of ${name}, Odia ${role}`}
@@ -111,7 +111,7 @@ export default function CastCard({ person, priority = false }: CastCardProps) {
             </p>
           </div>
         </div>
-      </Link>
+      </LoadingCard>
     </article>
   );
 }

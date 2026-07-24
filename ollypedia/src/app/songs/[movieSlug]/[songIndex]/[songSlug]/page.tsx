@@ -99,39 +99,8 @@ async function getRelatedBlogs(movie: MovieData): Promise<any[]> {
 
 // ─── Metadata ─────────────────────────────────────────────────
 
-// --- Fuzzy misspelling generator ---
-function getMisspellings(title: string): string[] {
-  if (!title) return [];
-  const variants = new Set<string>();
-  const words = title.trim().split(/\s+/);
-  for (const word of words) {
-    if (word.length < 3) continue;
-    const w = word.toLowerCase();
-    variants.add(w.replace(/([aeiou])\1+/g, "$1"));
-    variants.add(w.replace(/([aeiou])(?!\1)/g, "$1$1"));
-    variants.add(w.slice(0, -1));
-    variants.add(w.replace(/a/g, "e"));
-    variants.add(w.replace(/a/g, "o"));
-    variants.add(w.replace(/e/g, "i"));
-    variants.add(w.replace(/u/g, "o"));
-    for (let i = 0; i < w.length - 1; i++) {
-      variants.add(w.slice(0, i) + w[i + 1] + w[i] + w.slice(i + 2));
-    }
-    variants.add(w.replace(/h/g, ""));
-    variants.add(w.replace(/([sc])([aeiou])/g, "$1h$2"));
-    variants.add(w.replace(/ph/g, "f"));
-    variants.add(w.replace(/f/g, "ph"));
-  }
-  const result: string[] = [];
-  variants.forEach((v) => {
-    if (v && v !== title.toLowerCase() && v.length > 2) {
-      result.push(v);
-      result.push(`${v} odia movie`);
-      result.push(`${v} odia film`);
-    }
-  });
-  return result;
-}
+// getMisspellings REMOVED — Google handles misspelling matching automatically.
+// Intentional misspellings in <meta keywords> trigger spam/keyword-stuffing penalties.
 
 export async function generateMetadata({
   params,
@@ -154,7 +123,7 @@ export async function generateMetadata({
     || `${SITE_URL}/og-default.jpg`;
 
   // ★ Rich title — song + singer + movie + year for long-tail capture
-  const title = `${song.title}${singerStr} – ${movie.title}${year ? ` (${year})` : ""} | Odia Song | Ollypedia`;
+  const title = `${song.title}${singerStr} – ${movie.title}${year ? ` (${year})` : ""} | Odia Song`;
 
   const descParts = [
     `Listen to "${song.title}"${singerStr} from the Odia film "${movie.title}"${year ? ` (${year})` : ""}.`,
@@ -193,8 +162,6 @@ export async function generateMetadata({
     year ? `odia songs ${year}` : null,
     year ? `ollywood songs ${year}` : null,
     ...(movie.genre || []).map((g: string) => `${g} odia film`),
-    ...getMisspellings(movie.title),
-    ...getMisspellings(song.title),
   ].filter(Boolean) as string[];
 
   return {

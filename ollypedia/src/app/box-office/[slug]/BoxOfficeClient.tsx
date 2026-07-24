@@ -595,7 +595,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet: initialT
                   🎬 Movie Page
                 </Link>
                 {songs.length > 0 && (
-                  <Link href={`/songs/${movie.slug}/0/${toSongSlug(songs[0]?.title) || "0"}`}
+                  <Link href={`/songs/${movie.slug}`}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/25 hover:border-green-500/50 rounded-full text-xs font-semibold text-green-400 transition-all">
                     🎵 Songs &amp; Album
                   </Link>

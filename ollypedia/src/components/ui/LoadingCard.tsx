@@ -10,6 +10,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface LoadingCardProps {
   href?: string;
@@ -17,6 +18,8 @@ interface LoadingCardProps {
   className?: string;
   style?: React.CSSProperties;
   borderRadius?: number;
+  onMouseEnter?: (e: React.MouseEvent) => void;
+  onMouseLeave?: (e: React.MouseEvent) => void;
 }
 
 export function LoadingCard({
@@ -25,6 +28,8 @@ export function LoadingCard({
   className,
   style,
   borderRadius = 10,
+  onMouseEnter,
+  onMouseLeave,
 }: LoadingCardProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -45,13 +50,15 @@ const handleClick = (e: React.MouseEvent) => {
 };
 
   return (
-    <div
+    <Link
+      href={href || "#"}
       onClick={href ? handleClick : undefined}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       className={className}
       style={{
         ...style,
         position: "relative",
-        display: "block",
         textDecoration: "none",
         borderRadius,
         outline: loading ? "2px solid rgba(201,151,58,.7)" : "2px solid transparent",
@@ -118,6 +125,6 @@ const handleClick = (e: React.MouseEvent) => {
           100% { background-position: -200% 0; }
         }
       `}</style>
-    </div>
+    </Link>
   );
 }

@@ -22,8 +22,8 @@ export async function generateMetadata({
   const pageLabel = page > 1 ? ` | Page ${page}` : "";
   const isCurrentYear = year === new Date().getFullYear();
   const title = isCurrentYear
-    ? `Odia Box Office Collection ${year}${pageLabel} | Ollypedia`
-    : `Odia Box Office Collection ${year}${pageLabel} | Ollywood Hit Flop List | Ollypedia`;
+    ? `Odia Box Office Collection ${year}${pageLabel}`
+    : `Odia Box Office Collection ${year}${pageLabel} | Ollywood Hit Flop List`;
   const description = isCurrentYear
     ? `Complete Odia (Ollywood) box office collection report ${year}${page > 1 ? ` (Page ${page})` : ""}. Day-wise net and gross earnings for all latest Odia movies — updated daily on Ollypedia.`
     : `Odia (Ollywood) box office collection ${year}${page > 1 ? ` (Page ${page})` : ""} — all movies, hit & flop verdict, day-wise net and gross earnings. Complete Ollywood ${year} trade report on Ollypedia.`;
@@ -319,7 +319,7 @@ export default async function BoxOfficePage({
   const movieListJsonLd = {
     "@context": "https://schema.org",
     "@type":    "CollectionPage",
-    "name":     `Odia Box Office Collection ${selectedYear} | Ollypedia`,
+    "name":     `Odia Box Office Collection ${selectedYear}`,
     "description": `Complete day-wise box office collection for Odia (Ollywood) movies ${selectedYear}. Updated daily.`,
     "url":      `${SITE_URL}/box-office`,
     "dateModified": lastUpdated,

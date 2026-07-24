@@ -78,8 +78,8 @@ export async function generateMetadata({
 
   return buildMeta({
     title: seo
-      ? `${seo.title} – Ollywood Directory${pageLabel} | Ollypedia`
-      : `Odia Actors, Actresses & Crew – Complete Ollywood Cast Directory${pageLabel} | Ollypedia`,
+      ? `${seo.title} – Ollywood Directory${pageLabel}`
+      : `Odia Actors, Actresses & Crew – Complete Ollywood Cast Directory${pageLabel}`,
     description: seo
       ? `${seo.description} View complete filmographies, biographies and career highlights on Ollypedia.${page > 1 ? ` (Page ${page})` : ""}`
       : `Explore the complete directory of Odia film actors, actresses, directors, singers and crew.${page > 1 ? ` (Page ${page})` : ""} Browse profiles with filmographies and career stats of Ollywood celebrities.`,

@@ -28,8 +28,10 @@ import {
 } from "@/lib/trailerSeo";
 import { TrailerPlayer }  from "@/components/trailers/TrailerPlayer";
 import { TrailerCard }    from "@/components/trailers/TrailerCard";
-import { BlogCard } from "@/components/blog/BlogCard";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { LoadingCard } from "@/components/ui/LoadingCard";
 import { SongCard } from "@/components/songs/SongCard";
+import { BlogCard } from "@/components/blog/BlogCard";
 import Blog from "@/models/Blog";
 import {
   Calendar, Clock, User, Film, Tag, Star, Globe,
@@ -101,7 +103,7 @@ async function getMovieBlogs(movieTitle: string) {
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const movie = await fetchMovie(params.movieSlug);
-  if (!movie) return { title: "Trailer Not Found | Ollypedia" };
+  if (!movie) return { title: "Trailer Not Found" };
   return buildIndividualTrailerMeta(movie);
 }
 
@@ -427,13 +429,11 @@ export default async function IndividualTrailerPage({ params }: { params: Params
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {(movie.media!.songs!).slice(0, 6).map((s, i) => (
-                    <Link
+                    <SongCard 
                       key={i}
                       href={`/songs/${movieSlug}/${i}/${toSlug(s.title) || String(i)}`}
-                      className="block no-underline"
-                    >
-                      <SongCard song={{ ...s, title: s.title || `Song ${i + 1}`, movieTitle: movie.title }} />
-                    </Link>
+                      song={{ ...s, title: s.title || `Song ${i + 1}`, movieTitle: movie.title }} 
+                    />
                   ))}
                 </div>
               </section>
