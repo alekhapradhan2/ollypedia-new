@@ -413,11 +413,11 @@ export default async function CastDetailPage({ params }: { params: { id: string 
       <div className="relative overflow-hidden w-full bg-[#0a0a0a]">
         
         {/* ── Bright & Unique Background ── */}
-        <div className="absolute inset-0 h-[65vh] min-h-[400px] w-full">
+        <div className="absolute inset-0 h-[65vh] min-h-[400px] w-full overflow-hidden">
           {backdrop ? (
             <>
               <Image src={backdrop} alt={`${person.name} background`} fill
-                className="object-cover object-top opacity-85" priority />
+                className="object-cover object-top opacity-85 blur-sm scale-105" priority />
               {/* This mask creates a perfect smooth fade from the image into the dark background below */}
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0a0a]/60 to-[#0a0a0a]" />
               <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/80 via-transparent to-[#0a0a0a]/80 hidden sm:block" />
@@ -429,176 +429,77 @@ export default async function CastDetailPage({ params }: { params: { id: string 
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[80vw] h-[80vw] max-w-[600px] max-h-[600px] bg-orange-500/20 rounded-full blur-[100px] mix-blend-screen pointer-events-none animate-pulse" style={{ animationDuration: '8s' }} />
         </div>
 
-        {/* ── MOBILE layout: Centered, overlapping portrait ── */}
-        <div className="relative z-10 sm:hidden flex flex-col items-center px-4 pt-24 pb-12 w-full text-center mt-10">
+        {/* ── UNIFIED layout: poster on left, details on right ── */}
+        <div className="relative z-10 flex items-end max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[18vh] sm:pt-[22vh] pb-8 sm:pb-12 gap-4 sm:gap-10">
           
-          {/* Portrait — perfectly centered, overlapping the banner */}
-          <div className="relative z-20 -mt-16 mb-5" style={{ width: "140px" }}>
-            <div className="relative overflow-hidden group"
-              style={{
-                aspectRatio: "3/4",
-                borderRadius: "20px",
-                border: "2px solid rgba(255,255,255,0.2)",
-                boxShadow: "0 20px 40px -10px rgba(0,0,0,0.8), 0 0 30px rgba(249,115,22,0.3)",
-              }}>
-              {person.photo ? (
-                <Image src={person.photo} alt={`${person.name} – Odia ${rolesStr}`}
-                  fill className="object-cover object-top" priority />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-5xl bg-[#1a1a1a]">{icon}</div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            </div>
-          </div>
-
-          {/* Role chip */}
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-black tracking-widest uppercase px-4 py-1.5 rounded-full mb-4 backdrop-blur-md bg-orange-500/10 border border-orange-500/30 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)]">
-            {icon} {rolesStr}
-          </span>
-
-          {/* Name */}
-          <h1 className="font-display font-black leading-tight mb-3 text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 drop-shadow-lg"
-            style={{ fontSize: "clamp(2.2rem, 8vw, 3rem)" }}>
-            {person.name}
-          </h1>
-
-          {/* Location + year */}
-          <div className="flex flex-wrap justify-center gap-2 mb-4">
-            {person.location && (
-              <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1 rounded-full backdrop-blur-md bg-white/5 border border-white/10 text-gray-300">
-                <MapPin className="w-3 h-3 text-gray-400" />{person.location}
-              </span>
-            )}
-            {debutMovie?.releaseDate && (
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full backdrop-blur-md bg-blue-500/10 border border-blue-500/20 text-blue-300">
-                Since {new Date(debutMovie.releaseDate).getFullYear()}
-              </span>
-            )}
-          </div>
-
-          {/* Bio */}
-          {person.bio && (
-            <p className="text-[13px] leading-relaxed font-medium text-gray-300/90 max-w-sm mb-6 line-clamp-3">
-              {person.bio}
-            </p>
-          )}
-
-          {/* Stat pills */}
-          {movies.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-2 mb-6">
-              <div className="flex flex-col items-center justify-center w-[85px] h-[75px] rounded-2xl backdrop-blur-md border border-white/10 bg-white/5 shadow-xl">
-                <Film className="w-5 h-5 text-orange-400 mb-1" />
-                <span className="text-white font-black text-sm">{movies.length}</span>
-                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mt-0.5">Films</span>
-              </div>
-              {genres.length > 0 && (
-                <div className="flex flex-col items-center justify-center w-[85px] h-[75px] rounded-2xl backdrop-blur-md border border-white/10 bg-white/5 shadow-xl">
-                  <Award className="w-5 h-5 text-purple-400 mb-1" />
-                  <span className="text-white font-black text-sm">{genres.length}</span>
-                  <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mt-0.5">Genres</span>
-                </div>
-              )}
-              {costars.length > 0 && (
-                <div className="flex flex-col items-center justify-center w-[85px] h-[75px] rounded-2xl backdrop-blur-md border border-white/10 bg-white/5 shadow-xl">
-                  <Users className="w-5 h-5 text-pink-400 mb-1" />
-                  <span className="text-white font-black text-sm">{costars.length}</span>
-                  <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mt-0.5">Co-stars</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Social */}
-          {(person.instagram || person.website) && (
-            <div className="flex justify-center gap-3">
-              {person.instagram && (
-                <a href={`https://instagram.com/${person.instagram.replace("@", "")}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold backdrop-blur-md bg-pink-500/10 border border-pink-500/30 text-pink-300 shadow-[0_4px_12px_rgba(236,72,153,0.2)]">
-                  <Instagram className="w-4 h-4" /> Instagram
-                </a>
-              )}
-              {person.website && (
-                <a href={person.website} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold backdrop-blur-md bg-white/5 border border-white/20 text-gray-200">
-                  <Globe className="w-4 h-4" /> Website
-                </a>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ── TABLET + DESKTOP layout: glassmorphism overlap ── */}
-        <div className="relative z-10 hidden sm:flex items-end max-w-7xl mx-auto px-6 lg:px-8 pt-[22vh] pb-12 gap-10">
-
           {/* Portrait — overlaps the banner fade */}
           <div className="flex-shrink-0 self-end relative z-20 group">
             {/* Ambient glow behind image */}
-            <div className="absolute -inset-6 bg-orange-500/30 blur-[40px] rounded-full opacity-50 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+            <div className="absolute -inset-4 sm:-inset-6 bg-orange-500/30 blur-[30px] sm:blur-[40px] rounded-full opacity-50 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
             
-            <div className="relative overflow-hidden transition-all duration-500 group-hover:-translate-y-3"
+            <div className="relative overflow-hidden transition-all duration-500 group-hover:-translate-y-2 sm:group-hover:-translate-y-3"
               style={{
-                width: "clamp(200px, 20vw, 280px)",
+                width: "clamp(110px, 30vw, 280px)",
                 aspectRatio: "3/4",
-                borderRadius: "24px",
+                borderRadius: "16px",
                 border: "2px solid rgba(255,255,255,0.2)",
-                boxShadow: "0 30px 60px -15px rgba(0,0,0,0.9), 0 0 40px rgba(249,115,22,0.25)",
+                boxShadow: "0 20px 40px -10px rgba(0,0,0,0.9), 0 0 30px rgba(249,115,22,0.25)",
               }}>
               {person.photo ? (
                 <Image src={person.photo} alt={`${person.name} – Odia ${rolesStr}`}
                   fill className="object-cover object-top transition-transform duration-700 group-hover:scale-105" priority />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-7xl bg-[#1a1a1a]">{icon}</div>
+                <div className="absolute inset-0 flex items-center justify-center text-4xl sm:text-7xl bg-[#1a1a1a]">{icon}</div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             </div>
           </div>
 
           {/* Info */}
-          <div className="flex-1 min-w-0 pb-4 z-10">
+          <div className="flex-1 min-w-0 pb-2 sm:pb-4 z-10">
             {/* Chips */}
-            <div className="flex flex-wrap items-center gap-3 mb-5">
-              <span className="text-[12px] font-black tracking-widest uppercase px-4 py-1.5 rounded-full backdrop-blur-md bg-orange-500/10 border border-orange-500/30 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)]">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 sm:mb-5">
+              <span className="text-[10px] sm:text-[12px] font-black tracking-widest uppercase px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full backdrop-blur-md bg-orange-500/10 border border-orange-500/30 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)]">
                 {icon} {rolesStr}
               </span>
               {person.location && (
-                <span className="text-[13px] font-medium px-4 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-md bg-white/5 border border-white/10 text-gray-300 shadow-lg">
+                <span className="hidden sm:flex text-[13px] font-medium px-4 py-1.5 rounded-full items-center gap-1.5 backdrop-blur-md bg-white/5 border border-white/10 text-gray-300 shadow-lg">
                   <MapPin className="w-3.5 h-3.5 text-gray-400" />{person.location}
                 </span>
               )}
               {debutMovie?.releaseDate && (
-                <span className="text-[13px] font-bold px-4 py-1.5 rounded-full backdrop-blur-md bg-blue-500/10 border border-blue-500/20 text-blue-300 shadow-lg">
+                <span className="hidden sm:inline-flex text-[13px] font-bold px-4 py-1.5 rounded-full backdrop-blur-md bg-blue-500/10 border border-blue-500/20 text-blue-300 shadow-lg">
                   Since {new Date(debutMovie.releaseDate).getFullYear()}
                 </span>
               )}
             </div>
 
             {/* Name */}
-            <h1 className="font-display font-black leading-tight mb-4 text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 drop-shadow-2xl"
-              style={{ fontSize: "clamp(3rem, 5.5vw, 5rem)" }}>
+            <h1 className="font-display font-black leading-tight mb-2 sm:mb-4 text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 drop-shadow-2xl"
+              style={{ fontSize: "clamp(1.75rem, 5.5vw, 5rem)" }}>
               {person.name}
             </h1>
 
             {/* Bio */}
             {person.bio && (
-              <p className="text-[16px] leading-relaxed mb-8 max-w-3xl font-medium text-gray-300/90 line-clamp-2">
+              <p className="text-[12px] sm:text-[16px] leading-relaxed mb-4 sm:mb-8 max-w-3xl font-medium text-gray-300/90 line-clamp-2 sm:line-clamp-2">
                 {person.bio}
               </p>
             )}
 
             {/* Stat pills & Social in one row */}
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
               {movies.length > 0 && (
-                <div className="group flex items-center gap-3 px-5 py-2.5 rounded-2xl backdrop-blur-md border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all cursor-default shadow-xl hover:-translate-y-1">
-                  <Film className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
+                <div className="group flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl backdrop-blur-md border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all cursor-default shadow-xl sm:hover:-translate-y-1">
+                  <Film className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400 group-hover:scale-110 transition-transform" />
                   <div className="flex flex-col">
-                    <span className="text-white font-black text-sm leading-none drop-shadow-md">{movies.length}</span>
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Films</span>
+                    <span className="text-white font-black text-xs sm:text-sm leading-none drop-shadow-md">{movies.length}</span>
+                    <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Films</span>
                   </div>
                 </div>
               )}
               {genres.length > 0 && (
-                <div className="group flex items-center gap-3 px-5 py-2.5 rounded-2xl backdrop-blur-md border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all cursor-default shadow-xl hover:-translate-y-1">
+                <div className="group hidden sm:flex items-center gap-3 px-5 py-2.5 rounded-2xl backdrop-blur-md border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all cursor-default shadow-xl hover:-translate-y-1">
                   <Award className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
                   <div className="flex flex-col">
                     <span className="text-white font-black text-sm leading-none drop-shadow-md">{genres.length}</span>
@@ -607,7 +508,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                 </div>
               )}
               {costars.length > 0 && (
-                <div className="group flex items-center gap-3 px-5 py-2.5 rounded-2xl backdrop-blur-md border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all cursor-default shadow-xl hover:-translate-y-1">
+                <div className="group hidden sm:flex items-center gap-3 px-5 py-2.5 rounded-2xl backdrop-blur-md border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all cursor-default shadow-xl hover:-translate-y-1">
                   <Users className="w-5 h-5 text-pink-400 group-hover:scale-110 transition-transform" />
                   <div className="flex flex-col">
                     <span className="text-white font-black text-sm leading-none drop-shadow-md">{costars.length}</span>
@@ -620,18 +521,18 @@ export default async function CastDetailPage({ params }: { params: { id: string 
 
               {/* Social */}
               {(person.instagram || person.website) && (
-                <div className="flex gap-3">
+                <div className="flex gap-2 sm:gap-3">
                   {person.instagram && (
                     <a href={`https://instagram.com/${person.instagram.replace("@", "")}`}
                       target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center w-11 h-11 rounded-full backdrop-blur-md bg-pink-500/10 border border-pink-500/30 text-pink-400 hover:bg-pink-500/20 hover:-translate-y-1 transition-all shadow-[0_8px_20px_rgba(236,72,153,0.2)]">
-                      <Instagram className="w-5 h-5" />
+                      className="inline-flex items-center justify-center w-8 h-8 sm:w-11 sm:h-11 rounded-full backdrop-blur-md bg-pink-500/10 border border-pink-500/30 text-pink-400 hover:bg-pink-500/20 hover:-translate-y-1 transition-all shadow-[0_8px_20px_rgba(236,72,153,0.2)]">
+                      <Instagram className="w-4 h-4 sm:w-5 sm:h-5" />
                     </a>
                   )}
                   {person.website && (
                     <a href={person.website} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center w-11 h-11 rounded-full backdrop-blur-md bg-white/5 border border-white/20 text-gray-300 hover:bg-white/10 hover:-translate-y-1 transition-all shadow-[0_8px_20px_rgba(0,0,0,0.3)]">
-                      <Globe className="w-5 h-5" />
+                      className="inline-flex items-center justify-center w-8 h-8 sm:w-11 sm:h-11 rounded-full backdrop-blur-md bg-white/5 border border-white/20 text-gray-300 hover:bg-white/10 hover:-translate-y-1 transition-all shadow-[0_8px_20px_rgba(0,0,0,0.3)]">
+                      <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
                     </a>
                   )}
                 </div>

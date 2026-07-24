@@ -315,6 +315,15 @@ export default async function IndividualTrailerPage({ params }: { params: Params
                 <Film className="w-4 h-4" />
                 View Full Movie Page
               </Link>
+              {movie.media?.songs && movie.media.songs.length > 0 && (
+                <Link
+                  href={`/songs/${movieSlug}`}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-[#1e1e1e] hover:bg-emerald-500/10 border border-[#2a2a2a] hover:border-emerald-500/30 text-gray-300 hover:text-emerald-400 text-sm font-semibold rounded-xl transition-all"
+                >
+                  <Music className="w-4 h-4" />
+                  Playlist
+                </Link>
+              )}
               <Link
                 href="/trailers"
                 className="flex items-center gap-2 px-4 py-2.5 bg-[#1e1e1e] hover:bg-white/5 border border-[#2a2a2a] hover:border-white/20 text-gray-500 hover:text-white text-sm font-medium rounded-xl transition-all"
