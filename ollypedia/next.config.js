@@ -2,7 +2,7 @@
 const nextConfig = {
   experimental: {
     instrumentationHook: true, // remove if you're on Next.js 15+
-    isrMemoryCacheSize: 10,    // Limit in-memory cache to 10 pages to save RAM on Hostinger (512MB limit)
+    cacheMaxMemorySize: 0,     // Disable in-memory cache entirely, forcing disk cache to prevent RAM exhaustion on Hostinger (512MB)
   },
 
   images: {
