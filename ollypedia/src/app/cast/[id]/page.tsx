@@ -345,8 +345,27 @@ export default async function CastDetailPage({ params }: { params: { id: string 
     sameAs: [
       person.instagram ? `https://instagram.com/${person.instagram.replace("@", "")}` : null,
       person.website ?? null,
+      person.wikipedia ?? null,
+      person.imdb ?? null,
     ].filter(Boolean),
     memberOf: { "@type": "Organization", name: "Ollywood – Odia Film Industry" },
+  };
+
+  const filmographyLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `${person.name} Filmography`,
+    description: `Complete list of Odia films featuring ${person.name}`,
+    itemListElement: movies.map((m: any, idx: number) => ({
+      "@type": "ListItem",
+      position: idx + 1,
+      item: {
+        "@type": "Movie",
+        name: m.title,
+        url: `${SITE_URL}/movie/${m.slug || m._id}`,
+        ...(m.releaseDate ? { datePublished: m.releaseDate } : {}),
+      }
+    }))
   };
   const breadcrumbLd = {
     "@context": "https://schema.org", "@type": "BreadcrumbList",
@@ -386,6 +405,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(filmographyLd) }} />
 
       {/* ══ CINEMATIC HERO ══ */}
       <div className="relative overflow-hidden w-full bg-[#0a0a0a]">

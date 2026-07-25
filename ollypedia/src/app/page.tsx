@@ -352,7 +352,9 @@ export default async function HomePage() {
               name: "Ollypedia",
               url: "https://www.ollypedia.in",
               logo: "https://www.ollypedia.in/logo.png",
-              sameAs: [],
+              sameAs: [
+                "https://www.instagram.com/ollypedia.in"
+              ],
             },
           ]),
         }}

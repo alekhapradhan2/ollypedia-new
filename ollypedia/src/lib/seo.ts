@@ -78,17 +78,29 @@ export function movieJsonLd(movie: any) {
 export function articleJsonLd(blog: any) {
   return {
     "@context": "https://schema.org",
-    "@type": "Article",
+    "@type": ["Article", "NewsArticle"],
     headline: blog.title,
     description: blog.excerpt || blog.seoDesc,
     url: `${SITE_URL}/blog/${blog.slug}`,
     image: blog.coverImage,
     datePublished: blog.createdAt,
     dateModified: blog.updatedAt,
-    author: { "@type": "Organization", name: blog.author || SITE_NAME },
+    // ★ EEAT: Person author required for Google Top Stories eligibility
+    author: {
+      "@type": "Person",
+      name: blog.authorName || "Ollypedia Editorial",
+      url: `${SITE_URL}/about`,
+    },
+    // ★ publisher logo is REQUIRED by Google for NewsArticle rich results
     publisher: {
       "@type": "Organization",
       name: SITE_NAME,
+      logo: {
+        "@type": "ImageObject",
+        url: `${SITE_URL}/logo.png`,
+        width: 600,
+        height: 60,
+      },
     },
   };
 }

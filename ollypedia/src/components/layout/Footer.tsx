@@ -241,25 +241,35 @@ export async function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
 
         {/* ══════════════════════════════════════════════════════
-            SEO PILL LINKS
+            SEO PREMIUM LINKS
         ══════════════════════════════════════════════════════ */}
         <nav aria-label="SEO quick links">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 pb-8 sm:pb-10 border-b border-[#1c1c1c]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-12 pb-10 sm:pb-12 border-b border-[#1c1c1c]">
             {Object.entries(SEO_LINKS).map(([section, links]) => (
               <div key={section}>
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-500 mb-3 sm:mb-4 flex items-center gap-2">
-                  <span className="w-5 h-px bg-orange-500/60" aria-hidden="true" />
+                <h3 className="text-xs font-bold uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600 mb-4 sm:mb-5 flex items-center gap-3">
+                  <div className="w-1 h-3.5 bg-gradient-to-b from-orange-400 to-orange-600 rounded-sm shadow-[0_0_8px_rgba(249,115,22,0.5)]" aria-hidden="true" />
                   {section}
                 </h3>
-                <ul className="flex flex-wrap gap-1.5 sm:gap-2">
+                <ul className="flex flex-wrap gap-2.5 sm:gap-3">
                   {links.map((link) => (
                     <li key={`${link.href}-${link.label}`}>
                       <Link
                         href={link.href}
-                        className="inline-flex items-center gap-1 text-[11px] text-gray-500 hover:text-orange-400 bg-[#141414] hover:bg-orange-500/8 border border-[#1e1e1e] hover:border-orange-500/25 px-2.5 py-1 rounded-full transition-all duration-200"
+                        className="group relative inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-b from-[#181818] to-[#111111] border border-[#252525] hover:border-orange-500/40 transition-all duration-300 overflow-hidden shadow-sm hover:shadow-[0_4px_12px_rgba(249,115,22,0.05)] hover:-translate-y-0.5"
                       >
-                        <ChevronRight className="w-2.5 h-2.5 opacity-40" aria-hidden="true" />
-                        {link.label}
+                        {/* Glow sweep effect on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transform -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
+                        
+                        {/* Animated glowing dot indicator */}
+                        <div className="relative flex items-center justify-center w-1.5 h-1.5 ml-0.5">
+                          <div className="absolute inset-0 rounded-full bg-orange-500 opacity-0 group-hover:opacity-40 group-hover:animate-ping" style={{ animationDuration: '2s' }} />
+                          <div className="relative w-1.5 h-1.5 rounded-full bg-gray-600 group-hover:bg-orange-400 transition-colors shadow-[0_0_0_rgba(249,115,22,0)] group-hover:shadow-[0_0_6px_rgba(249,115,22,0.8)]" />
+                        </div>
+                        
+                        <span className="relative z-10 text-[11px] sm:text-xs font-semibold text-gray-400 group-hover:text-orange-50 transition-colors tracking-wide">
+                          {link.label}
+                        </span>
                       </Link>
                     </li>
                   ))}

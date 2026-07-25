@@ -1001,6 +1001,22 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 </Link>
               </li>
             )}
+            {/* ★ SEO: Trailer link — gives /trailers/[slug] HTML discovery instead of sitemap-only */}
+            {(movie.media?.videos?.length > 0) && movie.slug && (
+              <li>
+                <Link href={`/trailers/${movie.slug}`} className="block px-3 py-1.5 text-[11px] sm:text-sm font-semibold text-gray-400 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg whitespace-nowrap transition-colors">
+                  Trailer
+                </Link>
+              </li>
+            )}
+            {/* ★ SEO: OTT link — gives /ott/[slug] HTML discovery instead of sitemap-only */}
+            {(movie.ott?.platform || movie.streamingOn) && movie.slug && (
+              <li>
+                <Link href={`/ott/${movie.slug}`} className="block px-3 py-1.5 text-[11px] sm:text-sm font-semibold text-gray-400 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg whitespace-nowrap transition-colors">
+                  Watch Now
+                </Link>
+              </li>
+            )}
             <li>
               <Link href={`/blog?q=${encodeURIComponent(movie.title)}`} className="block px-3 py-1.5 text-[11px] sm:text-sm font-semibold text-gray-400 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg whitespace-nowrap transition-colors">
                 Blogs/Reviews
