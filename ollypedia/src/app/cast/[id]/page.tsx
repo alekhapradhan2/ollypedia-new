@@ -161,6 +161,77 @@ function fmtDate(d?: string | Date) {
   catch { return String(d); }
 }
 
+function stripMarkdown(raw: string): string {
+  if (!raw) return "";
+  // Strip HTML tags first
+  let stripped = raw.replace(/<[^>]+>/g, " ");
+  // Strip Markdown
+  return stripped.replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1").replace(/^[#\-*•]\s+/gm, "").trim();
+}
+
+function formatBioHtml(raw: string): string {
+  if (!raw) return "";
+  
+  // If it already contains HTML tags, just return it as is
+  if (/<[a-z][\s\S]*>/i.test(raw)) {
+    return raw;
+  }
+
+  const lines = raw.split(/\r?\n/);
+  const parts: string[] = [];
+  let ulOpen = false;
+  let paraLines: string[] = [];
+
+  const inlineFmt = (s: string) =>
+    s.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
+     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+     .replace(/\*(.+?)\*/g, "<em>$1</em>");
+
+  const flushPara = () => {
+    if (!paraLines.length) return;
+    const text = paraLines.join(" ").trim();
+    if (text) parts.push(`<p class="mb-4 last:mb-0">${inlineFmt(text)}</p>`);
+    paraLines = [];
+  };
+
+  const closeList = () => {
+    if (ulOpen) { parts.push("</ul>"); ulOpen = false; }
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const t = lines[i].trim();
+    if (!t) { flushPara(); closeList(); continue; }
+
+    const bullet = t.match(/^[•\-*]\s+(.+)/);
+    if (bullet) {
+      flushPara();
+      if (!ulOpen) { parts.push('<ul class="list-disc pl-5 mb-4 space-y-2 text-gray-300 text-sm md:text-base leading-relaxed">'); ulOpen = true; }
+      parts.push(`<li>${inlineFmt(bullet[1])}</li>`);
+      continue;
+    }
+
+    const boldLine = t.match(/^\*\*([^*]+)\*\*\s*:?\s*$/);
+    if (boldLine) {
+      flushPara(); closeList();
+      parts.push(`<h3 class="text-white font-bold text-lg mt-6 mb-2">${boldLine[1]}</h3>`);
+      continue;
+    }
+    
+    const mdH3 = t.match(/^###?\s+(.+)/);
+    if (mdH3) {
+      flushPara(); closeList();
+      parts.push(`<h3 class="text-white font-bold text-lg mt-6 mb-2">${inlineFmt(mdH3[1])}</h3>`);
+      continue;
+    }
+
+    closeList();
+    paraLines.push(t);
+  }
+
+  flushPara(); closeList();
+  return parts.join("\n");
+}
+
 function generateRichBio(person: any, movies: any[]): string {
   if (person.ai?.about) return person.ai.about;
   if (person.bio && person.bio.trim().length > 80) return person.bio;
@@ -481,7 +552,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
             {/* Bio */}
             {person.bio && (
               <p className="text-[12px] sm:text-[16px] leading-relaxed mb-4 sm:mb-8 max-w-3xl font-medium text-gray-300/90 line-clamp-2 sm:line-clamp-2">
-                {person.bio}
+                {stripMarkdown(person.bio)}
               </p>
             )}
 
@@ -666,9 +737,10 @@ export default async function CastDetailPage({ params }: { params: { id: string 
             <section aria-label={`About ${person.name}`}>
               <SectionHeading icon={Info} title={`About ${person.name}`} />
               <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-6">
-                {bio.split("\n\n").filter(Boolean).map((para: string, i: number) => (
-                  <p key={i} className="text-gray-300 text-sm md:text-base leading-relaxed mb-4 last:mb-0">{para.trim()}</p>
-                ))}
+                <div 
+                  className="prose prose-invert max-w-none prose-p:leading-relaxed prose-headings:font-display prose-headings:text-orange-50 prose-a:text-orange-400 prose-strong:text-orange-50 text-gray-300"
+                  dangerouslySetInnerHTML={{ __html: formatBioHtml(bio) }} 
+                />
               </div>
             </section>
 
