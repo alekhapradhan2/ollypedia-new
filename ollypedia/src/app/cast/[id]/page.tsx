@@ -60,8 +60,9 @@ async function getCastMember(id: string) {
   const [movies, news, blogs] = await Promise.all([
     Movie.find(
       { "cast.castId": member._id },
-      "title slug posterUrl thumbnailUrl releaseDate genre verdict imdbRating cast media"
-    ).sort({ releaseDate: -1 }).lean(),
+      // ⚠ 'media' REMOVED — it contains all songs/videos arrays and can be megabytes per movie
+      "title slug posterUrl thumbnailUrl releaseDate genre verdict imdbRating cast"
+    ).sort({ releaseDate: -1 }).limit(30).lean(),
     News.find({ castId: member._id }).sort({ createdAt: -1 }).limit(12).lean(),
     Blog.find(
       {
