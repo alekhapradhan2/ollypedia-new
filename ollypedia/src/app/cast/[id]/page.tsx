@@ -738,7 +738,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
               <SectionHeading icon={Info} title={`About ${person.name}`} />
               <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-6">
                 <div 
-                  className="prose prose-invert max-w-none prose-p:leading-relaxed prose-headings:font-display prose-headings:text-orange-50 prose-a:text-orange-400 prose-strong:text-orange-50 text-gray-300"
+                  className="prose prose-invert max-w-none prose-p:leading-relaxed prose-headings:font-display prose-headings:text-orange-50 prose-a:text-orange-400 prose-strong:text-orange-50 text-gray-300 text-justify"
                   dangerouslySetInnerHTML={{ __html: formatBioHtml(bio) }} 
                 />
               </div>
