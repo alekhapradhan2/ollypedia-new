@@ -504,6 +504,8 @@ export default async function SongDetailSlugPage({
         "inAlbum": {
           "@type": "MusicAlbum",
           "name": `${movie.title} Original Soundtrack`,
+          "albumReleaseType": "SoundtrackAlbum",
+          "url": `${SITE_URL}/songs/${movie.slug}`,
           "numTracks": movie.media.songs.length,
           ...(song.musicDirector && {
             "byArtist": { "@type": "Person", "name": song.musicDirector },
