@@ -7,6 +7,7 @@ import Link              from "next/link";
 import { connectDB }     from "@/lib/db";
 import Movie             from "@/models/Movie";
 import Blog              from "@/models/Blog";
+import { DisplayAd }     from "@/components/ads/DisplayAd";
 
 export const revalidate = 600;
 
@@ -449,6 +450,11 @@ export default async function BoxOfficePage({
               </time>
             </p>
           </div>
+        </div>
+
+        {/* ══ GLOBAL BANNER AD ══ */}
+        <div className="w-full max-w-screen-lg mx-auto px-3 sm:px-5 mt-4 sm:mt-6">
+          <DisplayAd slot="8191172163" format="horizontal" className="rounded-xl border border-[#1c1c1c]" />
         </div>
 
         <div className="w-full max-w-screen-lg mx-auto px-3 sm:px-5 py-4 sm:py-6 space-y-5">

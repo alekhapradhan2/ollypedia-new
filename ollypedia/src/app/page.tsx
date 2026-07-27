@@ -18,6 +18,7 @@ import RandomMoviePicker from "@/components/home/RandomMoviePicker";
 import DidYouKnow, { type TriviaCard } from "@/components/home/DidYouKnow";
 import { TRIVIA_EMOJIS } from "@/lib/trivia-constants";
 import { InFeedAd } from "@/components/ads/InFeedAd";
+import { DisplayAd } from "@/components/ads/DisplayAd";
 
 export const revalidate = 600;
 
@@ -403,6 +404,11 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ══ GLOBAL BANNER AD ══ */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <DisplayAd slot="8191172163" format="horizontal" className="rounded-xl border border-[#222]" />
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 sm:space-y-20">
 

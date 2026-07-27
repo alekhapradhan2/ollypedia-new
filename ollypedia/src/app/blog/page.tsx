@@ -14,6 +14,7 @@ import { BlogSearch } from "@/components/blog/BlogSearch";
 import { BlogInfiniteScroll } from "@/components/blog/BlogInfiniteScroll";
 import { BlogCategoryDropdown } from "@/components/blog/BlogCategoryDropdown";
 import { Search, BookOpen, TrendingUp, Star, Eye, Flame, ChevronRight } from "lucide-react";
+import { DisplayAd } from "@/components/ads/DisplayAd";
 
 export const revalidate = 600;
 
@@ -551,6 +552,11 @@ export default async function BlogPage({
             </div>
           </div>
         </header>
+
+        {/* ══ GLOBAL BANNER AD ══ */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+          <DisplayAd slot="8191172163" format="horizontal" className="rounded-xl border border-[#222]" />
+        </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
