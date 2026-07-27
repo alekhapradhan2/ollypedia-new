@@ -32,21 +32,19 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.ico" },
 };
 
-import Script from "next/script";
 import { GlobalMultiplexWrapper } from "@/components/ads/GlobalMultiplexWrapper";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
       <head>
-      </head>
-      <body className="grain min-h-screen flex flex-col bg-[#0a0a0a]">
-        <Script
-          id="adsbygoogle-init"
-          strategy="afterInteractive"
+        <script
+          async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5823659147566885"
           crossOrigin="anonymous"
-        />
+        ></script>
+      </head>
+      <body className="grain min-h-screen flex flex-col bg-[#0a0a0a]">
         <Suspense fallback={null}>
           <GlobalLoader />
         </Suspense>
