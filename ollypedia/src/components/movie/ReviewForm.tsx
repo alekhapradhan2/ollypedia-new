@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -259,18 +259,11 @@ function ShareModal({
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      // ── Portrait card: 600 × 780 ──
-      // Layout (top → bottom):
-      //   [4px gold bar]
-      //   [Header: favicon + OLLYPEDIA wordmark | MY REVIEW badge]   ~86px
-      //   [1px divider]
-      //   [ROW: poster(left 160×224) | title + stars(right)]         ~244px
-      //   [1px divider]
-      //   [Quote box full-width]                                      ~dynamic
-      //   [Footer: ollypedia.in]                                      ~44px
-      //   [4px gold bar]
-
+      // ── Portrait card: 1080 × 1350 (Instagram 4:5) ──
+      // We draw in a virtual 600 × 750 coordinate system and scale up by 1.8
+      const SCALE  = 1.8;
       const CARD_W = 600;
+      const CARD_H = 750;
       const PAD    = 32;
 
       // ── helpers defined early so they're available everywhere ──
@@ -350,11 +343,16 @@ function ShareModal({
       const DIV       = 1;
       const ROW_H     = 230;  // poster row zone (tight)
       const FOT_H     = 52;   // footer
-      const CARD_H    = 4 + HDR_H + DIV + 16 + ROW_H + 16 + DIV + 16 + BOX_H + 16 + DIV + FOT_H + 4;
+      
+      const content_H = 4 + HDR_H + DIV + 16 + ROW_H + DIV + 16 + BOX_H + 16 + DIV + FOT_H + 4;
+      const extra     = Math.max(0, CARD_H - content_H);
+      const gap       = extra / 3;
 
       const canvas = document.createElement("canvas");
-      canvas.width = CARD_W; canvas.height = CARD_H;
+      canvas.width = CARD_W * SCALE;
+      canvas.height = CARD_H * SCALE;
       const ctx = canvas.getContext("2d")!;
+      ctx.scale(SCALE, SCALE);
 
       // ── Background ──
       const bgGrad = ctx.createLinearGradient(0, 0, CARD_W, CARD_H);
@@ -430,7 +428,7 @@ function ShareModal({
       ctx.fillStyle = "#f59e0b";
       ctx.fillText(bdgTxt, bdgX + 11, bdgY + 16);
 
-      curY += HDR_H;
+      curY += HDR_H + gap;
 
       // ── divider ──
       const divider = (y: number) => {
@@ -532,7 +530,7 @@ ry += lines.length * lineHeight + 12;
       ctx.fillStyle = "#f59e0b";
       ctx.fillText(rateTxt, RX + 9, ry + 15);
 
-      curY += ROW_H;
+      curY += ROW_H + gap;
       divider(curY); curY += DIV + 16;
 
       // ── QUOTE BOX ──
@@ -567,7 +565,7 @@ ry += lines.length * lineHeight + 12;
       ctx.font = "12px 'Georgia', serif";
       ctx.fillText(`— ${review.user || "Anonymous"} · ollypedia.in`, BOX_X + BOX_PAD + 6, BOX_Y + BOX_H - 14);
 
-      curY += BOX_H + 16;
+      curY += BOX_H + 16 + gap;
       divider(curY); curY += DIV;
 
       // ── FOOTER ──
@@ -921,6 +919,7 @@ export function ReviewForm({
   initialReviews = [], // ← NEW
 }: ReviewFormProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [user, setUser] = useState("");
   const [starRating, setStarRating] = useState(0); // 1–5 (UI)
   const [text, setText] = useState("");
@@ -991,10 +990,9 @@ export function ReviewForm({
       setShareReview(confirmedReview);
 
       // The route handler already revalidated this page's cache server-side
-      // (it derives the slug itself), so this refetches the Server Component
-      // (hero rating + review count) with fresh data — without it, those
-      // would stay stale until the page's normal revalidate window (1hr) elapses.
-      router.refresh();
+      // (it derives the slug itself), so we need to refetch the Server Component
+      // to get the updated hero rating + review count. We do this when the
+      // modal CLOSES so it doesn't unmount the modal prematurely.
     } catch (err: any) {
       setError(err.message || "Could not save your review. Please try again.");
     } finally {
@@ -1016,7 +1014,12 @@ export function ReviewForm({
           review={shareReview}
           movieTitle={movieTitle}
           moviePoster={moviePoster}
-          onClose={() => setShareReview(null)}
+          onClose={() => {
+            setShareReview(null);
+            startTransition(() => {
+              router.refresh();
+            });
+          }}
         />
       )}
 
