@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { buildMeta, SITE_NAME } from "@/lib/seo";
+import { buildMeta, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { Film, Award, Users, Globe } from "lucide-react";
 
 export const metadata: Metadata = buildMeta({
