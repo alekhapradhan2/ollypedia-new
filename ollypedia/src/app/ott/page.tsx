@@ -7,7 +7,8 @@ import { ChevronRight, Play, Calendar, MonitorPlay } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { PlatformLogo } from "@/components/ui/PlatformLogo";
-
+import { InFeedAd } from "@/components/ads/InFeedAd";
+import React from "react";
 export const revalidate = 600;
 
 export const metadata: Metadata = buildMeta({
@@ -245,8 +246,15 @@ export default async function OttLandingPage() {
             </div>
             
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
-              {upcomingMovies.map((movie: any) => (
-                <MovieCard key={movie._id} movie={movie} variant="ott" />
+              {upcomingMovies.map((movie: any, idx: number) => (
+                <React.Fragment key={movie._id}>
+                  <MovieCard movie={movie} variant="ott" />
+                  {(idx + 1) % 7 === 0 && (
+                    <div className="w-full h-full bg-[#111] border border-[#1f1f1f] rounded-xl overflow-hidden flex items-center justify-center">
+                      <InFeedAd className="min-h-[250px] w-full h-full" />
+                    </div>
+                  )}
+                </React.Fragment>
               ))}
             </div>
             
@@ -274,8 +282,15 @@ export default async function OttLandingPage() {
             </div>
             
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
-              {streamingMovies.map((movie: any) => (
-                <MovieCard key={movie._id} movie={movie} variant="ott" />
+              {streamingMovies.map((movie: any, idx: number) => (
+                <React.Fragment key={movie._id}>
+                  <MovieCard movie={movie} variant="ott" />
+                  {(idx + 1) % 7 === 0 && (
+                    <div className="w-full h-full bg-[#111] border border-[#1f1f1f] rounded-xl overflow-hidden flex items-center justify-center">
+                      <InFeedAd className="min-h-[250px] w-full h-full" />
+                    </div>
+                  )}
+                </React.Fragment>
               ))}
             </div>
             

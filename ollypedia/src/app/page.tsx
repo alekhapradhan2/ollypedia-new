@@ -1,3 +1,4 @@
+import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
@@ -16,6 +17,7 @@ import HeroCarousel, { type HeroMovie } from "@/components/layout/HeroCarousel";
 import RandomMoviePicker from "@/components/home/RandomMoviePicker";
 import DidYouKnow, { type TriviaCard } from "@/components/home/DidYouKnow";
 import { TRIVIA_EMOJIS } from "@/lib/trivia-constants";
+import { InFeedAd } from "@/components/ads/InFeedAd";
 
 export const revalidate = 600;
 
@@ -413,8 +415,15 @@ export default async function HomePage() {
               href="/movies"
             />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-              {latestMovies.slice(0, 10).map((m: any) => (
-                <MovieCard key={String(m._id)} movie={m} />
+              {latestMovies.slice(0, 10).map((m: any, idx: number) => (
+                <React.Fragment key={String(m._id)}>
+                  {idx === 4 && (
+                    <div className="col-span-2 sm:col-span-1 h-full">
+                      <InFeedAd className="min-h-[250px]" />
+                    </div>
+                  )}
+                  <MovieCard movie={m} />
+                </React.Fragment>
               ))}
             </div>
             <div className="mt-6 text-center">

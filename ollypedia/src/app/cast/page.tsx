@@ -382,8 +382,8 @@ export default async function CastPage({
                       <CastCard person={p} priority={i < 8} />
                       {/* Native In-feed Ad after every 7th card */}
                       {(i + 1) % 7 === 0 && (
-                        <div className="col-span-full w-full">
-                          <InFeedAd className="min-h-[250px]" />
+                        <div className="w-full h-full bg-[#111] border border-[#1f1f1f] rounded-xl overflow-hidden flex items-center justify-center">
+                          <InFeedAd className="min-h-[250px] w-full h-full" />
                         </div>
                       )}
                     </React.Fragment>

@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Loader2, Search, X } from "lucide-react";
 import { AlbumCard } from "@/components/songs/AlbumCard";
-
+import { InFeedAd } from "@/components/ads/InFeedAd";
+import React from "react";
 interface Props {
   initialMovies: any[];
 }
@@ -137,8 +138,15 @@ export function SongsClient({ initialMovies }: Props) {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10">
-              {movies.map((movie) => (
-                <AlbumCard key={movie._id} movie={movie} hrefPrefix="/songs" />
+              {movies.map((movie, idx) => (
+                <React.Fragment key={movie._id}>
+                  <AlbumCard movie={movie} hrefPrefix="/songs" />
+                  {(idx + 1) % 7 === 0 && (
+                    <div className="w-full h-full bg-[#111] border border-[#1f1f1f] rounded-xl overflow-hidden flex items-center justify-center">
+                      <InFeedAd className="min-h-[250px] w-full h-full" />
+                    </div>
+                  )}
+                </React.Fragment>
               ))}
             </div>
           )}

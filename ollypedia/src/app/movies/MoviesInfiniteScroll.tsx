@@ -30,7 +30,7 @@ export function MoviesInfiniteScroll({
     setPage(searchParams.page ? parseInt(searchParams.page) : 1);
     setHasMore((searchParams.page ? parseInt(searchParams.page) : 1) < totalPages);
     setLoading(false);
-  }, [initialMovies, totalPages, searchParams]);
+  }, [totalPages, searchParams.page, searchParams.genre, searchParams.verdict, searchParams.sort]);
 
   const fetchMoreMovies = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -63,7 +63,7 @@ export function MoviesInfiniteScroll({
     } finally {
       setLoading(false);
     }
-  }, [page, hasMore, loading, searchParams]);
+  }, [page, hasMore, loading, searchParams.page, searchParams.genre, searchParams.verdict, searchParams.sort]);
 
   useEffect(() => {
     const node = loadMoreRef.current;

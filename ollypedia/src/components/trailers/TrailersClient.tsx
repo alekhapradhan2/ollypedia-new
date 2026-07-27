@@ -9,6 +9,8 @@ import {
   Search, Filter, X, ChevronDown, Loader2, Film,
 } from "lucide-react";
 import { TrailerCard } from "./TrailerCard";
+import { InFeedAd } from "@/components/ads/InFeedAd";
+import React from "react";
 import type { TrailerMovieDoc } from "@/lib/trailerSeo";
 
 const GENRES = ["Action", "Romance", "Drama", "Comedy", "Thriller", "Horror", "Devotional", "Family", "Historical"];
@@ -255,8 +257,15 @@ export function TrailersClient({ initialMovies, totalCount }: Props) {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 mt-6">
-          {movies.map((m) => (
-            <TrailerCard key={String(m._id)} movie={m} />
+          {movies.map((m, idx) => (
+            <React.Fragment key={String(m._id)}>
+              <TrailerCard movie={m} />
+              {(idx + 1) % 7 === 0 && (
+                <div className="w-full h-full bg-[#111] border border-[#1f1f1f] rounded-xl overflow-hidden flex items-center justify-center">
+                  <InFeedAd className="min-h-[250px] w-full h-full" />
+                </div>
+              )}
+            </React.Fragment>
           ))}
         </div>
       )}
