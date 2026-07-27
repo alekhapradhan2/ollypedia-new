@@ -29,6 +29,7 @@ import {
   TrendingUp, Award, Globe, Users, BookOpen,
   Play, Info, Tag,
 } from "lucide-react";
+import { DisplayAd } from "@/components/ads/DisplayAd";
 
 export const revalidate    = 3600;
 export const dynamicParams = true;
@@ -1378,6 +1379,10 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 })()}
               </section>
             )}
+
+            <div className="py-2">
+              <DisplayAd slot="8191172163" format="auto" />
+            </div>
 
             {/* ── Crew ── */}
             {(() => {

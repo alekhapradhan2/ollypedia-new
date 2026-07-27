@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import "../styles/globals.css";
 import { Navbar } from "@/components/layout/Navbar";
@@ -6,6 +7,7 @@ import { Toaster } from "react-hot-toast";
 import { SITE_NAME, SITE_URL } from "@/lib/seo";
 import NextTopLoader from 'nextjs-toploader';
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
+import { GlobalLoader } from "@/components/layout/GlobalLoader";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -30,21 +32,31 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.ico" },
 };
 
+import Script from "next/script";
+import { GlobalMultiplexWrapper } from "@/components/ads/GlobalMultiplexWrapper";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
       <head>
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5823659147566885"
-          crossOrigin="anonymous"
-        ></script>
       </head>
       <body className="grain min-h-screen flex flex-col bg-[#0a0a0a]">
+        <Script
+          id="adsbygoogle-init"
+          strategy="afterInteractive"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5823659147566885"
+          crossOrigin="anonymous"
+        />
+        <Suspense fallback={null}>
+          <GlobalLoader />
+        </Suspense>
         <ScrollToTop />
-        <NextTopLoader color="#f97316" showSpinner={true} easing="ease" speed={200} />
-        <Navbar />
+        <NextTopLoader color="#f97316" showSpinner={false} easing="ease" speed={200} />
+        <Suspense fallback={<div className="h-16 border-b border-white/[0.07] bg-[#080808]/95" />}>
+          <Navbar />
+        </Suspense>
         <main className="flex-1">{children}</main>
+        <GlobalMultiplexWrapper />
         <Footer />
         <Toaster
           position="bottom-right"

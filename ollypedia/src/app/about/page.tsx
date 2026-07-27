@@ -10,8 +10,26 @@ export const metadata: Metadata = buildMeta({
 });
 
 export default function AboutPage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "name": "About Ollypedia",
+    "description": "Learn about Ollypedia, the most comprehensive online database for Odia cinema (Ollywood).",
+    "url": `${SITE_URL}/about`,
+    "publisher": {
+      "@type": "Organization",
+      "name": "Ollypedia",
+      "url": SITE_URL,
+    }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="mb-10">
         <h1 className="font-display text-4xl md:text-5xl font-black text-white mb-4">
           About <span className="text-orange-500">Ollypedia</span>
@@ -97,5 +115,6 @@ export default function AboutPage() {
         ))}
       </div>
     </div>
+    </>
   );
 }

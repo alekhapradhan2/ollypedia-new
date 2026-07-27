@@ -96,7 +96,7 @@ export default async function OttLandingPage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+          <div className="relative grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
             
             {/* Left Content */}
             <div className="space-y-8 text-center lg:text-left flex flex-col items-center lg:items-start">
@@ -141,7 +141,7 @@ export default async function OttLandingPage() {
             </div>
 
             {/* Right Visual Panel */}
-            <div className="relative hidden lg:flex items-center justify-center h-[400px]">
+            <div className="absolute right-0 sm:-right-4 top-0 lg:relative lg:right-auto lg:top-auto flex items-center justify-center min-h-[300px] lg:min-h-[400px] scale-[0.55] sm:scale-75 lg:scale-100 origin-top-right lg:origin-center pointer-events-none lg:pointer-events-auto opacity-20 sm:opacity-40 lg:opacity-100 z-0 lg:z-10">
                <div className="relative w-full h-full perspective-[1000px] flex items-center justify-center">
                  
                  {/* Back Glow */}

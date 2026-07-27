@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { InFeedAd } from "@/components/ads/InFeedAd";
 import { Film, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
@@ -90,19 +91,10 @@ export function MoviesInfiniteScroll({
                 </LoadingCard>
               </div>
 
-              {/* ── In-grid AdSense unit after every 10th card ── */}
-              {(idx + 1) % 10 === 0 && (
-                <div className="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-5 my-2">
-                  <div className="adsense-container overflow-hidden rounded-xl" aria-hidden="true">
-                    <ins
-                      className="adsbygoogle"
-                      style={{ display: "block" }}
-                      data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-                      data-ad-slot="0987654321"
-                      data-ad-format="auto"
-                      data-full-width-responsive="true"
-                    />
-                  </div>
+              {/* ── Native In-feed Ad after every 7th card ── */}
+              {(idx + 1) % 7 === 0 && (
+                <div className="col-span-full w-full">
+                  <InFeedAd className="min-h-[350px]" />
                 </div>
               )}
             </React.Fragment>

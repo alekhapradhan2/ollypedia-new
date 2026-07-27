@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { buildMeta } from "@/lib/seo";
+import { buildMeta, SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = buildMeta({
   title: "HTML Sitemap – Ollypedia Directory",
@@ -13,8 +13,26 @@ export default function HTMLSitemap() {
   const years = Array.from({ length: new Date().getFullYear() - 1935 }, (_, i) => new Date().getFullYear() - i);
   const categories = ["action", "romance", "drama", "comedy", "thriller", "horror", "devotional", "family", "historical"];
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "HTML Sitemap - Ollypedia Directory",
+    "description": "Navigate through the complete Ollypedia directory.",
+    "url": `${SITE_URL}/sitemap`,
+    "publisher": {
+      "@type": "Organization",
+      "name": "Ollypedia",
+      "url": SITE_URL,
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-black pt-28 pb-20 px-4">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <div className="min-h-screen bg-black pt-28 pb-20 px-4">
       <div className="max-w-6xl mx-auto space-y-12">
         <header>
           <h1 className="text-4xl font-black text-white mb-4">Ollypedia Sitemap</h1>
@@ -61,5 +79,6 @@ export default function HTMLSitemap() {
         </section>
       </div>
     </div>
+    </>
   );
 }

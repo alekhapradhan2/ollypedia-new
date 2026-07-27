@@ -8,8 +8,10 @@ import Link from "next/link";
 import { connectDB } from "@/lib/db";
 import Cast from "@/models/Cast";
 import { buildMeta } from "@/lib/seo";
+import React from "react";
 import CastSearchBar from "@/components/cast/CastSearchBar";
 import CastCard      from "@/components/cast/CastCard";
+import { InFeedAd }  from "@/components/ads/InFeedAd";
 
 export const revalidate = 600;
 
@@ -376,7 +378,15 @@ export default async function CastPage({
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
                   {data.cast.map((p, i) => (
-                    <CastCard key={p._id} person={p} priority={i < 8} />
+                    <React.Fragment key={p._id}>
+                      <CastCard person={p} priority={i < 8} />
+                      {/* Native In-feed Ad after every 7th card */}
+                      {(i + 1) % 7 === 0 && (
+                        <div className="col-span-full w-full">
+                          <InFeedAd className="min-h-[250px]" />
+                        </div>
+                      )}
+                    </React.Fragment>
                   ))}
                 </div>
               </section>

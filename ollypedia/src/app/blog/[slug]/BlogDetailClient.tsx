@@ -14,6 +14,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import DOMPurify from "isomorphic-dompurify";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "/api").replace(/\/$/, "");
 
@@ -324,26 +325,111 @@ function extractToc(html: string): TocItem[] {
   return items;
 }
 
+// ─── In-Article Ad Injector ──────────────────────────────────────────────────
+function injectInArticleAds(html: string): string {
+  // Split by paragraph closing tags
+  const parts = html.split('</p>');
+  if (parts.length <= 2) return html; // Don't inject if very short content
+
+  let result = '';
+  let charsSinceLastAd = 0;
+  const MIN_CHARS_BETWEEN_ADS = 800; // Require roughly 800 chars between ads to ensure compliance
+  
+  for (let i = 0; i < parts.length - 1; i++) {
+    result += parts[i] + '</p>';
+    
+    // Calculate raw text length roughly for this paragraph
+    const textLength = parts[i].replace(/<[^>]*>/g, '').length;
+    charsSinceLastAd += textLength;
+    
+    // Inject ad after the 2nd paragraph, and then based on character count
+    if (i === 1 || (i > 1 && charsSinceLastAd > MIN_CHARS_BETWEEN_ADS)) {
+      result += `
+<div class="in-article-ad-container">
+  <span class="in-article-ad-title">Advertisement</span>
+  <ins class="adsbygoogle"
+       style="display:block; text-align:center; width:100%;"
+       data-ad-layout="in-article"
+       data-ad-format="fluid"
+       data-ad-client="ca-pub-5823659147566885"
+       data-ad-slot="2701894920"></ins>
+</div>
+`;
+      charsSinceLastAd = 0;
+    }
+  }
+  result += parts[parts.length - 1]; // add the remaining part
+  return result;
+}
+
 // ─── ColorfulArticle ──────────────────────────────────────────────────────────
 function ColorfulArticle({ content, onTocReady }: { content: string; onTocReady?: (items: TocItem[]) => void }) {
   const isHtml = /<[a-z][\s\S]*>/i.test(content || "");
   let finalHtml: string;
+  const containerRef = useRef<HTMLDivElement>(null);
 
   if (isHtml) {
     finalHtml = sanitizeMixedHtml(content);
   } else {
     finalHtml = plainTextToHtml(content || "");
   }
+  
+  // Sanitize user content first to prevent XSS
+  const safeHtml = DOMPurify.sanitize(finalHtml);
+  
+  // Inject AdSense tags safely into the sanitized HTML
+  finalHtml = injectInArticleAds(safeHtml);
 
   useEffect(() => {
     if (onTocReady) {
       onTocReady(extractToc(finalHtml));
     }
+    
+    const observers: MutationObserver[] = [];
+
+    // Initialize injected AdSense ads
+    try {
+      const ads = containerRef.current?.querySelectorAll('.adsbygoogle:not([data-adsbygoogle-pushed="true"])');
+      if (ads && ads.length > 0) {
+        ads.forEach((ad) => {
+          // Mark as pushed immediately to prevent race conditions during React Strict Mode
+          ad.setAttribute('data-adsbygoogle-pushed', 'true');
+          ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+
+          // Smart listener for each injected ad to avoid layout gaps
+          const observer = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+              if (m.type === 'attributes' && m.attributeName === 'data-ad-status') {
+                const status = ad.getAttribute('data-ad-status');
+                const container = ad.closest('.in-article-ad-container');
+                if (container) {
+                  if (status === 'filled') {
+                    (container as HTMLElement).classList.add('ad-filled');
+                  } else if (status === 'unfilled') {
+                    (container as HTMLElement).classList.add('ad-unfilled');
+                  }
+                }
+                observer.disconnect();
+              }
+            }
+          });
+          observer.observe(ad, { attributes: true, attributeFilter: ['data-ad-status'] });
+          observers.push(observer);
+        });
+      }
+    } catch (e) {
+      console.error("AdSense initialization error", e);
+    }
+
+    return () => {
+      observers.forEach(obs => obs.disconnect());
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalHtml]);
 
   return (
     <div
+      ref={containerRef}
       className="bp-article bp-article-html"
       dangerouslySetInnerHTML={{ __html: finalHtml }}
     />
@@ -1266,7 +1352,7 @@ export default function BlogDetailClient({
           </aside>
         </div>
       </div>
-      
+
       {/* ─── Related Blogs Grid ─── */}
       {related.length > 0 && (
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px 80px" }}>
@@ -1567,4 +1653,14 @@ const CSS = `
 .bp-404-t{font-family:'Playfair Display',serif;font-size:1.5rem;color:rgba(255,255,255,.4);}
 .bp-404-btn{padding:10px 24px;background:var(--gold);border:none;border-radius:2px;color:#000;font-family:inherit;font-weight:700;font-size:.82rem;cursor:pointer;transition:background .15s;}
 .bp-404-btn:hover{background:var(--gold2);}
+
+/* In-Article Ad Smart Display Styles */
+.in-article-ad-title {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  display: block;
+}
 `;

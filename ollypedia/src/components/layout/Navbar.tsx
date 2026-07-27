@@ -2,7 +2,7 @@
 // components/Navbar.tsx
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Search, Menu, X, Film,
@@ -383,7 +383,7 @@ function SearchDropdown({
 // Movies By Year Mega Dropdown
 // ─────────────────────────────────────────────────────────────────────────────
 
-function MoviesYearDropdown({ onClose }: { onClose: () => void }) {
+function MoviesYearDropdown({ onClose, onNavigate }: { onClose: () => void; onNavigate: (yr: number, href: string) => void }) {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -411,7 +411,10 @@ function MoviesYearDropdown({ onClose }: { onClose: () => void }) {
               <Link
                 key={yr}
                 href={`/movies/year/${yr}`}
-                onClick={onClose}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigate(yr, `/movies/year/${yr}`);
+                }}
                 className={clsx(
                   "group relative flex flex-col items-center justify-center py-3 px-2 rounded-xl transition-all duration-150 text-center overflow-hidden",
                   isCurrent
@@ -461,7 +464,7 @@ function MoviesYearDropdown({ onClose }: { onClose: () => void }) {
 // Box Office Year Mega Dropdown
 // ─────────────────────────────────────────────────────────────────────────────
 
-function BoxOfficeYearDropdown({ onClose }: { onClose: () => void }) {
+function BoxOfficeYearDropdown({ onClose, onNavigate }: { onClose: () => void; onNavigate: (yr: number, href: string) => void }) {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -485,11 +488,15 @@ function BoxOfficeYearDropdown({ onClose }: { onClose: () => void }) {
         <div className="grid grid-cols-3 gap-1.5">
           {BOX_OFFICE_YEARS.map((yr) => {
             const isCurrent = yr === currentYear;
-            return (
-              <Link
-                key={yr}
-                href={yr === currentYear ? "/box-office" : `/box-office?year=${yr}`}
-                onClick={onClose}
+              const href = yr === currentYear ? "/box-office" : `/box-office?year=${yr}`;
+              return (
+                <Link
+                  key={yr}
+                  href={href}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onNavigate(yr, href);
+                  }}
                 className={clsx(
                   "group relative flex flex-col items-center justify-center py-3 px-2 rounded-xl transition-all duration-150 text-center overflow-hidden",
                   isCurrent
@@ -554,7 +561,14 @@ function BoxOfficeYearDropdown({ onClose }: { onClose: () => void }) {
 
 export function Navbar() {
   const pathname = usePathname();
-  const router   = useRouter();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const [loadingYear, setLoadingYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    setLoadingYear(null);
+  }, [pathname, searchParams]);
 
   const [menuOpen,         setMenuOpen]         = useState(false);
   const [searchOpen,       setSearchOpen]       = useState(false);
@@ -702,10 +716,18 @@ export function Navbar() {
   ].join(" ");
 
   return (
-    <header
-      className="sticky top-0 z-50 bg-[#080808]/95 backdrop-blur-md border-b border-white/[0.07]"
-      role="banner"
-    >
+    <>
+      {/* Global Year Loading Overlay */}
+      {loadingYear && (
+        <div className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center">
+          <div className="w-12 h-12 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin mb-4" />
+          <p className="text-orange-400 font-medium tracking-widest uppercase text-sm animate-pulse">Loading {loadingYear}...</p>
+        </div>
+      )}
+      <header
+        className="sticky top-0 z-50 bg-[#080808]/95 backdrop-blur-md border-b border-white/[0.07]"
+        role="banner"
+      >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
@@ -747,7 +769,14 @@ export function Navbar() {
                       />
                     </Link>
                     {moviesDropOpen && (
-                      <MoviesYearDropdown onClose={() => setMoviesDropOpen(false)} />
+                      <MoviesYearDropdown 
+                        onClose={() => setMoviesDropOpen(false)} 
+                        onNavigate={(yr, href) => {
+                          setMoviesDropOpen(false);
+                          setLoadingYear(yr);
+                          router.push(href);
+                        }}
+                      />
                     )}
                   </div>
                 );
@@ -783,7 +812,14 @@ export function Navbar() {
                       />
                     </Link>
                     {boDropOpen && (
-                      <BoxOfficeYearDropdown onClose={() => setBoDropOpen(false)} />
+                      <BoxOfficeYearDropdown 
+                        onClose={() => setBoDropOpen(false)} 
+                        onNavigate={(yr, href) => {
+                          setBoDropOpen(false);
+                          setLoadingYear(yr);
+                          router.push(href);
+                        }}
+                      />
                     )}
                   </div>
                 );
@@ -965,7 +1001,13 @@ export function Navbar() {
                             <Link
                               key={yr}
                               href={`/movies/year/${yr}`}
-                              onClick={() => { setMenuOpen(false); setMobileYearsOpen(false); }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setMenuOpen(false); 
+                                setMobileYearsOpen(false); 
+                                setLoadingYear(yr);
+                                router.push(`/movies/year/${yr}`);
+                              }}
                               className="flex items-center justify-center py-2 rounded-lg bg-white/[0.04] border border-white/[0.07] hover:bg-orange-500/15 hover:border-orange-500/30 text-xs font-semibold text-gray-400 hover:text-orange-400 transition-all"
                             >
                               {yr}
@@ -1010,21 +1052,30 @@ export function Navbar() {
                           Box Office by Year
                         </p>
                         <div className="grid grid-cols-4 gap-1.5">
-                          {BOX_OFFICE_YEARS.map((yr) => (
-                            <Link
-                              key={yr}
-                              href={yr === _currentYear ? "/box-office" : `/box-office?year=${yr}`}
-                              onClick={() => { setMenuOpen(false); setMobileBoOpen(false); }}
-                              className={clsx(
-                                "flex items-center justify-center py-2 rounded-lg border text-xs font-semibold transition-all",
-                                yr === _currentYear
-                                  ? "bg-orange-500/15 border-orange-500/30 text-orange-400"
-                                  : "bg-white/[0.04] border-white/[0.07] text-gray-400 hover:bg-orange-500/15 hover:border-orange-500/30 hover:text-orange-400",
-                              )}
-                            >
-                              {yr}
-                            </Link>
-                          ))}
+                          {BOX_OFFICE_YEARS.map((yr) => {
+                            const href = yr === _currentYear ? "/box-office" : `/box-office?year=${yr}`;
+                            return (
+                              <Link
+                                key={yr}
+                                href={href}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setMenuOpen(false); 
+                                  setMobileBoOpen(false); 
+                                  setLoadingYear(yr);
+                                  router.push(href);
+                                }}
+                                className={clsx(
+                                  "flex items-center justify-center py-2 rounded-lg border text-xs font-semibold transition-all",
+                                  yr === _currentYear
+                                    ? "bg-orange-500/15 border-orange-500/30 text-orange-400"
+                                    : "bg-white/[0.04] border-white/[0.07] text-gray-400 hover:bg-orange-500/15 hover:border-orange-500/30 hover:text-orange-400",
+                                )}
+                              >
+                                {yr}
+                              </Link>
+                            );
+                          })}
                         </div>
                         {/* All-time + full list */}
                         <div className="mt-2 space-y-1.5">
@@ -1070,6 +1121,7 @@ export function Navbar() {
           </div>
         )}
       </div>
-    </header>
+      </header>
+    </>
   );
 }

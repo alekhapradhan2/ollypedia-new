@@ -78,8 +78,26 @@ async function getAlbums() {
 export default async function SongsPage() {
   const { upcoming, latest, allMovies } = await getAlbums();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Odia Movie Songs & Albums - Ollypedia",
+    "description": "Browse all Odia movie music albums. Listen to the latest Ollywood songs.",
+    "url": `${SITE_URL}/songs`,
+    "publisher": {
+      "@type": "Organization",
+      "name": "Ollypedia",
+      "url": SITE_URL,
+    }
+  };
+
   return (
-    <div className="min-h-screen">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <div className="min-h-screen">
       {/* ══ HERO BANNER ══ */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #050505 0%, #0f0500 40%, #080010 100%)" }}>
         <div className="absolute inset-0 pointer-events-none">
@@ -108,7 +126,7 @@ export default async function SongsPage() {
           </nav>
 
           {/* ── Two-column layout ── */}
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+          <div className="relative grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
             
             {/* ── LEFT: Text content ── */}
             <div className="space-y-8">
@@ -171,7 +189,7 @@ export default async function SongsPage() {
             </div>
 
             {/* ── RIGHT: Visual panel ── */}
-            <div className="relative hidden lg:flex items-center justify-center h-full min-h-[400px]">
+            <div className="absolute right-0 sm:-right-4 top-0 lg:relative lg:right-auto lg:top-auto flex items-center justify-center min-h-[300px] lg:min-h-[400px] scale-[0.55] sm:scale-75 lg:scale-100 origin-top-right lg:origin-center pointer-events-none lg:pointer-events-auto opacity-20 sm:opacity-40 lg:opacity-100 z-0 lg:z-10">
               
               {/* Outer ring glow */}
               <div className="absolute inset-0 flex items-center justify-center">
@@ -270,5 +288,6 @@ export default async function SongsPage() {
 
       </div>
     </div>
+    </>
   );
 }

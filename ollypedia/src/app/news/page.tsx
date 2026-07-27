@@ -4,7 +4,8 @@ import { connectDB } from "@/lib/db";
 import News from "@/models/News";
 import { buildMeta } from "@/lib/seo";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { Calendar, Newspaper } from "lucide-react";
+import { Calendar, Newspaper, User } from "lucide-react";
+import { SITE_URL } from "@/lib/seo";
 
 export const revalidate = 600;
 
@@ -37,19 +38,47 @@ export default async function NewsPage({
 }) {
   const { news, total } = await getNews(Number(searchParams.page) || 1);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Odia Film News - Ollypedia",
+    "description": "Stay updated with the latest news from Odia film industry (Ollywood).",
+    "url": `${SITE_URL}/news`,
+    "publisher": {
+      "@type": "Organization",
+      "name": "Ollypedia",
+      "url": SITE_URL,
+    }
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <SectionHeader
         title="Odia Film News"
         subtitle="Latest updates from Ollywood"
       />
 
-      <div className="mb-8 p-5 bg-[#111] border border-[#1f1f1f] rounded-xl">
-        <p className="text-gray-400 text-sm leading-relaxed">
+      <div className="mb-8 p-5 bg-[#111] border border-[#1f1f1f] rounded-xl flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <p className="text-gray-400 text-sm leading-relaxed max-w-3xl">
           Get the latest news and updates from the Odia film industry. From new movie announcements and casting
           news to box office results and celebrity interviews — Ollypedia keeps you connected with everything
           happening in Ollywood.
         </p>
+        <div className="flex flex-col gap-2 flex-shrink-0 text-xs text-gray-500 bg-[#161616] p-3 rounded-lg border border-[#2a2a2a]">
+          <div className="flex items-center gap-2">
+            <User className="w-3.5 h-3.5 text-orange-400" />
+            <span>Curated by <strong className="text-gray-300">Ollypedia Editorial Team</strong> (Author)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="w-3.5 h-3.5 text-orange-400" />
+            <span>Last Updated: {news.length > 0 ? new Date(news[0].createdAt).toLocaleDateString("en-IN") : new Date().toLocaleDateString("en-IN")}</span>
+          </div>
+        </div>
       </div>
 
       {news.length > 0 ? (
@@ -99,5 +128,6 @@ export default async function NewsPage({
         </div>
       )}
     </div>
+    </>
   );
 }

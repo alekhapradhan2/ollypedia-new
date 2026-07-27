@@ -11,6 +11,7 @@ import { OttMovieActions } from "@/components/movie/OttMovieActions";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { PlatformLogo } from "@/components/ui/PlatformLogo";
 import { getPlatformInfo } from "@/lib/platforms";
+import { DisplayAd } from "@/components/ads/DisplayAd";
 
 export const revalidate = 600;
 
@@ -256,6 +257,10 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
               </div>
             </div>
           </section>
+
+          <div className="py-2">
+            <DisplayAd slot="8191172163" format="auto" />
+          </div>
 
           {/* Cast Preview */}
           {m.cast && m.cast.length > 0 && (
