@@ -345,8 +345,8 @@ function injectInArticleAds(html: string): string {
     // Inject ad after the 2nd paragraph, and then based on character count
     if (i === 1 || (i > 1 && charsSinceLastAd > MIN_CHARS_BETWEEN_ADS)) {
       result += `
-<div class="in-article-ad-container">
-  <span class="in-article-ad-title">Advertisement</span>
+<div class="in-article-ad-container" style="min-height: 250px; background: #111; margin: 24px 0; border: 1px solid #222; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; justify-content: center;">
+  <span class="in-article-ad-title" style="display: block; text-align: center; font-size: 10px; color: #666; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Advertisement</span>
   <ins class="adsbygoogle"
        style="display:block; text-align:center; width:100%;"
        data-ad-layout="in-article"

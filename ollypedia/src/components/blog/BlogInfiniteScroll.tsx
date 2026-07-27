@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { BlogCard } from "@/components/blog/BlogCard";
+import { InFeedAd } from "@/components/ads/InFeedAd";
 
 interface BlogInfiniteScrollProps {
   initialBlogs: any[];
@@ -26,7 +27,7 @@ export function BlogInfiniteScroll({
     setPage(searchParams.page ? parseInt(searchParams.page) : 1);
     setHasMore((searchParams.page ? parseInt(searchParams.page) : 1) < totalPages);
     setLoading(false);
-  }, [initialBlogs, totalPages, searchParams]);
+  }, [totalPages, searchParams.page, searchParams.q, searchParams.category]); // Removed initialBlogs array reference to prevent false resets
 
   const fetchMoreBlogs = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -64,7 +65,7 @@ export function BlogInfiniteScroll({
     } finally {
       setLoading(false);
     }
-  }, [page, hasMore, loading, searchParams]);
+  }, [page, hasMore, loading, searchParams.page, searchParams.q, searchParams.category]);
 
   useEffect(() => {
     const node = loadMoreRef.current;
@@ -82,14 +83,20 @@ export function BlogInfiniteScroll({
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
         {blogs.map((b, idx) => (
-          <div
-            key={`${b._id}-${idx}`}
-            className={idx >= initialBlogs.length ? "animate-zoom-in" : ""}
-          >
-             <BlogCard blog={b} variant="standard" />
-          </div>
+          <React.Fragment key={`${b._id}-${idx}`}>
+            {idx > 0 && idx % 6 === 0 && (
+              <div className={`col-span-1 md:col-span-1 ${idx >= initialBlogs.length ? "animate-zoom-in" : ""}`}>
+                <InFeedAd />
+              </div>
+            )}
+            <div
+              className={idx >= initialBlogs.length ? "animate-zoom-in" : ""}
+            >
+               <BlogCard blog={b} variant="standard" />
+            </div>
+          </React.Fragment>
         ))}
       </div>
 

@@ -4,6 +4,8 @@ import Movie from "@/models/Movie";
 import { buildMeta, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { Calendar } from "lucide-react";
+import { InFeedAd } from "@/components/ads/InFeedAd";
+import React from "react";
 
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 
@@ -77,8 +79,15 @@ export default async function UpcomingOttPage() {
 
         {rawMovies.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
-            {movies.map((movie: any) => (
-              <MovieCard key={movie._id} movie={movie} variant="ott" />
+            {movies.map((movie: any, idx: number) => (
+              <React.Fragment key={movie._id}>
+                <MovieCard movie={movie} variant="ott" />
+                {(idx + 1) % 7 === 0 && (
+                  <div className="w-full h-full bg-[#111] border border-[#1f1f1f] rounded-xl overflow-hidden flex items-center justify-center">
+                    <InFeedAd className="min-h-[250px] w-full h-full" />
+                  </div>
+                )}
+              </React.Fragment>
             ))}
           </div>
         ) : (
