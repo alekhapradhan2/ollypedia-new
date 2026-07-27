@@ -7,7 +7,12 @@ export function useAdSense() {
   const pathname = usePathname();
   const [adLoaded, setAdLoaded] = useState(false);
   const [adUnfilled, setAdUnfilled] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const insRef = useRef<HTMLModElement>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     setAdLoaded(false);
@@ -54,5 +59,5 @@ export function useAdSense() {
     return () => observer.disconnect();
   }, [pathname]);
 
-  return { adLoaded, adUnfilled, insRef, pathname };
+  return { adLoaded, adUnfilled, insRef, pathname, isMounted };
 }
