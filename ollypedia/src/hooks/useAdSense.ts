@@ -15,6 +15,8 @@ export function useAdSense() {
   }, []);
 
   useEffect(() => {
+    if (!isMounted) return;
+    
     setAdLoaded(false);
     setAdUnfilled(false);
     
@@ -29,9 +31,11 @@ export function useAdSense() {
         console.error("AdSense initialization error", e);
       }
     }
-  }, [pathname]);
+  }, [pathname, isMounted]);
 
   useEffect(() => {
+    if (!isMounted) return;
+    
     const el = insRef.current;
     if (!el) return;
 
@@ -57,7 +61,7 @@ export function useAdSense() {
     observer.observe(el, { attributes: true, attributeFilter: ['data-ad-status'] });
 
     return () => observer.disconnect();
-  }, [pathname]);
+  }, [pathname, isMounted]);
 
   return { adLoaded, adUnfilled, insRef, pathname, isMounted };
 }
