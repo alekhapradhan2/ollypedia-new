@@ -36,18 +36,23 @@ function normalizeMovie(m: any) {
   const platform = m.ott?.platform || m.streamingOn || "";
   const watchUrl = m.ott?.watchUrl || m.streamingUrl || "";
   const releaseDate = m.ott?.releaseDate || m.ottReleaseDate || "";
-  const status = m.ott?.status || (watchUrl ? "Streaming" : releaseDate ? "Upcoming" : "");
+  
+  // Strict prioritization: if there is a watch URL, it's Streaming regardless of what the db status says.
+  const status = watchUrl ? "Streaming" : (m.ott?.status || (releaseDate ? "Upcoming" : ""));
+  
   return { ...m, _id: m._id.toString(), _platform: platform, _watchUrl: watchUrl, _ottReleaseDate: releaseDate, _ottStatus: status };
 }
 
 export default async function OttLandingPage() {
   await connectDB();
   
-  // Fetch movies with OTT data — supports both new ott.platform and legacy streamingOn
+  // Fetch movies with OTT data — supports both new ott.platform and legacy streamingOn, ensuring fields actually exist and aren't empty
   const rawMovies = await Movie.find({
     $or: [
-      { "ott.platform": { $ne: "" } },
-      { streamingOn: { $ne: "", $exists: true } },
+      { "ott.platform": { $exists: true, $nin: ["", null] } },
+      { streamingOn: { $exists: true, $nin: ["", null] } },
+      { "ott.watchUrl": { $exists: true, $nin: ["", null] } },
+      { streamingUrl: { $exists: true, $nin: ["", null] } },
     ]
   })
     .select("_id title slug posterUrl verdict releaseDate ott streamingOn streamingUrl ottReleaseDate")
@@ -61,6 +66,8 @@ export default async function OttLandingPage() {
   // Latest OTT Releases (Streaming)
   const streamingMovies = movies
     .filter((m: any) => {
+      const hasActualInfo = m._platform.trim() !== "" || m._watchUrl.trim() !== "";
+      if (!hasActualInfo) return false;
       const isUpcoming = m._ottStatus === "Upcoming" || (m._ottReleaseDate && new Date(m._ottReleaseDate) > now);
       if (isUpcoming) return false;
       return m._ottStatus === "Streaming" || m._watchUrl || (m._ottReleaseDate && new Date(m._ottReleaseDate) <= now);
@@ -69,7 +76,11 @@ export default async function OttLandingPage() {
 
   // Upcoming OTT Releases
   const upcomingMovies = movies
-    .filter((m: any) => m._ottStatus === "Upcoming" || (m._ottReleaseDate && new Date(m._ottReleaseDate) > now))
+    .filter((m: any) => {
+      const hasActualInfo = m._platform.trim() !== "" || m._watchUrl.trim() !== "";
+      if (!hasActualInfo) return false;
+      return m._ottStatus === "Upcoming" || (m._ottReleaseDate && new Date(m._ottReleaseDate) > now);
+    })
     .sort((a: any, b: any) => new Date(a._ottReleaseDate || 0).getTime() - new Date(b._ottReleaseDate || 0).getTime())
     .slice(0, 10);
 

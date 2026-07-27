@@ -17,11 +17,15 @@ export const revalidate = 600;
 
 export async function generateMetadata({ params }: { params: { movieSlug: string } }): Promise<Metadata> {
   await connectDB();
+  const isOid = /^[a-f0-9]{24}$/i.test(params.movieSlug);
+  const queryMatch = isOid ? { _id: params.movieSlug } : { slug: params.movieSlug };
   const movie = await Movie.findOne({ 
-    slug: params.movieSlug,
+    ...queryMatch,
     $or: [
-      { "ott.platform": { $ne: "" } },
-      { streamingOn: { $ne: "", $exists: true } },
+      { "ott.platform": { $exists: true, $nin: ["", null] } },
+      { streamingOn: { $exists: true, $nin: ["", null] } },
+      { "ott.watchUrl": { $exists: true, $nin: ["", null] } },
+      { streamingUrl: { $exists: true, $nin: ["", null] } },
     ]
   }).lean().exec();
   if (!movie) return {};
@@ -30,7 +34,7 @@ export async function generateMetadata({ params }: { params: { movieSlug: string
   const ott = {
     platform: m.ott?.platform || m.streamingOn || "",
     releaseDate: m.ott?.releaseDate || m.ottReleaseDate || "",
-    status: m.ott?.status || (m.streamingUrl ? "Streaming" : "Upcoming"),
+    status: (m.ott?.watchUrl || m.streamingUrl) ? "Streaming" : (m.ott?.status || "Upcoming"),
     watchUrl: m.ott?.watchUrl || m.streamingUrl || "",
   };
   
@@ -41,11 +45,15 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
   await connectDB();
   
   // Find movie that has OTT data — either new ott.platform or legacy streamingOn
+  const isOid = /^[a-f0-9]{24}$/i.test(params.movieSlug);
+  const queryMatch = isOid ? { _id: params.movieSlug } : { slug: params.movieSlug };
   const movie = await Movie.findOne({ 
-    slug: params.movieSlug,
+    ...queryMatch,
     $or: [
-      { "ott.platform": { $ne: "" } },
-      { streamingOn: { $ne: "", $exists: true } },
+      { "ott.platform": { $exists: true, $nin: ["", null] } },
+      { streamingOn: { $exists: true, $nin: ["", null] } },
+      { "ott.watchUrl": { $exists: true, $nin: ["", null] } },
+      { streamingUrl: { $exists: true, $nin: ["", null] } },
     ]
   }).lean().exec();
   

@@ -21,16 +21,16 @@ export const metadata: Metadata = buildMeta({
 export default async function NowStreamingPage() {
   await connectDB();
   
-  // Query supports both legacy streamingOn/streamingUrl and new ott fields
+  // Ensure we only fetch movies that actually have OTT info (platform or url)
   const rawMovies = await Movie.find({
     $or: [
-      { streamingUrl: { $ne: "", $exists: true } },  // legacy: has a watch URL = streaming
-      { "ott.watchUrl": { $ne: "", $exists: true } },  // new: ott watch url
-      { "ott.status": "Streaming" },                    // new: ott status is streaming
+      { "ott.platform": { $exists: true, $nin: ["", null] } },
+      { streamingOn: { $exists: true, $nin: ["", null] } },
+      { "ott.watchUrl": { $exists: true, $nin: ["", null] } },
+      { streamingUrl: { $exists: true, $nin: ["", null] } },
     ]
   })
     .select("_id title slug posterUrl verdict releaseDate ott streamingOn streamingUrl ottReleaseDate")
-    .sort({ updatedAt: -1 })
     .lean()
     .exec();
 
@@ -38,11 +38,25 @@ export default async function NowStreamingPage() {
     const p = m.ott?.platform || m.streamingOn || "";
     const watchUrl = m.ott?.watchUrl || m.streamingUrl || "";
     const releaseDate = m.ott?.releaseDate || m.ottReleaseDate || "";
-    const status = m.ott?.status || (watchUrl ? "Streaming" : releaseDate ? "Upcoming" : "");
+    // Strict prioritization: if there is a watch URL, it's Streaming regardless of what the db status says.
+    const status = watchUrl ? "Streaming" : (m.ott?.status || (releaseDate ? "Upcoming" : ""));
     return { ...m, _id: m._id.toString(), _platform: p, _watchUrl: watchUrl, _ottReleaseDate: releaseDate, _ottStatus: status };
   };
 
-  const movies = (rawMovies as any[]).map(normalizeMovie);
+  const now = new Date();
+  const movies = (rawMovies as any[])
+    .map(normalizeMovie)
+    .filter((m: any) => {
+      const hasActualInfo = m._platform.trim() !== "" || m._watchUrl.trim() !== "";
+      if (!hasActualInfo) return false;
+      const isUpcoming = m._ottStatus === "Upcoming" || (m._ottReleaseDate && new Date(m._ottReleaseDate) > now);
+      if (isUpcoming) return false;
+      return m._ottStatus === "Streaming" || m._watchUrl || (m._ottReleaseDate && new Date(m._ottReleaseDate) <= now);
+    })
+    .sort((a: any, b: any) => {
+      // Sort by latest added, since they are streaming
+      return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+    });
 
   const jsonLd = {
     "@context": "https://schema.org",

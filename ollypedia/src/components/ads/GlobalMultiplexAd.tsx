@@ -3,7 +3,7 @@
 import { useAdSense } from "@/hooks/useAdSense";
 
 export function GlobalMultiplexAd() {
-  const { adLoaded, adUnfilled, insRef, pathname } = useAdSense();
+  const { adLoaded, adUnfilled, insRef, pathname, isMounted } = useAdSense();
 
   // If AdSense explicitly says it couldn't fill the ad, hide the content visually to remove gap layout issues without causing CLS
   return (
@@ -21,13 +21,15 @@ export function GlobalMultiplexAd() {
       
       {/* AdSense tag remains in DOM flow so AdSense can calculate available width. */}
       <div>
-        <ins key={pathname}
-             ref={insRef}
-             className="adsbygoogle w-full"
-             style={{ display: "block" }}
-             data-ad-format="autorelaxed"
-             data-ad-client="ca-pub-5823659147566885"
-             data-ad-slot="3548072735"></ins>
+        {isMounted && (
+          <ins key={pathname}
+               ref={insRef}
+               className="adsbygoogle w-full"
+               style={{ display: "block" }}
+               data-ad-format="autorelaxed"
+               data-ad-client="ca-pub-5823659147566885"
+               data-ad-slot="3548072735"></ins>
+        )}
       </div>
     </div>
   );
