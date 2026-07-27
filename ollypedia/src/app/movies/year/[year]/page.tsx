@@ -12,11 +12,12 @@ import {
   TrendingUp, Star, Flame, Clock, Zap, User, ExternalLink,
   BookOpen, HelpCircle, Globe, Award, Sparkles,
 } from "lucide-react";
+import { YearDropdown } from "./YearDropdown";
 
 export const revalidate = 600;
 
 // ─── Valid years ───────────────────────────────────────────────────────────────
-const _OLDEST_YEAR = 2010;
+const _OLDEST_YEAR = 1936;
 const _NOW_YEAR = new Date().getFullYear();
 const VALID_YEARS: number[] = Array.from(
   { length: _NOW_YEAR - _OLDEST_YEAR + 1 },
@@ -338,80 +339,154 @@ export default async function MoviesByYearPage({
 
       <div className="min-h-screen bg-[#0a0a0a]">
 
-        {/* ══════════════════════════════════════════════════════════
-            HERO BANNER
-        ══════════════════════════════════════════════════════════ */}
-        <section
-          className="relative overflow-hidden bg-gradient-to-b from-[#0d0d0d] to-[#0a0a0a] border-b border-[#1f1f1f]"
-          aria-label={`Odia movies from ${year}`}
-        >
-          {/* Decorative glows */}
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-            <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-500/6 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-orange-600/4 rounded-full blur-2xl" />
-            <div className="absolute inset-0"
-              style={{ backgroundImage: "radial-gradient(circle at 70% 50%, #f9731608 0%, transparent 60%)" }} />
+        {/* ══ HERO BANNER ══ */}
+        <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #050505 0%, #0f0500 40%, #080010 100%)" }}>
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Animated Gradients */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[900px] h-[600px] rounded-full"
+              style={{ background: "radial-gradient(ellipse, rgba(249,115,22,0.08) 0%, transparent 70%)" }} />
+            <div className="absolute -left-20 top-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full"
+              style={{ background: "radial-gradient(ellipse, rgba(239,68,68,0.07) 0%, transparent 70%)" }} />
+            <div className="absolute -right-20 bottom-0 w-[500px] h-[400px] rounded-full"
+              style={{ background: "radial-gradient(ellipse, rgba(168,85,247,0.06) 0%, transparent 70%)" }} />
+            
+            <div className="absolute inset-0 opacity-[0.025]"
+              style={{
+                backgroundImage: "linear-gradient(rgba(249,115,22,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(249,115,22,0.5) 1px, transparent 1px)",
+                backgroundSize: "60px 60px",
+              }} />
           </div>
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 relative z-10">
-
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+            
             {/* Breadcrumb */}
-            <nav className="flex items-center gap-1.5 text-xs text-gray-500 mb-5 flex-wrap" aria-label="Breadcrumb">
+            <nav className="flex items-center gap-2 text-xs text-gray-600 mb-10">
               <Link href="/" className="hover:text-orange-400 transition-colors">Home</Link>
               <ChevronRight className="w-3 h-3" />
               <Link href="/movies" className="hover:text-orange-400 transition-colors">Movies</Link>
               <ChevronRight className="w-3 h-3" />
-              <span className="text-orange-400 font-medium">Movies of {year}</span>
+              <span className="text-gray-400">Movies of {year}</span>
             </nav>
 
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-              <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-orange-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Calendar className="w-5 h-5 text-orange-500" />
-                  </div>
-                  {/* H1 — primary SEO heading */}
-                  <h1 className="font-display text-3xl md:text-4xl font-black text-white leading-tight">
-                    Odia Movies {year} – A to Z Ollywood Films List
+            {/* ── Two-column layout ── */}
+            <div className="relative grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+              
+              {/* ── LEFT: Text content ── */}
+              <div className="space-y-8">
+                
+                {/* Badge */}
+                <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border text-xs font-bold uppercase tracking-widest"
+                  style={{ color: "#f97316", borderColor: "rgba(249,115,22,0.3)", background: "rgba(249,115,22,0.08)" }}>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                  </span>
+                  <Calendar className="w-3.5 h-3.5" />
+                  Year {year} Collection
+                </div>
+
+                {/* Heading */}
+                <div>
+                  <h1 className="font-black text-white leading-[1.05]" style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)" }}>
+                    <span className="block text-gray-300 font-extrabold" style={{ fontSize: "0.55em", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "0.3em", color: "rgba(249,115,22,0.7)" }}>
+                      Ollywood Films
+                    </span>
+                    Odia Movies{" "}
+                    <span style={{
+                      background: "linear-gradient(135deg, #f97316 0%, #ef4444 60%, #ec4899 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}>
+                      {year}
+                    </span>
                   </h1>
                 </div>
-                <p className="text-gray-400 text-sm md:text-base max-w-2xl leading-relaxed">
+
+                {/* Description */}
+                <p className="text-gray-400 leading-relaxed max-w-lg" style={{ fontSize: "clamp(0.95rem, 1.5vw, 1.1rem)" }}>
                   {year === currentYear
                     ? `Complete A to Z list of all Odia (Ollywood) movies released in ${year}. Every ${year} Odia film listed with movie name, director, and release date — updated regularly as new films hit theatres.`
                     : `Complete A to Z list of all Odia (Ollywood) movies released in ${year}. Find every Ollywood film from ${year} with director names, release dates, box office verdict, cast details, and reviews.`}
                 </p>
+
+                {/* Stats row */}
+                <div className="flex flex-wrap gap-6 pt-6 border-t border-white/[0.06]">
+                  <div className="text-center">
+                    <div className="text-2xl font-black text-white">{total}</div>
+                    <div className="text-xs text-gray-600 font-medium mt-0.5">Films Released</div>
+                  </div>
+                  {verdictCounts["Blockbuster"] > 0 && (
+                    <div className="text-center">
+                      <div className="text-2xl font-black text-white">{verdictCounts["Blockbuster"]}</div>
+                      <div className="text-xs text-orange-500 font-medium mt-0.5">Blockbusters</div>
+                    </div>
+                  )}
+                  {verdictCounts["Superhit"] > 0 && (
+                    <div className="text-center">
+                      <div className="text-2xl font-black text-white">{verdictCounts["Superhit"]}</div>
+                      <div className="text-xs text-yellow-500 font-medium mt-0.5">Superhits</div>
+                    </div>
+                  )}
+                  <div className="text-center">
+                    <div className="text-2xl font-black text-white">{year}</div>
+                    <div className="text-xs text-gray-600 font-medium mt-0.5">Collection Year</div>
+                  </div>
+                </div>
               </div>
 
-              {/* Movie count pill */}
-              <div className="flex items-center gap-2 bg-[#111] border border-[#1f1f1f] rounded-xl px-5 py-3 self-start md:self-auto flex-shrink-0">
-                <Film className="w-4 h-4 text-orange-500" />
-                <span className="text-2xl font-black text-white font-display">{total}</span>
-                <span className="text-xs text-gray-500 leading-tight">Odia<br />films</span>
-              </div>
-            </div>
+              {/* ── RIGHT: Visual panel ── */}
+              <div className="absolute right-0 sm:-right-4 top-0 lg:relative lg:right-auto lg:top-auto flex items-center justify-center min-h-[300px] lg:min-h-[400px] scale-[0.55] sm:scale-75 lg:scale-100 origin-top-right lg:origin-center pointer-events-none lg:pointer-events-auto opacity-20 sm:opacity-40 lg:opacity-100 z-0 lg:z-10">
+                
+                {/* Outer ring glow */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-80 h-80 rounded-full border border-orange-500/10 animate-[pulse_4s_ease-in-out_infinite]" />
+                  <div className="absolute w-64 h-64 rounded-full border border-orange-500/15" />
+                </div>
 
-            {/* Year navigator */}
-            <div className="flex items-center gap-2 mt-6 flex-wrap">
-              <span className="text-[10px] text-gray-600 font-bold uppercase tracking-widest mr-1">Browse year:</span>
-              {VALID_YEARS.map((yr) => (
-                <Link
-                  key={yr}
-                  href={`/movies/year/${yr}`}
-                  aria-label={`Odia movies of ${yr}`}
-                  aria-current={yr === year ? "page" : undefined}
-                  className={[
-                    "px-3 py-1 rounded-lg text-xs font-semibold transition-all",
-                    yr === year
-                      ? "bg-orange-500 text-white shadow-md shadow-orange-500/25"
-                      : "bg-[#141414] border border-[#222] text-gray-400 hover:border-orange-500/40 hover:text-orange-400",
-                  ].join(" ")}
-                >
-                  {yr}
-                </Link>
-              ))}
+                {/* Center Icon */}
+                <div className="relative z-10 flex flex-col items-center gap-6">
+                  
+                  {/* Main visual */}
+                  <div className="relative">
+                    <div className="w-40 h-40 rounded-full flex items-center justify-center shadow-2xl animate-[spin_20s_linear_infinite]"
+                      style={{
+                        background: "linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(239,68,68,0.15) 100%)",
+                        border: "1px solid rgba(249,115,22,0.25)",
+                        boxShadow: "0 0 80px rgba(249,115,22,0.12), inset 0 1px 0 rgba(255,255,255,0.05)",
+                      }}>
+                      <Film className="w-20 h-20 text-orange-400" strokeWidth={1.2} />
+                    </div>
+                    {/* Play badge */}
+                    <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full flex items-center justify-center shadow-lg"
+                      style={{ background: "linear-gradient(135deg, #ef4444, #f97316)" }}>
+                      <Calendar className="w-4 h-4 text-white fill-white ml-0.5" />
+                    </div>
+                  </div>
+
+                  {/* Floating cards around the center */}
+                  <div className="absolute -top-16 -left-20 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 animate-bounce"
+                    style={{ animationDuration: "3s", background: "rgba(15,15,15,0.95)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
+                    <Calendar className="w-3 h-3" /> {year} Releases
+                  </div>
+
+                  <div className="absolute top-1/2 -right-24 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 animate-bounce"
+                    style={{ animationDuration: "2.5s", animationDelay: "1s", background: "rgba(15,15,15,0.95)", border: "1px solid rgba(249,115,22,0.3)", color: "#f97316", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
+                    <TrendingUp className="w-3 h-3" /> Box Office Hits
+                  </div>
+
+                  <div className="absolute -bottom-10 left-0 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 animate-bounce"
+                    style={{ animationDuration: "3.5s", animationDelay: "0.5s", background: "rgba(15,15,15,0.95)", border: "1px solid rgba(168,85,247,0.3)", color: "#a855f7", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
+                    <Star className="w-3 h-3" /> {total} Movies
+                  </div>
+
+                </div>
+              </div>
             </div>
           </div>
         </section>
+
+
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
 
@@ -445,21 +520,28 @@ export default async function MoviesByYearPage({
               MOVIES TABLE
           ══════════════════════════════════════════════════════ */}
           <section aria-labelledby="movies-table-heading">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 bg-orange-500/15 rounded-lg flex items-center justify-center">
-                <Clapperboard className="w-4 h-4 text-orange-500" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-orange-500/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Clapperboard className="w-4 h-4 text-orange-500" />
+                </div>
+                <div>
+                  <h2 id="movies-table-heading" className="font-display text-lg font-bold text-white">
+                    {total > 0
+                      ? `${total} Odia Films Released in ${year}`
+                      : `No Movies Found for ${year}`}
+                  </h2>
+                  {total > 0 && (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Sorted by release date — newest first. Click a movie name to view full details.
+                    </p>
+                  )}
+                </div>
               </div>
-              <div>
-                <h2 id="movies-table-heading" className="font-display text-lg font-bold text-white">
-                  {total > 0
-                    ? `${total} Odia Films Released in ${year}`
-                    : `No Movies Found for ${year}`}
-                </h2>
-                {total > 0 && (
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Sorted by release date — newest first. Click a movie name to view full details.
-                  </p>
-                )}
+              
+              <div className="flex items-center gap-3 self-start sm:self-auto shrink-0">
+                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest hidden sm:inline-block">Select Year:</span>
+                <YearDropdown currentYear={year} validYears={VALID_YEARS} />
               </div>
             </div>
 

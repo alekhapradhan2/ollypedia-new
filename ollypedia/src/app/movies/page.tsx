@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connectDB } from "@/lib/db";
@@ -7,12 +7,13 @@ import { MovieCard } from "@/components/movie/MovieCard";
 import { MoviesFilter } from "./MoviesFilter";
 import { MoviesInfiniteScroll } from "./MoviesInfiniteScroll";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { buildMeta } from "@/lib/seo";
+import { buildMeta, SITE_URL } from "@/lib/seo";
 import {
   Film, Star, TrendingUp, Calendar, Filter, Award,
   ChevronRight, Clapperboard, Globe, Users, Zap,
   Clock, Flame, PlayCircle, BookOpen, Mic2,
 } from "lucide-react";
+import { DisplayAd } from "@/components/ads/DisplayAd";
 
 export const revalidate = 600;
 
@@ -64,11 +65,6 @@ const ODIA_FILM_FACTS = [
 const VERDICT_TABS = [
   { label: "All", value: null, icon: Film, color: "text-gray-300" },
   { label: "Upcoming", value: "Upcoming", icon: Calendar, color: "text-sky-400" },
-  { label: "Blockbuster", value: "Blockbuster", icon: Flame, color: "text-orange-400" },
-  { label: "Superhit", value: "Superhit", icon: Star, color: "text-yellow-400" },
-  { label: "Hit", value: "Hit", icon: TrendingUp, color: "text-green-400" },
-  { label: "Average", value: "Average", icon: Zap, color: "text-blue-400" },
-  { label: "Flop", value: "Flop", icon: Clock, color: "text-red-400" },
 ];
 
 /* ─── HELPERS ────────────────────────────────────────────── */
@@ -76,14 +72,15 @@ function hasRealDate(releaseDate: any) {
   return { $and: [{ $ifNull: [releaseDate, false] }, { $ne: [releaseDate, ""] }] };
 }
 
-async function getMovies({ genre, verdict, sort, page }: {
-  genre?: string; verdict?: string; sort?: string; page?: number;
+async function getMovies({ genre, verdict, year, sort, page }: {
+  genre?: string; verdict?: string; year?: string; sort?: string; page?: number;
 }) {
   await connectDB();
   const LIMIT = 20;
   const skip = ((page || 1) - 1) * LIMIT;
   const filter: any = {};
   if (genre) filter.genre = { $in: [genre] };
+  if (year) filter.releaseDate = { $regex: `^${year}` };
 
   if (verdict) {
     if (verdict === "Upcoming") {
@@ -152,111 +149,197 @@ async function getMovies({ genre, verdict, sort, page }: {
   return { movies, total, pages: Math.ceil(total / LIMIT) };
 }
 
-/* ─── ADSENSE COMPONENT (replace data-ad-slot with real slot IDs) ── */
-function AdBanner({ slot, format = "auto", className = "" }: {
-  slot: string; format?: string; className?: string;
-}) {
-  return (
-    <div className={`adsense-container overflow-hidden rounded-xl ${className}`} aria-hidden="true">
-      {/* Replace the ins tag below with your real AdSense code */}
-      <ins
-        className="adsbygoogle"
-        style={{ display: "block" }}
-        data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-        data-ad-slot={slot}
-        data-ad-format={format}
-        data-full-width-responsive="true"
-      />
-      {/* Script to push AdSense — add once in _document.tsx instead of inline */}
-      {/* <script>(adsbygoogle = window.adsbygoogle || []).push({});</script> */}
-    </div>
-  );
-}
-
 /* ─── PAGE ───────────────────────────────────────────────── */
 export default async function MoviesPage({
   searchParams,
 }: {
-  searchParams: { genre?: string; verdict?: string; sort?: string; page?: string };
+  searchParams: { genre?: string; verdict?: string; year?: string; sort?: string; page?: string };
 }) {
-  const { genre, verdict, sort, page } = searchParams;
+  const { genre, verdict, year, sort, page } = searchParams;
   const { movies, total, pages } = await getMovies({
-    genre, verdict, sort, page: Number(page) || 1,
+    genre, verdict, year, sort, page: Number(page) || 1,
   });
 
   const currentPage = Number(page) || 1;
-  const isFiltered = !!(genre || verdict || sort);
+  const isFiltered = !!(genre || verdict || year || sort);
 
   const activeVerdictLabel = verdict
     ? VERDICT_TABS.find((t) => t.value === verdict)?.label || verdict
     : "All";
 
-  return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": `Odia Movies - Ollywood Film Database`,
+    "description": `Browse the complete list of Odia (Ollywood) movies.`,
+    "url": `${SITE_URL}/movies`,
+    "publisher": {
+      "@type": "Organization",
+      "name": "Ollypedia",
+      "url": SITE_URL,
+    }
+  };
 
-      {/* ══════════════════════════════════════════════════════════
-          HERO BANNER
-      ══════════════════════════════════════════════════════════ */}
-      <section
-        className="relative overflow-hidden bg-gradient-to-b from-[#0d0d0d] to-[#0a0a0a] border-b border-[#1f1f1f]"
-        aria-label="Odia movies database hero"
-      >
-        {/* Decorative glows */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-500/6 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-orange-600/4 rounded-full blur-2xl" />
-          <div className="absolute inset-0"
-            style={{ backgroundImage: "radial-gradient(circle at 70% 50%, #f9731608 0%, transparent 60%)" }} />
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <div className="min-h-screen bg-[#0a0a0a]">
+
+      {/* ══ HERO BANNER ══ */}
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #050505 0%, #0f0500 40%, #080010 100%)" }}>
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Animated Gradients */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[900px] h-[600px] rounded-full"
+            style={{ background: "radial-gradient(ellipse, rgba(249,115,22,0.08) 0%, transparent 70%)" }} />
+          <div className="absolute -left-20 top-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full"
+            style={{ background: "radial-gradient(ellipse, rgba(239,68,68,0.07) 0%, transparent 70%)" }} />
+          <div className="absolute -right-20 bottom-0 w-[500px] h-[400px] rounded-full"
+            style={{ background: "radial-gradient(ellipse, rgba(168,85,247,0.06) 0%, transparent 70%)" }} />
+          
+          <div className="absolute inset-0 opacity-[0.025]"
+            style={{
+              backgroundImage: "linear-gradient(rgba(249,115,22,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(249,115,22,0.5) 1px, transparent 1px)",
+              backgroundSize: "60px 60px",
+            }} />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 relative z-10">
-          {/* Breadcrumb — SEO canonical trail */}
-          <nav className="flex items-center gap-1.5 text-xs text-gray-500 mb-5" aria-label="Breadcrumb">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+          
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-2 text-xs text-gray-600 mb-10">
             <Link href="/" className="hover:text-orange-400 transition-colors">Home</Link>
             <ChevronRight className="w-3 h-3" />
-            <Link href="/movies" className="hover:text-orange-400 transition-colors text-gray-300">Movies</Link>
+            <Link href="/movies" className="hover:text-orange-400 transition-colors text-gray-400">Movies</Link>
             {genre && (
               <>
                 <ChevronRight className="w-3 h-3" />
-                <span className="text-orange-400">{genre}</span>
+                <span className="text-gray-400">{genre}</span>
               </>
             )}
             {verdict && !genre && (
               <>
                 <ChevronRight className="w-3 h-3" />
-                <span className="text-orange-400">{activeVerdictLabel} Films</span>
+                <span className="text-gray-400">{activeVerdictLabel} Films</span>
               </>
             )}
           </nav>
 
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-orange-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Clapperboard className="w-5 h-5 text-orange-500" />
-                </div>
-                <h1 className="font-display text-3xl md:text-4xl font-black text-white leading-tight">
-                  {genre
-                    ? `${genre} Odia Movies`
-                    : verdict
-                      ? `${activeVerdictLabel} Odia Movies`
-                      : "Odia Movies — Ollywood Film Database"}
+          {/* ── Two-column layout ── */}
+          <div className="relative grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+            
+            {/* ── LEFT: Text content ── */}
+            <div className="space-y-8">
+              
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border text-xs font-bold uppercase tracking-widest"
+                style={{ color: "#f97316", borderColor: "rgba(249,115,22,0.3)", background: "rgba(249,115,22,0.08)" }}>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                </span>
+                <Film className="w-3.5 h-3.5" />
+                Ollywood Film Database
+              </div>
+
+              {/* Heading */}
+              <div>
+                <h1 className="font-black text-white leading-[1.05]" style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)" }}>
+                  <span className="block text-gray-300 font-extrabold" style={{ fontSize: "0.55em", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "0.3em", color: "rgba(249,115,22,0.7)" }}>
+                    Discover
+                  </span>
+                  Odia{" "}
+                  <span style={{
+                    background: "linear-gradient(135deg, #f97316 0%, #ef4444 60%, #ec4899 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}>
+                    Movies
+                  </span>
+                  <br />
+                  & Cinema
                 </h1>
               </div>
-              <p className="text-gray-400 text-sm md:text-base max-w-xl leading-relaxed">
+
+              {/* Description */}
+              <p className="text-gray-400 leading-relaxed max-w-lg" style={{ fontSize: "clamp(0.95rem, 1.5vw, 1.1rem)" }}>
                 {genre
                   ? `${GENRE_META[genre]?.desc || `Browse ${genre} films from Ollywood`}. Discover the best ${genre.toLowerCase()} Odia movies with cast, box office and reviews.`
                   : verdict === "Upcoming"
                     ? "All confirmed upcoming Odia movies with release dates, cast details and trailers. Stay ahead of every new Ollywood release."
                     : "The most complete Ollywood film database — browse every Odia movie with cast, songs, box office collection, trailers and reviews."}
               </p>
+
+              {/* Stats row */}
+              <div className="flex flex-wrap gap-6 pt-6 border-t border-white/[0.06]">
+                <div className="text-center">
+                  <div className="text-2xl font-black text-white">{total}</div>
+                  <div className="text-xs text-gray-600 font-medium mt-0.5">Films</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-black text-white">1936</div>
+                  <div className="text-xs text-gray-600 font-medium mt-0.5">First Release</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-black text-white">Latest</div>
+                  <div className="text-xs text-gray-600 font-medium mt-0.5">Box Office</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-black text-white">Reviews</div>
+                  <div className="text-xs text-gray-600 font-medium mt-0.5">& Ratings</div>
+                </div>
+              </div>
             </div>
 
-            {/* Live count pill */}
-            <div className="flex items-center gap-2 bg-[#111] border border-[#1f1f1f] rounded-xl px-5 py-3 self-start md:self-auto flex-shrink-0">
-              <Film className="w-4 h-4 text-orange-500" />
-              <span className="text-2xl font-black text-white font-display">{total}</span>
-              <span className="text-xs text-gray-500 leading-tight">Odia<br />films</span>
+            {/* ── RIGHT: Visual panel ── */}
+            <div className="absolute right-0 sm:-right-4 top-0 lg:relative lg:right-auto lg:top-auto flex items-center justify-center min-h-[300px] lg:min-h-[400px] scale-[0.55] sm:scale-75 lg:scale-100 origin-top-right lg:origin-center pointer-events-none lg:pointer-events-auto opacity-20 sm:opacity-40 lg:opacity-100 z-0 lg:z-10">
+              
+              {/* Outer ring glow */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-80 h-80 rounded-full border border-orange-500/10 animate-[pulse_4s_ease-in-out_infinite]" />
+                <div className="absolute w-64 h-64 rounded-full border border-orange-500/15" />
+              </div>
+
+              {/* Center Icon */}
+              <div className="relative z-10 flex flex-col items-center gap-6">
+                
+                {/* Main visual */}
+                <div className="relative">
+                  <div className="w-40 h-40 rounded-full flex items-center justify-center shadow-2xl animate-[spin_20s_linear_infinite]"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(239,68,68,0.15) 100%)",
+                      border: "1px solid rgba(249,115,22,0.25)",
+                      boxShadow: "0 0 80px rgba(249,115,22,0.12), inset 0 1px 0 rgba(255,255,255,0.05)",
+                    }}>
+                    <Clapperboard className="w-20 h-20 text-orange-400" strokeWidth={1.2} />
+                  </div>
+                  {/* Play badge */}
+                  <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full flex items-center justify-center shadow-lg"
+                    style={{ background: "linear-gradient(135deg, #ef4444, #f97316)" }}>
+                    <Star className="w-4 h-4 text-white fill-white ml-0.5" />
+                  </div>
+                </div>
+
+                {/* Floating cards around the center */}
+                <div className="absolute -top-16 -left-20 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 animate-bounce"
+                  style={{ animationDuration: "3s", background: "rgba(15,15,15,0.95)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
+                  <Calendar className="w-3 h-3" /> Latest Releases
+                </div>
+
+                <div className="absolute top-1/2 -right-24 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 animate-bounce"
+                  style={{ animationDuration: "2.5s", animationDelay: "1s", background: "rgba(15,15,15,0.95)", border: "1px solid rgba(249,115,22,0.3)", color: "#f97316", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
+                  <TrendingUp className="w-3 h-3" /> Box Office Hits
+                </div>
+
+                <div className="absolute -bottom-10 left-0 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 animate-bounce"
+                  style={{ animationDuration: "3.5s", animationDelay: "0.5s", background: "rgba(15,15,15,0.95)", border: "1px solid rgba(168,85,247,0.3)", color: "#a855f7", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
+                  <Users className="w-3 h-3" /> Full Cast Info
+                </div>
+
+              </div>
             </div>
           </div>
         </div>
@@ -290,23 +373,6 @@ export default async function MoviesPage({
                 </Link>
               );
             })}
-
-            {/* Genre pills — compact */}
-            <div className="w-px h-5 bg-[#2a2a2a] mx-2 flex-shrink-0" aria-hidden="true" />
-            {GENRES.map((g) => (
-              <Link
-                key={g}
-                href={`/movies?genre=${g}`}
-                className={[
-                  "flex-shrink-0 flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap",
-                  genre === g
-                    ? "bg-orange-500/20 border border-orange-500/50 text-orange-300"
-                    : "bg-[#141414] border border-[#222] text-gray-400 hover:border-orange-500/30 hover:text-orange-400",
-                ].join(" ")}
-              >
-                {GENRE_META[g]?.emoji} {g}
-              </Link>
-            ))}
           </div>
         </div>
       </section>
@@ -317,7 +383,7 @@ export default async function MoviesPage({
           not at very top of page. This position is after nav.
       ══════════════════════════════════════════════════════════ */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-        <AdBanner slot="1234567890" format="horizontal" />
+        <DisplayAd slot="8191172163" format="horizontal" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-12">
@@ -335,12 +401,14 @@ export default async function MoviesPage({
               </Link>
             )}
           </div>
-          <MoviesFilter
-            genres={GENRES}
-            verdicts={VERDICTS}
-            active={{ genre, verdict, sort, page: currentPage }}
-            totalPages={pages}
-          />
+          <Suspense fallback={<div className="h-10 animate-pulse bg-white/5 rounded-xl" />}>
+            <MoviesFilter
+              genres={GENRES}
+              verdicts={VERDICTS}
+              active={{ genre, verdict, year, sort, page: currentPage }}
+              totalPages={pages}
+            />
+          </Suspense>
         </div>
 
         {/* ══════════════════════════════════════════════════════
@@ -419,7 +487,7 @@ export default async function MoviesPage({
         {/* ══════════════════════════════════════════════════════
             AD BANNER — Mid-page rectangle (300×250 / responsive)
         ══════════════════════════════════════════════════════ */}
-        <AdBanner slot="1122334455" format="rectangle" />
+        <DisplayAd slot="8191172163" format="rectangle" />
 
         {/* ══════════════════════════════════════════════════════
             SEO BLOCK 1 — Browse by Genre (link grid)
@@ -510,7 +578,7 @@ export default async function MoviesPage({
         {/* ══════════════════════════════════════════════════════
             AD BANNER — Bottom rectangle before footer content
         ══════════════════════════════════════════════════════ */}
-        <AdBanner slot="5566778899" format="auto" />
+        <DisplayAd slot="8191172163" format="auto" />
 
         {/* ══════════════════════════════════════════════════════
             SEO BLOCK 3 — About Ollywood (rich editorial text)
@@ -661,7 +729,7 @@ export default async function MoviesPage({
             </h2>
           </div>
           <div className="flex flex-wrap gap-2">
-            {Array.from({ length: new Date().getFullYear() - 2014 + 1 }, (_, i) => new Date().getFullYear() - i).map((yr) => (
+            {Array.from({ length: new Date().getFullYear() - 1935 }, (_, i) => new Date().getFullYear() - i).map((yr) => (
               <Link
                 key={yr}
                 href={`/movies/year/${yr}`}
@@ -677,6 +745,7 @@ export default async function MoviesPage({
 
       </div>
     </div>
+    </>
   );
 }
 

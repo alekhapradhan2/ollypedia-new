@@ -5,7 +5,7 @@ import Cast from "@/models/Cast";
 import Blog from "@/models/Blog";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { BlogCard } from "@/components/blog/BlogCard";
-import { buildMeta } from "@/lib/seo";
+import { buildMeta, SITE_URL } from "@/lib/seo";
 import { Search } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -40,8 +40,25 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
   const results = q ? await doSearch(q) : { movies: [], cast: [], blogs: [] };
   const total = results.movies.length + results.cast.length + results.blogs.length;
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SearchResultsPage",
+    "name": q ? `Search results for "${q}" - Ollypedia` : "Search Ollypedia",
+    "url": `${SITE_URL}/search${q ? `?q=${encodeURIComponent(q)}` : ""}`,
+    "publisher": {
+      "@type": "Organization",
+      "name": "Ollypedia",
+      "url": SITE_URL,
+    }
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="mb-8">
         <h1 className="section-title mb-2">
           {q ? `Results for "${q}"` : "Search Ollypedia"}
@@ -120,5 +137,6 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
         </div>
       )}
     </div>
+    </>
   );
 }

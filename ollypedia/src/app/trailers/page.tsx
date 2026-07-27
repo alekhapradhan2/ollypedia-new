@@ -2,7 +2,7 @@
 // SSR landing page for Ollywood Movie Trailers
 // SEO intro is at the BOTTOM, after all 4 content sections
 
-import React from "react";
+import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
@@ -255,7 +255,7 @@ function TrailersHero() {
         </nav>
 
         {/* ── Two-column layout ── */}
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+        <div className="relative grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
 
           {/* ── LEFT: Text content ── */}
           <div className="space-y-8">
@@ -311,7 +311,7 @@ function TrailersHero() {
           </div>
 
           {/* ── RIGHT: Visual panel ── */}
-          <div className="relative hidden lg:flex items-center justify-center">
+          <div className="absolute right-0 sm:-right-4 top-0 lg:relative lg:right-auto lg:top-auto flex items-center justify-center min-h-[300px] lg:min-h-[400px] scale-[0.55] sm:scale-75 lg:scale-100 origin-top-right lg:origin-center pointer-events-none lg:pointer-events-auto opacity-20 sm:opacity-40 lg:opacity-100 z-0 lg:z-10">
 
             {/* Outer ring glow */}
             <div className="absolute inset-0 flex items-center justify-center">
@@ -595,7 +595,9 @@ export default async function TrailersPage() {
             color="text-orange-400"
             animateWord
           />
-          <TrailersClient initialMovies={allFirst} totalCount={totalAll} />
+          <Suspense fallback={<div className="h-40 animate-pulse bg-white/5 rounded-2xl" />}>
+            <TrailersClient initialMovies={allFirst} totalCount={totalAll} />
+          </Suspense>
         </section>
 
         {/* ── Internal linking ─────────────────────────────────────────────── */}

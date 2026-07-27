@@ -75,66 +75,85 @@ const SECTIONS = [
 ];
 
 export default function PrivacyPolicyPage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Privacy Policy - Ollypedia",
+    "description": "Read Ollypedia's Privacy Policy to learn how we collect, use, and protect your information.",
+    "url": `${SITE_URL}/privacy`,
+    "publisher": {
+      "@type": "Organization",
+      "name": "Ollypedia",
+      "url": SITE_URL,
+    }
+  };
+
   return (
-    <main className="bg-black min-h-screen">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-        {/* Header */}
-        <div className="mb-10 sm:mb-12">
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-500 mb-3 flex items-center gap-2">
-            <span className="w-5 h-px bg-orange-500/60" aria-hidden="true" />
-            Legal
-          </h3>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">
-            Privacy Policy
-          </h1>
-          <p className="text-gray-600 text-xs sm:text-sm mt-3">
-            Effective date: June 16, 2026
-          </p>
-        </div>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main className="bg-black min-h-screen">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+          {/* Header */}
+          <div className="mb-10 sm:mb-12">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-500 mb-3 flex items-center gap-2">
+              <span className="w-5 h-px bg-orange-500/60" aria-hidden="true" />
+              Legal
+            </h3>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">
+              Privacy Policy
+            </h1>
+            <p className="text-gray-600 text-xs sm:text-sm mt-3">
+              Effective date: June 16, 2026
+            </p>
+          </div>
 
-        {/* Sections */}
-        <div className="space-y-8 sm:space-y-10">
-          {SECTIONS.map((section) => (
-            <section key={section.heading}>
-              <h2 className="text-sm sm:text-base font-semibold text-gray-300 mb-2.5">
-                {section.heading}
-              </h2>
-              <p className="text-gray-500 text-[13px] sm:text-sm leading-relaxed">
-                {section.body}
-              </p>
-              {section.list && (
-                <ul className="mt-3 space-y-1.5 list-disc list-inside text-gray-500 text-[13px] sm:text-sm leading-relaxed">
-                  {section.list.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          ))}
-        </div>
+          {/* Sections */}
+          <div className="space-y-8 sm:space-y-10">
+            {SECTIONS.map((section) => (
+              <section key={section.heading}>
+                <h2 className="text-sm sm:text-base font-semibold text-gray-300 mb-2.5">
+                  {section.heading}
+                </h2>
+                <p className="text-gray-500 text-[13px] sm:text-sm leading-relaxed">
+                  {section.body}
+                </p>
+                {section.list && (
+                  <ul className="mt-3 space-y-1.5 list-disc list-inside text-gray-500 text-[13px] sm:text-sm leading-relaxed">
+                    {section.list.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            ))}
+          </div>
 
-        {/* Related legal links */}
-        <div className="mt-12 pt-6 border-t border-[#1c1c1c] flex flex-wrap gap-x-4 gap-y-2">
-          <Link
-            href="/disclaimer"
-            className="text-gray-600 text-xs hover:text-orange-400 transition-colors"
-          >
-            Disclaimer
-          </Link>
-          <Link
-            href="/terms-and-conditions"
-            className="text-gray-600 text-xs hover:text-orange-400 transition-colors"
-          >
-            Terms &amp; Conditions
-          </Link>
-          <Link
-            href="/contact"
-            className="text-gray-600 text-xs hover:text-orange-400 transition-colors"
-          >
-            Contact Us
-          </Link>
+          {/* Related legal links */}
+          <div className="mt-12 pt-6 border-t border-[#1c1c1c] flex flex-wrap gap-x-4 gap-y-2">
+            <Link
+              href="/disclaimer"
+              className="text-gray-600 text-xs hover:text-orange-400 transition-colors"
+            >
+              Disclaimer
+            </Link>
+            <Link
+              href="/terms-and-conditions"
+              className="text-gray-600 text-xs hover:text-orange-400 transition-colors"
+            >
+              Terms &amp; Conditions
+            </Link>
+            <Link
+              href="/contact"
+              className="text-gray-600 text-xs hover:text-orange-400 transition-colors"
+            >
+              Contact Us
+            </Link>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }

@@ -12,7 +12,8 @@ import { buildMeta } from "@/lib/seo";
 import { BlogCard } from "@/components/blog/BlogCard";
 import { BlogSearch } from "@/components/blog/BlogSearch";
 import { BlogInfiniteScroll } from "@/components/blog/BlogInfiniteScroll";
-import { Search, BookOpen, TrendingUp, Star, Eye, Flame } from "lucide-react";
+import { BlogCategoryDropdown } from "@/components/blog/BlogCategoryDropdown";
+import { Search, BookOpen, TrendingUp, Star, Eye, Flame, ChevronRight } from "lucide-react";
 
 export const revalidate = 600;
 
@@ -356,22 +357,27 @@ export default async function BlogPage({
       <main className="min-h-screen bg-[#0a0a0a] text-white">
 
         {/* ── HERO / SEO HEADER ─────────────────────────────────────────── */}
-        <header className="relative overflow-hidden border-b border-white/6">
-          {/* Background texture */}
-          <div
-            aria-hidden
-            className="absolute inset-0 opacity-20"
-            style={{
-              backgroundImage: `radial-gradient(circle at 20% 50%, #f97316 0%, transparent 50%),
-                                radial-gradient(circle at 80% 20%, #7c3aed 0%, transparent 40%)`,
-            }}
-          />
-          <div aria-hidden className="absolute inset-0 bg-[#0a0a0a]/70" />
+        <header className="relative overflow-hidden border-b border-white/6" style={{ background: "linear-gradient(135deg, #050505 0%, #0f0500 40%, #080010 100%)" }}>
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Animated Gradients */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[900px] h-[600px] rounded-full"
+              style={{ background: "radial-gradient(ellipse, rgba(249,115,22,0.08) 0%, transparent 70%)" }} />
+            <div className="absolute -left-20 top-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full"
+              style={{ background: "radial-gradient(ellipse, rgba(239,68,68,0.07) 0%, transparent 70%)" }} />
+            <div className="absolute -right-20 bottom-0 w-[500px] h-[400px] rounded-full"
+              style={{ background: "radial-gradient(ellipse, rgba(168,85,247,0.06) 0%, transparent 70%)" }} />
+            
+            <div className="absolute inset-0 opacity-[0.025]"
+              style={{
+                backgroundImage: "linear-gradient(rgba(249,115,22,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(249,115,22,0.5) 1px, transparent 1px)",
+                backgroundSize: "60px 60px",
+              }} />
+          </div>
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-10">
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
 
             {/* Breadcrumb — SEO + AdSense loves clear site structure */}
-            <nav aria-label="Breadcrumb" className="mb-6">
+            <nav aria-label="Breadcrumb" className="mb-10">
               <ol
                 className="flex items-center gap-1.5 text-xs text-gray-500"
                 itemScope
@@ -383,7 +389,9 @@ export default async function BlogPage({
                   </a>
                   <meta itemProp="position" content="1" />
                 </li>
-                <span aria-hidden>/</span>
+                <span aria-hidden className="mx-0.5">
+                  <ChevronRight className="w-3 h-3" />
+                </span>
                 <li itemScope itemType="https://schema.org/ListItem" itemProp="itemListElement">
                   {category ? (
                     <>
@@ -394,17 +402,18 @@ export default async function BlogPage({
                     </>
                   ) : (
                     <>
-                      <span itemProp="name" className="text-orange-400">Blog</span>
+                      <span itemProp="name" className="text-gray-400">Blog</span>
                       <meta itemProp="position" content="2" />
                     </>
                   )}
                 </li>
-                {/* ── NEW: third breadcrumb crumb for category pages ── */}
                 {category && (
                   <>
-                    <span aria-hidden>/</span>
+                    <span aria-hidden className="mx-0.5">
+                      <ChevronRight className="w-3 h-3" />
+                    </span>
                     <li itemScope itemType="https://schema.org/ListItem" itemProp="itemListElement">
-                      <span itemProp="name" className="text-orange-400">{category}</span>
+                      <span itemProp="name" className="text-gray-400">{category}</span>
                       <meta itemProp="position" content="3" />
                     </li>
                   </>
@@ -412,91 +421,134 @@ export default async function BlogPage({
               </ol>
             </nav>
 
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-              <div>
-                {/* H1 — dynamic per category/search/page for better keyword targeting */}
-                <h1 className="font-display text-4xl md:text-5xl font-black text-white leading-tight tracking-tight mb-3">
-                  {category ? (
-                    <>{category} <span className="text-orange-400">Articles</span></>
-                  ) : query ? (
-                    <>Search <span className="text-orange-400">Results</span></>
-                  ) : (
-                    <>Ollywood <span className="text-orange-400">Blog</span></>
-                  )}
-                </h1>
-                <p className="text-gray-400 text-base md:text-lg max-w-2xl leading-relaxed">
+            <div className="relative grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+              
+              {/* ── LEFT: Text content ── */}
+              <div className="space-y-8">
+                
+                {/* Badge */}
+                <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border text-xs font-bold uppercase tracking-widest"
+                  style={{ color: "#f97316", borderColor: "rgba(249,115,22,0.3)", background: "rgba(249,115,22,0.08)" }}>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                  </span>
+                  <BookOpen className="w-3.5 h-3.5" />
+                  {category ? `${category} Articles` : "Odia Cinema Blog"}
+                </div>
+
+                {/* Heading */}
+                <div>
+                  <h1 className="font-black text-white leading-[1.05]" style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)" }}>
+                    <span className="block text-gray-300 font-extrabold" style={{ fontSize: "0.55em", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "0.3em", color: "rgba(249,115,22,0.7)" }}>
+                      Ollywood Reading
+                    </span>
+                    {category ? (
+                      <>{category} <span style={{ background: "linear-gradient(135deg, #f97316 0%, #ef4444 60%, #ec4899 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Articles</span></>
+                    ) : query ? (
+                      <>Search <span style={{ background: "linear-gradient(135deg, #f97316 0%, #ef4444 60%, #ec4899 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Results</span></>
+                    ) : (
+                      <>Ollywood <span style={{ background: "linear-gradient(135deg, #f97316 0%, #ef4444 60%, #ec4899 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Blog</span></>
+                    )}
+                  </h1>
+                </div>
+
+                {/* Description */}
+                <p className="text-gray-400 leading-relaxed max-w-lg" style={{ fontSize: "clamp(0.95rem, 1.5vw, 1.1rem)" }}>
                   {category && CATEGORY_DESCRIPTIONS[category]
                     ? CATEGORY_DESCRIPTIONS[category]
                     : query
                     ? `Showing results for "${query}" across all Odia cinema articles.`
-                    : <>In-depth movie reviews, actor profiles, top lists, song breakdowns and news
-                      from <strong className="text-gray-300 font-medium">Odia cinema</strong> — updated every week.</>
+                    : <>In-depth movie reviews, actor profiles, top lists, song breakdowns and news from <strong className="text-gray-300 font-medium">Odia cinema</strong> — updated every week.</>
                   }
                 </p>
 
-                {/* Stat pills */}
-                <div className="flex flex-wrap gap-2 mt-4">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/6 border border-white/10 rounded-full px-3 py-1.5 text-gray-300">
-                    <BookOpen className="w-3.5 h-3.5 text-orange-400" />
-                    {stats.totalPosts}+ Articles
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/6 border border-white/10 rounded-full px-3 py-1.5 text-gray-300">
-                    <TrendingUp className="w-3.5 h-3.5 text-orange-400" />
-                    {stats.totalCategories} Categories
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/6 border border-white/10 rounded-full px-3 py-1.5 text-gray-300">
-                    <Star className="w-3.5 h-3.5 text-orange-400" />
-                    Weekly Updates
-                  </span>
+                {/* Stats row */}
+                <div className="flex flex-wrap gap-6 pt-6 border-t border-white/[0.06]">
+                  <div className="text-center">
+                    <div className="text-2xl font-black text-white">{stats.totalPosts}</div>
+                    <div className="text-xs text-gray-600 font-medium mt-0.5">Total Articles</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-black text-white">{stats.totalCategories}</div>
+                    <div className="text-xs text-orange-500 font-medium mt-0.5">Categories</div>
+                  </div>
                   {totalViews > 0 && (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/6 border border-white/10 rounded-full px-3 py-1.5 text-gray-300">
-                      <Eye className="w-3.5 h-3.5 text-orange-400" />
-                      {totalViews >= 1_000_000
-                        ? `${(totalViews / 1_000_000).toFixed(1)}M`
-                        : totalViews >= 1_000
-                        ? `${(totalViews / 1_000).toFixed(0)}K`
-                        : totalViews}+ Total Reads
-                    </span>
+                    <div className="text-center">
+                      <div className="text-2xl font-black text-white">
+                        {totalViews >= 1_000_000 ? `${(totalViews / 1_000_000).toFixed(1)}M` : totalViews >= 1_000 ? `${(totalViews / 1_000).toFixed(0)}K` : totalViews}
+                      </div>
+                      <div className="text-xs text-yellow-500 font-medium mt-0.5">Total Reads</div>
+                    </div>
                   )}
+                  <div className="text-center">
+                    <div className="text-2xl font-black text-white">24/7</div>
+                    <div className="text-xs text-purple-500 font-medium mt-0.5">Updates</div>
+                  </div>
                 </div>
               </div>
 
-              {/* Search box — client component, syncs with URL params */}
-              <div className="w-full md:w-80">
+              {/* ── RIGHT: Visual panel ── */}
+              <div className="absolute right-0 sm:-right-4 top-0 lg:relative lg:right-auto lg:top-auto flex items-center justify-center min-h-[300px] lg:min-h-[400px] scale-[0.55] sm:scale-75 lg:scale-100 origin-top-right lg:origin-center pointer-events-none lg:pointer-events-auto opacity-20 sm:opacity-40 lg:opacity-100 z-0 lg:z-10">
+                
+                {/* Outer ring glow */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-80 h-80 rounded-full border border-orange-500/10 animate-[pulse_4s_ease-in-out_infinite]" />
+                  <div className="absolute w-64 h-64 rounded-full border border-orange-500/15" />
+                </div>
+
+                {/* Center Icon */}
+                <div className="relative z-10 flex flex-col items-center gap-6">
+                  
+                  {/* Main visual */}
+                  <div className="relative">
+                    <div className="w-40 h-40 rounded-full flex items-center justify-center shadow-2xl animate-[spin_20s_linear_infinite]"
+                      style={{
+                        background: "linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(239,68,68,0.15) 100%)",
+                        border: "1px solid rgba(249,115,22,0.25)",
+                        boxShadow: "0 0 80px rgba(249,115,22,0.12), inset 0 1px 0 rgba(255,255,255,0.05)",
+                      }}>
+                      <BookOpen className="w-20 h-20 text-orange-400" strokeWidth={1.2} />
+                    </div>
+                    {/* Play badge */}
+                    <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full flex items-center justify-center shadow-lg"
+                      style={{ background: "linear-gradient(135deg, #ef4444, #f97316)" }}>
+                      <Star className="w-4 h-4 text-white fill-white ml-0.5" />
+                    </div>
+                  </div>
+
+                  {/* Floating cards around the center */}
+                  <div className="absolute -top-16 -left-20 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 animate-bounce"
+                    style={{ animationDuration: "3s", background: "rgba(15,15,15,0.95)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
+                    <Flame className="w-3 h-3" /> Hot News
+                  </div>
+
+                  <div className="absolute top-1/2 -right-24 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 animate-bounce"
+                    style={{ animationDuration: "2.5s", animationDelay: "1s", background: "rgba(15,15,15,0.95)", border: "1px solid rgba(249,115,22,0.3)", color: "#f97316", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
+                    <TrendingUp className="w-3 h-3" /> Movie Reviews
+                  </div>
+
+                  <div className="absolute -bottom-10 left-0 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 animate-bounce"
+                    style={{ animationDuration: "3.5s", animationDelay: "0.5s", background: "rgba(15,15,15,0.95)", border: "1px solid rgba(168,85,247,0.3)", color: "#a855f7", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
+                    <Eye className="w-3 h-3" /> Deep Analysis
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Unified Search & Category Row */}
+            <div className="mt-10 flex flex-col sm:flex-row items-center gap-4 border-t border-white/[0.06] pt-8">
+              <div className="w-full sm:flex-1 sm:max-w-md">
                 <Suspense>
                   <BlogSearch initialQuery={query} />
                 </Suspense>
               </div>
-            </div>
-
-            {/* Category filter pills */}
-            {categories.length > 0 && (
-              <div className="mt-6 flex flex-wrap gap-2" role="navigation" aria-label="Filter by category">
-                <a
-                  href="/blog"
-                  className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${
-                    !category
-                      ? "bg-orange-500 border-orange-500 text-white"
-                      : "border-white/15 text-gray-400 hover:border-orange-500/50 hover:text-white"
-                  }`}
-                >
-                  All
-                </a>
-                {categories.map((cat) => (
-                  <a
-                    key={cat}
-                    href={`/blog?category=${encodeURIComponent(cat)}`}
-                    className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${
-                      category === cat
-                        ? "bg-orange-500 border-orange-500 text-white"
-                        : "border-white/15 text-gray-400 hover:border-orange-500/50 hover:text-white"
-                    }`}
-                  >
-                    {cat}
-                  </a>
-                ))}
+              <div className="w-full sm:w-auto">
+                {categories.length > 0 && (
+                  <BlogCategoryDropdown currentCategory={category || "All"} categories={categories} />
+                )}
               </div>
-            )}
+            </div>
           </div>
         </header>
 
@@ -528,71 +580,6 @@ export default async function BlogPage({
                 </p>
               )}
             </div>
-          )}
-
-          {/* ── MOST POPULAR ─────────────────────────────────────────────
-               Sorted by all-time views. Surfaces evergreen content that keeps
-               getting traffic — great for new visitors and Google E-E-A-T.   */}
-          {isHomePage && mostPopular.length > 0 && (
-            <section aria-labelledby="popular-heading" className="mb-12">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-1 h-5 bg-orange-500 rounded-full" aria-hidden />
-                <h2
-                  id="popular-heading"
-                  className="text-xs font-black uppercase tracking-widest text-orange-400 flex items-center gap-1.5"
-                >
-                  <Flame className="w-3.5 h-3.5" />
-                  Most Popular
-                </h2>
-                <span className="text-[10px] text-gray-600 ml-1">— all-time top reads</span>
-              </div>
-              <div className="divide-y divide-[#1a1a1a] border border-[#1c1c1c] rounded-2xl overflow-hidden">
-                {mostPopular.map((b: any, i: number) => (
-                  <a
-                    key={String(b._id)}
-                    href={`/blog/${b.slug}`}
-                    className="group flex items-center gap-3 px-4 py-3.5
-                      hover:bg-white/[0.025] transition-colors"
-                  >
-                    {/* Rank */}
-                    <span className="w-6 text-center text-sm font-black flex-shrink-0
-                      text-gray-700 group-hover:text-orange-500 transition-colors">
-                      {i + 1}
-                    </span>
-                    {/* Thumbnail */}
-                    {b.coverImage ? (
-                      <img src={b.coverImage} alt={b.title} loading="lazy"
-                        className="w-12 h-8 object-cover rounded-lg flex-shrink-0" />
-                    ) : (
-                      <div className="w-12 h-8 bg-[#1a1a1a] rounded-lg flex-shrink-0
-                        flex items-center justify-center text-gray-700 text-xs">📰</div>
-                    )}
-                    {/* Title */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-semibold text-white truncate
-                        group-hover:text-orange-400 transition-colors">
-                        {b.title}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {b.category && (
-                          <span className="text-[10px] text-orange-400/70">{b.category}</span>
-                        )}
-                        {b.readTime && (
-                          <span className="text-[10px] text-gray-600">{b.readTime} min read</span>
-                        )}
-                      </div>
-                    </div>
-                    {/* View count */}
-                    <div className="flex-shrink-0 flex items-center gap-1 text-[10px] text-gray-600">
-                      <Eye className="w-3 h-3" />
-                      {b.views >= 1000
-                        ? `${(b.views / 1000).toFixed(1)}K`
-                        : b.views}
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </section>
           )}
 
           {/* ── FEATURED POSTS ───────────────────────────────────────────── */}

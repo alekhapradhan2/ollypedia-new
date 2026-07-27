@@ -117,8 +117,26 @@ const sections = [
 export default function TermsAndConditionsPage() {
   const lastUpdated = "May 3, 2025";
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Terms & Conditions - Ollypedia",
+    "description": "Read the Terms and Conditions for using Ollypedia, the most complete online encyclopedia for Odia movies.",
+    "url": `${SITE_URL}/terms-and-conditions`,
+    "publisher": {
+      "@type": "Organization",
+      "name": "Ollypedia",
+      "url": SITE_URL,
+    }
+  };
+
   return (
-    <main className="bg-[#0a0a0a] min-h-screen text-white">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main className="bg-[#0a0a0a] min-h-screen text-white">
 
       {/* ── Hero ── */}
       <div className="relative overflow-hidden border-b border-[#1c1c1c]">
@@ -358,5 +376,6 @@ export default function TermsAndConditionsPage() {
       </div>
 
     </main>
+    </>
   );
 }

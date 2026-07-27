@@ -15,7 +15,7 @@ import {
   Gavel,
   Mail,
 } from "lucide-react";
-import { buildMeta } from "@/lib/seo";
+import { buildMeta, SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = buildMeta({
   title: "Disclaimer – Ollypedia",
@@ -152,9 +152,27 @@ const QUICK_LINKS = SECTIONS.filter((s) => s.id !== "contact").map((s) => ({
 }));
 
 export default function DisclaimerPage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Disclaimer - Ollypedia",
+    "description": "Read Ollypedia's disclaimer regarding content accuracy, box office data, copyright, and external links.",
+    "url": `${SITE_URL}/disclaimer`,
+    "publisher": {
+      "@type": "Organization",
+      "name": "Ollypedia",
+      "url": SITE_URL,
+    }
+  };
+
   return (
-    <main className="bg-black min-h-screen">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main className="bg-black min-h-screen">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
 
         {/* ── Header ──────────────────────────────────────────────────── */}
         <div className="mb-8 sm:mb-10">
@@ -278,5 +296,6 @@ export default function DisclaimerPage() {
         </div>
       </div>
     </main>
+    </>
   );
 }

@@ -7,6 +7,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { TrendingUp, Calendar, IndianRupee, BarChart3, ChevronDown, ChevronUp, Film, Music, BookOpen, ExternalLink } from "lucide-react";
+import { DisplayAd } from "@/components/ads/DisplayAd";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api").replace(/\/$/, "");
 
@@ -767,6 +768,10 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet: initialT
                     </div>
                   </div>
                 </section>
+
+                <div className="py-2">
+                  <DisplayAd slot="8191172163" format="auto" />
+                </div>
 
                 {/* ── Bar Chart (SVG — works for any number of days) ── */}
                 <section>

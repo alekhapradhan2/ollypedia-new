@@ -38,6 +38,7 @@ import {
   ChevronRight, Play, Clapperboard, ExternalLink,
   Users, Music, DollarSign, Award, Info, FileText,
 } from "lucide-react";
+import { DisplayAd } from "@/components/ads/DisplayAd";
 
 export const revalidate    = 3600;
 export const dynamicParams = true;
@@ -362,6 +363,10 @@ export default async function IndividualTrailerPage({ params }: { params: Params
                 })}
               </div>
             </section>
+
+            <div className="py-2">
+              <DisplayAd slot="8191172163" format="auto" />
+            </div>
 
             {/* Cast section */}
             {cast.length > 0 && (
