@@ -115,7 +115,8 @@ export default async function OttPlatformPage({ params }: { params: { platformSl
     const p = m.ott?.platform || m.streamingOn || "";
     const watchUrl = m.ott?.watchUrl || m.streamingUrl || "";
     const releaseDate = m.ott?.releaseDate || m.ottReleaseDate || "";
-    const status = m.ott?.status || (watchUrl ? "Streaming" : releaseDate ? "Upcoming" : "");
+    // Strict prioritization: if there is a watch URL, it's Streaming regardless of what the db status says.
+    const status = watchUrl ? "Streaming" : (m.ott?.status || (releaseDate ? "Upcoming" : ""));
     return { ...m, _id: m._id.toString(), _platform: p, _watchUrl: watchUrl, _ottReleaseDate: releaseDate, _ottStatus: status };
   };
 
