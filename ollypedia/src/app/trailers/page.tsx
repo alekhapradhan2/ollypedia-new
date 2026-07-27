@@ -22,6 +22,7 @@ import {
 import { TrailersClient } from "@/components/trailers/TrailersClient";
 import { TrailerCard } from "@/components/trailers/TrailerCard";
 import { AnimatedWord, AnimatedWordSection } from "@/components/trailers/AnimatedWord";
+import { DisplayAd } from "@/components/ads/DisplayAd";
 import {
   Film, Play, Calendar, TrendingUp, Clock, Star,
   ChevronRight, Clapperboard, Zap, Eye,
@@ -520,6 +521,11 @@ export default async function TrailersPage() {
 
       {/* Hero */}
       <TrailersHero />
+
+      {/* ══ GLOBAL BANNER AD ══ */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <DisplayAd slot="8191172163" format="horizontal" className="rounded-xl border border-[#222]" />
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20">
 

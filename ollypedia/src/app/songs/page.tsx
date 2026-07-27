@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 import { SITE_URL } from "@/lib/seo";
 import { Music, Mic2, Radio, ChevronRight, Headphones, Search } from "lucide-react";
+import { DisplayAd } from "@/components/ads/DisplayAd";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { AlbumCard } from "@/components/songs/AlbumCard";
 import { SongsClient } from "@/components/songs/SongsClient";
@@ -238,6 +239,11 @@ export default async function SongsPage() {
           </div>
         </div>
       </section>
+
+      {/* ══ GLOBAL BANNER AD ══ */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <DisplayAd slot="8191172163" format="horizontal" className="rounded-xl border border-[#222]" />
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20">
         

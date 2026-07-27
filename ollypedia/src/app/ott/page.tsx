@@ -8,6 +8,7 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { PlatformLogo } from "@/components/ui/PlatformLogo";
 import { InFeedAd } from "@/components/ads/InFeedAd";
+import { DisplayAd } from "@/components/ads/DisplayAd";
 import React from "react";
 export const revalidate = 600;
 
@@ -201,6 +202,11 @@ export default async function OttLandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ══ GLOBAL BANNER AD ══ */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <DisplayAd slot="8191172163" format="horizontal" className="rounded-xl border border-[#222]" />
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-20">
         
