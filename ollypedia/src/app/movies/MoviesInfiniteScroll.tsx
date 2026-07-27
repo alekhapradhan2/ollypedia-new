@@ -93,8 +93,10 @@ export function MoviesInfiniteScroll({
 
               {/* ── Native In-feed Ad after every 7th card ── */}
               {(idx + 1) % 7 === 0 && (
-                <div className="col-span-full w-full">
-                  <InFeedAd className="min-h-[350px]" />
+                <div className={idx >= initialMovies.length ? "animate-zoom-in" : ""}>
+                  <div className="w-full h-full bg-[#111] border border-[#1f1f1f] rounded-xl overflow-hidden flex items-center justify-center">
+                    <InFeedAd className="min-h-[250px] w-full h-full" />
+                  </div>
                 </div>
               )}
             </React.Fragment>
