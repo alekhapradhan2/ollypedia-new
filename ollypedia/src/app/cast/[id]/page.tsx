@@ -54,37 +54,39 @@ export async function generateStaticParams() {
 
 // ─── Data fetching ────────────────────────────────────────────────────────────
 async function getCastMember(id: string) {
-  if (!/^[a-f0-9]{24}$/i.test(id)) return null;
-  await connectDB();
-  const member: any = await Cast.findById(id).lean();
-  if (!member) return null;
-  const [movies, news, blogs] = await Promise.all([
-    Movie.find(
-      { "cast.castId": member._id },
-      // ⚠ 'media' REMOVED — it contains all songs/videos arrays and can be megabytes per movie
-      "title slug posterUrl thumbnailUrl releaseDate genre verdict imdbRating cast"
-    ).sort({ releaseDate: -1 }).limit(30).lean(),
-    News.find({ castId: member._id }).sort({ createdAt: -1 }).limit(12).lean(),
-    Blog.find(
-      {
-        $and: [
-          // Accept either approved:true OR status:"published" (handles both schema styles)
-          { $or: [{ approved: true }, { status: "published" }] },
-          // Match by castIds array OR name in tags OR name in title (broad net)
-          {
-            $or: [
-              { castIds: member._id },
-              { "castIds": String(member._id) },
-              { tags: { $regex: member.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } },
-              { title: { $regex: member.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } },
-            ],
-          },
-        ],
-      },
-      "title slug excerpt coverImage category tags createdAt readTime views"
-    ).sort({ createdAt: -1 }).limit(9).lean(),
-  ]);
-  return JSON.parse(JSON.stringify({ ...member, moviesList: movies, newsList: news, blogsList: blogs }));
+  if (!id || typeof id !== "string" || !/^[a-f0-9]{24}$/i.test(id)) return null;
+  try {
+    await connectDB();
+    const member: any = await Cast.findById(id).lean();
+    if (!member) return null;
+    const [movies, news, blogs] = await Promise.all([
+      Movie.find(
+        { "cast.castId": member._id },
+        "title slug posterUrl thumbnailUrl releaseDate genre verdict imdbRating cast"
+      ).sort({ releaseDate: -1 }).limit(30).lean(),
+      News.find({ castId: member._id }).sort({ createdAt: -1 }).limit(12).lean(),
+      Blog.find(
+        {
+          $and: [
+            { $or: [{ approved: true }, { status: "published" }] },
+            {
+              $or: [
+                { castIds: member._id },
+                { "castIds": String(member._id) },
+                { tags: { $regex: member.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } },
+                { title: { $regex: member.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } },
+              ],
+            },
+          ],
+        },
+        "title slug excerpt coverImage category tags createdAt readTime views"
+      ).sort({ createdAt: -1 }).limit(9).lean(),
+    ]);
+    return JSON.parse(JSON.stringify({ ...member, moviesList: movies, newsList: news, blogsList: blogs }));
+  } catch (err) {
+    console.error("getCastMember Error:", err);
+    return null;
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
