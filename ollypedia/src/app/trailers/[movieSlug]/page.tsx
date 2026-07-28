@@ -348,17 +348,30 @@ export default async function IndividualTrailerPage({ params }: { params: Params
                 prose-strong:text-white prose-strong:font-semibold"
               >
                 {seoContent.split("\n\n").map((para, i) => {
-                  if (para.startsWith("**") && para.endsWith("**")) {
-                    return (
-                      <h3 key={i} className="text-orange-400 font-bold text-base mt-6 mb-2">
-                        {para.replace(/\*\*/g, "")}
-                      </h3>
-                    );
-                  }
-                  return (
-                    <p key={i} className="text-gray-400 leading-relaxed mb-4"
+                  const isHeading = para.startsWith("**") && para.endsWith("**");
+                  const content = isHeading ? (
+                    <h3 key={`h-${i}`} className="text-orange-400 font-bold text-base mt-6 mb-2">
+                      {para.replace(/\*\*/g, "")}
+                    </h3>
+                  ) : (
+                    <p key={`p-${i}`} className="text-gray-400 leading-relaxed mb-4"
                       dangerouslySetInnerHTML={{ __html: para.replace(/\*\*(.+?)\*\*/g, "<strong class='text-white'>$1</strong>") }}
                     />
+                  );
+
+                  // Inject two ads directly before these specific headings to guarantee they always show
+                  const showAdBefore = para === "**Official Trailer Details**" || para === "**Cast and Crew Highlights**";
+
+                  return (
+                    <React.Fragment key={i}>
+                      {showAdBefore && (
+                        <div className="py-2 my-4 border-y border-[#1f1f1f]">
+                          {/* In-content Ad (Visible on all screen sizes, responsive) */}
+                          <DisplayAd slot="8191172163" format="auto" />
+                        </div>
+                      )}
+                      {content}
+                    </React.Fragment>
                   );
                 })}
               </div>
@@ -573,6 +586,9 @@ export default async function IndividualTrailerPage({ params }: { params: Params
               </div>
               <ChevronRight className="w-5 h-5 text-orange-400 group-hover:translate-x-0.5 transition-transform" />
             </Link>
+
+            {/* Sidebar Ad (Visible on all screen sizes, responsive) */}
+            <DisplayAd slot="8191172163" format="auto" />
           </aside>
         </div>
 

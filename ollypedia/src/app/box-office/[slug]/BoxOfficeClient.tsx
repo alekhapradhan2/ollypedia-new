@@ -663,6 +663,11 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet: initialT
         </div>
       </div>
 
+      {/* ── Top Content Ad (Visible on all screen sizes, responsive) ── */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+        <DisplayAd slot="8191172163" format="auto" />
+      </div>
+
       {/* ── Data Disclaimer ── */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
         <BoxOfficeDisclaimer />
@@ -782,6 +787,11 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet: initialT
                   <BoxOfficeChart days={days} maxNet={maxNet} />
                 </section>
 
+                <div className="py-2">
+                  {/* Mid Content Ad (Visible on all screen sizes, responsive) */}
+                  <DisplayAd slot="8191172163" format="auto" />
+                </div>
+
                 {/* ── Day-wise Table ── */}
                 <section>
                   <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
@@ -856,6 +866,11 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet: initialT
                     </div>{/* end rounded-xl border */}
                   </div>{/* end space-y-4 */}
                 </section>
+
+                <div className="py-2">
+                  {/* Mid Content Ad (Visible on all screen sizes, responsive) */}
+                  <DisplayAd slot="8191172163" format="auto" />
+                </div>
 
                 {/* ── SEO Rich Content ── */}
                 <section className="space-y-5">
@@ -1233,6 +1248,9 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet: initialT
 
             {/* Quick explore links */}
             <QuickLinksSidebar movie={movie} />
+
+            {/* Sidebar Ad (Visible on all screen sizes, responsive) */}
+            <DisplayAd slot="8191172163" format="auto" />
 
             {/* Related blogs — server-fetched, always populated */}
             <RelatedBlogsSidebar blogs={relatedBlogs} movieTitle={movie.title} />

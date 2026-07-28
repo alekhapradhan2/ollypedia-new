@@ -1027,6 +1027,11 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
         </nav>
       </div>
 
+      {/* ── Top Content Ad (Visible on all screen sizes, responsive) ── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+        <DisplayAd slot="8191172163" format="auto" />
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
 
         {/* ══ MAIN CONTENT GRID ══ */}
@@ -1486,6 +1491,11 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               );
             })()}
 
+            <div className="py-2">
+              {/* Mid Content Ad (Visible on all screen sizes, responsive) */}
+              <DisplayAd slot="8191172163" format="auto" />
+            </div>
+
             {/* ── Songs ── */}
             {songs.length > 0 && (
               <section aria-label={`${movie.title} songs soundtrack`}>
@@ -1688,6 +1698,11 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   </div>
                 </div>
               )}
+
+              {/* Pre-FAQ Ad (Visible on all screen sizes, responsive) */}
+              <div className="py-2">
+                <DisplayAd slot="8191172163" format="auto" />
+              </div>
 
               {/* FAQ accordion */}
               <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-6">

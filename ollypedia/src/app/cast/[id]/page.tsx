@@ -13,6 +13,7 @@ import Movie from "@/models/Movie";
 import News from "@/models/News";
 import Blog from "@/models/Blog";
 import { buildMeta } from "@/lib/seo";
+import { DisplayAd } from "@/components/ads/DisplayAd";
 import {
   Film, Calendar, MapPin, User,
   ChevronRight, Award, Music, Play, Newspaper,
@@ -713,6 +714,9 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                 ))}
               </div>
             </div>
+            
+            {/* Sidebar Ad (Visible on all screen sizes, responsive) */}
+            <DisplayAd slot="8191172163" format="auto" />
 
             {/* Editorial credit */}
             <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-4 flex items-start gap-3">
@@ -743,6 +747,9 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                 />
               </div>
             </section>
+
+            {/* ── Main Content Ad ── */}
+            <DisplayAd slot="8191172163" format="auto" />
 
             {/* ── Filmography ── */}
             {movies.length > 0 && (
