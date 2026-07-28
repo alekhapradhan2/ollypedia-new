@@ -6,7 +6,7 @@ export function InFeedAd({ className = "" }: { className?: string }) {
   const { adLoaded, adUnfilled, insRef, pathname, isMounted } = useAdSense();
 
   return (
-    <div className={`w-full h-full min-h-[250px] overflow-hidden flex flex-col justify-center rounded-xl transition-all duration-700 ${className} ${adLoaded ? "bg-[#111111] border border-[#222]" : "bg-transparent"} ${adUnfilled ? "ad-unfilled" : ""}`}>
+    <div className={`w-full h-full min-h-[250px] overflow-hidden block rounded-xl transition-all duration-700 ${className} ${adLoaded ? "bg-[#111111] border border-[#222]" : "bg-transparent"} ${adUnfilled ? "ad-unfilled" : ""}`}>
       {isMounted && (
         <ins key={pathname}
              ref={insRef}

@@ -14,5 +14,5 @@ export function GlobalMultiplexWrapper() {
     return null;
   }
 
-  return <GlobalMultiplexAd />;
+  return <GlobalMultiplexAd key={pathname} />;
 }

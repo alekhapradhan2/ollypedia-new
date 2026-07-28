@@ -294,6 +294,11 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
             </section>
           )}
 
+          <div className="py-2">
+            {/* Mid Content Ad (Visible on all screen sizes, responsive) */}
+            <DisplayAd slot="8191172163" format="auto" />
+          </div>
+
           {/* Auto-generated FAQ */}
           <section>
             <h2 className="text-2xl font-bold text-white mb-6">Frequently Asked Questions</h2>
@@ -353,6 +358,9 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
               </Link>
             </div>
           )}
+          
+          {/* Sidebar Ad (Visible on all screen sizes, responsive) */}
+          <DisplayAd slot="8191172163" format="auto" />
         </div>
       </div>
     </main>
