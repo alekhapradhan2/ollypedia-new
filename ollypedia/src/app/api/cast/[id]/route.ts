@@ -27,7 +27,12 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
     // Get their movies
     const movies = await Movie.find(
-      { "cast.castId": castMember._id },
+      {
+        $or: [
+          { "cast.castId": castMember._id },
+          ...(Array.isArray(castMember.movies) && castMember.movies.length > 0 ? [{ _id: { $in: castMember.movies } }] : []),
+        ]
+      },
       "title slug posterUrl thumbnailUrl releaseDate genre verdict"
     ).sort({ releaseDate: -1 }).lean();
 

@@ -59,11 +59,19 @@ async function getCastMember(id: string) {
     await connectDB();
     const member: any = await Cast.findById(id).lean();
     if (!member) return null;
+
+    const escapedName = member.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
     const [movies, news, blogs] = await Promise.all([
       Movie.find(
-        { "cast.castId": member._id },
+        {
+          $or: [
+            { "cast.castId": member._id },
+            ...(Array.isArray(member.movies) && member.movies.length > 0 ? [{ _id: { $in: member.movies } }] : []),
+          ]
+        },
         "title slug posterUrl thumbnailUrl releaseDate genre verdict imdbRating cast"
-      ).sort({ releaseDate: -1 }).limit(30).lean(),
+      ).sort({ releaseDate: -1 }).lean(),
       News.find({ castId: member._id }).sort({ createdAt: -1 }).limit(12).lean(),
       Blog.find(
         {
@@ -73,8 +81,8 @@ async function getCastMember(id: string) {
               $or: [
                 { castIds: member._id },
                 { "castIds": String(member._id) },
-                { tags: { $regex: member.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } },
-                { title: { $regex: member.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } },
+                { tags: { $regex: escapedName, $options: "i" } },
+                { title: { $regex: escapedName, $options: "i" } },
               ],
             },
           ],
@@ -625,6 +633,11 @@ export default async function CastDetailPage({ params }: { params: { id: string 
           <ChevronRight className="w-3 h-3" />
           <span className="text-gray-300">{person.name}</span>
         </nav>
+
+        {/* ── Top Banner Ad ── */}
+        <div className="mb-8">
+          <DisplayAd slot="8191172163" format="horizontal" className="rounded-2xl border border-[#1f1f1f] bg-[#0d0d0d] p-2 overflow-hidden" />
+        </div>
 
         {/* ══ MAIN CONTENT GRID ══ */}
         <div className="grid lg:grid-cols-3 gap-8 items-start">
