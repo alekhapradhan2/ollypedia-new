@@ -57,7 +57,7 @@ export default function HTMLSitemap() {
           <ul className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {categories.map((cat) => (
               <li key={cat}>
-                <Link href={`/movies/${cat}`} className="text-blue-400 hover:underline capitalize">
+                <Link href={`/movies?genre=${cat}`} className="text-blue-400 hover:underline capitalize">
                   {cat} Movies
                 </Link>
               </li>

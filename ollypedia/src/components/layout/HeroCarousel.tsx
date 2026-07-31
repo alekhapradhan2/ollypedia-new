@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { formatReleaseDate } from "@/lib/dateUtils";
 
 // ── Helpers ─────────────────────────────────────────────────────────
 const extractYtId = (input: string | null | undefined) => {
@@ -19,8 +20,7 @@ const heroImage = (m: HeroMovie) => {
   const primaryVid = getPrimaryVideo(m);
   return m.thumbnailUrl || ytThumb(primaryVid?.ytId) || m.posterUrl || null;
 };
-const fmtDate = (d: string) =>
-  d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "";
+const fmtDate = (d: string) => formatReleaseDate(d, undefined, "short");
 
 function getPrimaryVideo(m: HeroMovie) {
   const vids = m.videos || [];

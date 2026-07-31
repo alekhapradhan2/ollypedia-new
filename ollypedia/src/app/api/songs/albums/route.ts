@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
+import { mongoDateExpr } from "@/lib/dateUtils";
 
 export async function GET(req: Request) {
   try {
@@ -24,18 +25,7 @@ export async function GET(req: Request) {
       ];
     }
 
-    const sortDateFallback = {
-      $cond: [
-        {
-          $and: [
-            { $ifNull: ["$releaseDate", false] },
-            { $ne: ["$releaseDate", ""] },
-          ],
-        },
-        { $toDate: "$releaseDate" },
-        null,
-      ],
-    };
+    const sortDateFallback = mongoDateExpr("$releaseDate", "1900-01-01");
 
     const movies = await Movie.aggregate([
       { $match: matchFilter },

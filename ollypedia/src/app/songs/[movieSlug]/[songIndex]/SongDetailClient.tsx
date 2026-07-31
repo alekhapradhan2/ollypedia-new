@@ -5,6 +5,7 @@ import type { MovieData, SongData } from "./types";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { formatReleaseDate } from "@/lib/dateUtils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function extractYtId(input?: string | null): string | null {
@@ -18,8 +19,8 @@ function extractYtId(input?: string | null): string | null {
 const ytThumb = (id?: string | null) =>
   id ? `https://img.youtube.com/vi/${extractYtId(id) || id}/mqdefault.jpg` : null;
 
-const fmtDate = (d?: string) =>
-  d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "";
+const fmtDate = (d?: string, precision?: string) =>
+  d ? formatReleaseDate(d, precision, "short") : "";
 
 const firstToken = (str?: string) => (str || "").split(/[,&\/]/)[0].trim().toLowerCase();
 

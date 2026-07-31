@@ -111,19 +111,22 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 // ─── Static params (top 100 for ISR) ─────────────────────────────────────────
 
 export async function generateStaticParams() {
-  await connectDB();
-  const movies = await Movie.find(
-    {
-      "media.videos.ytId": { $exists: true, $ne: "" },
-      slug: { $exists: true, $ne: "" },
-    },
-    "slug"
-  )
-    .sort({ updatedAt: -1 })
-    .limit(15) // Reduced limit to 15 to prevent memory overflow on Hostinger
-    .lean();
-
-  return movies.map((m: any) => ({ movieSlug: m.slug }));
+  try {
+    await connectDB();
+    const movies = await Movie.find(
+      {
+        "media.videos.ytId": { $exists: true, $ne: "" },
+        slug: { $exists: true, $ne: "" },
+      },
+      "slug"
+    )
+      .sort({ updatedAt: -1 })
+      .limit(15)
+      .lean();
+    return movies.map((m: any) => ({ movieSlug: m.slug }));
+  } catch (err) {
+    return [];
+  }
 }
 
 // ─── Helper components ────────────────────────────────────────────────────────

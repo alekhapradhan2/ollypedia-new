@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { TrendingUp, Calendar, IndianRupee, BarChart3, ChevronDown, ChevronUp, Film, Music, BookOpen, ExternalLink } from "lucide-react";
 import { DisplayAd } from "@/components/ads/DisplayAd";
+import { formatReleaseDate } from "@/lib/dateUtils";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api").replace(/\/$/, "");
 
@@ -111,9 +112,9 @@ function fmtINR(val: unknown): string {
   return `₹${n.toLocaleString("en-IN")}`;
 }
 
-function fmtDate(d?: string) {
+function fmtDate(d?: string, precision?: string) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  return formatReleaseDate(d, precision, "short") || "—";
 }
 
 function toSongSlug(str?: string): string {

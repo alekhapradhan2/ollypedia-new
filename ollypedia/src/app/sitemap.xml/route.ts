@@ -242,17 +242,9 @@ export async function GET() {
       entries.push(urlEntry(`${SITE_URL}/blog/${b.slug}`, lastmod, freq, pri));
     });
 
-    // ── News articles ──────────────────────────────────────────────────────
-    const newsItems = await News.find(
-      {},
-      "slug _id updatedAt createdAt"
-    ).lean() as any[];
-
-    newsItems.forEach((n: any) => {
-      const newsSlug = n.slug?.trim() || String(n._id);
-      const lastmod  = safeDate(n.updatedAt ?? n.createdAt);
-      entries.push(urlEntry(`${SITE_URL}/news/${newsSlug}`, lastmod, "weekly", "0.75"));
-    });
+    // ── News articles ─────────────────────────────────────────────────────
+    // NOTE: Individual news article pages (/news/[slug]) have been removed.
+    // Only the /news listing page is submitted (already in static pages above).
 
   } catch (err) {
     console.error("Sitemap generation error:", err);

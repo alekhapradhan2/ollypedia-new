@@ -19,6 +19,7 @@ import {
   fmtDate,
   type TrailerMovieDoc,
 } from "@/lib/trailerSeo";
+import { mongoDateExpr } from "@/lib/dateUtils";
 import { TrailersClient } from "@/components/trailers/TrailersClient";
 import { TrailerCard } from "@/components/trailers/TrailerCard";
 import { AnimatedWord, AnimatedWordSection } from "@/components/trailers/AnimatedWord";
@@ -93,18 +94,7 @@ async function fetchUpcomingWithVideo(): Promise<TrailerMovieDoc[]> {
             0,
           ],
         },
-        _releaseDateObj: {
-          $cond: [
-            {
-              $and: [
-                { $ifNull: ["$releaseDate", false] },
-                { $ne: ["$releaseDate", ""] },
-              ],
-            },
-            { $toDate: "$releaseDate" },
-            null,
-          ],
-        },
+        _releaseDateObj: mongoDateExpr("$releaseDate", "9999-12-31"),
       },
     },
     // Future dated movies first (soonest first), then TBA
@@ -134,7 +124,7 @@ async function fetchLatestTrailers(): Promise<TrailerMovieDoc[]> {
     { $project: { reviews: 0, story: 0 } },
     {
       $addFields: {
-        _releaseDateObj: { $toDate: "$releaseDate" },
+        _releaseDateObj: mongoDateExpr("$releaseDate", "1900-01-01"),
       },
     },
     // Strict descending by release date
@@ -177,18 +167,7 @@ async function fetchAllWithVideo(page = 1, limit = 20): Promise<{ movies: Traile
               0,
             ],
           },
-          _releaseDateObj: {
-            $cond: [
-              {
-                $and: [
-                  { $ifNull: ["$releaseDate", false] },
-                  { $ne: ["$releaseDate", ""] },
-                ],
-              },
-              { $toDate: "$releaseDate" },
-              null,
-            ],
-          },
+        _releaseDateObj: mongoDateExpr("$releaseDate", "1900-01-01"),
         },
       },
       // Released movies first (newest release date), then TBA/upcoming last

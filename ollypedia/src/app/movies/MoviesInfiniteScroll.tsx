@@ -86,9 +86,7 @@ export function MoviesInfiniteScroll({
           {movies.map((m: any, idx: number) => (
             <React.Fragment key={`${m._id}-${idx}`}>
               <div className={idx >= initialMovies.length ? "animate-zoom-in" : ""}>
-                <LoadingCard borderRadius={12}>
-                  <MovieCard movie={m} />
-                </LoadingCard>
+                <MovieCard movie={m} />
               </div>
 
               {/* ── Native In-feed Ad after every 7th card ── */}
