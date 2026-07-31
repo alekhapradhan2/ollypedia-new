@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "NODE_OPTIONS='--max-old-space-size=400' next start",
+    "start": "NODE_OPTIONS=--max-old-space-size=350 next start",
     "lint": "next lint",
     "seed": "node scripts/seed.js"
   },
