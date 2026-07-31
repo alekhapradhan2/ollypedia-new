@@ -19,6 +19,7 @@ import DidYouKnow, { type TriviaCard } from "@/components/home/DidYouKnow";
 import { TRIVIA_EMOJIS } from "@/lib/trivia-constants";
 import { InFeedAd } from "@/components/ads/InFeedAd";
 import { DisplayAd } from "@/components/ads/DisplayAd";
+import { formatReleaseDate, mongoDateExpr } from "@/lib/dateUtils";
 
 export const revalidate = 600;
 
@@ -53,10 +54,8 @@ function isLastMonth(d: string | undefined) {
   const lm = new Date(_now.getFullYear(), _now.getMonth() - 1, 1);
   return dt.getMonth() === lm.getMonth() && dt.getFullYear() === lm.getFullYear();
 }
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric", month: "short", year: "numeric",
-  });
+function fmtDate(iso: string, precision?: string) {
+  return formatReleaseDate(iso, precision, "short");
 }
 
 // ── Box office helpers (same as /box-office/page.tsx) ────────────
@@ -102,16 +101,7 @@ async function getHomeData() {
               0,
             ],
           },
-          // Safe date conversion: replace null or "" with a far-future sentinel
-          _releaseDateObj: {
-            $toDate: {
-              $cond: [
-                { $and: [{ $ifNull: ["$releaseDate", false] }, { $ne: ["$releaseDate", ""] }] },
-                "$releaseDate",
-                "9999-12-31",
-              ],
-            },
-          },
+          _releaseDateObj: mongoDateExpr("$releaseDate", "9999-12-31"),
         },
       },
       // _hasDated desc (dated first), then by date asc (soonest first), TBA last
@@ -501,7 +491,7 @@ export default async function HomePage() {
                       {/* Title overlay */}
                       <div className="absolute bottom-0 left-0 right-0 p-5">
                         <p className="text-xs text-orange-400 font-semibold mb-1">
-                          {m.releaseDate ? new Date(m.releaseDate).toLocaleDateString("en-IN", { day:"numeric", month:"short", year:"numeric" }) : ""}
+                          {m.releaseDate ? formatReleaseDate(m.releaseDate, m.releaseDatePrecision, "short") : ""}
                           {(m.genre || []).length > 0 && ` · ${(m.genre as string[]).slice(0,2).join(", ")}`}
                         </p>
                         <h2 className="font-display text-lg sm:text-xl lg:text-2xl font-bold text-white leading-snug group-hover:text-orange-300 transition-colors">
@@ -601,7 +591,7 @@ export default async function HomePage() {
                           {m.title}
                         </h3>
                         <p className="text-[11px] text-gray-500 mt-0.5">
-                          {m.releaseDate ? new Date(m.releaseDate).toLocaleDateString("en-IN", { day:"numeric", month:"short", year:"numeric" }) : ""}
+                          {m.releaseDate ? formatReleaseDate(m.releaseDate, m.releaseDatePrecision, "short") : ""}
                         </p>
                         {/* Verdict + formatted total from boxOfficeDays */}
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -732,7 +722,7 @@ export default async function HomePage() {
                           </h3>
                           <p className="text-[11px] text-gray-500 mb-3">
                             {weekTop.releaseDate
-                              ? new Date(weekTop.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+                              ? formatReleaseDate(weekTop.releaseDate, weekTop.releaseDatePrecision, "short")
                               : ""}
                           </p>
                           <p className="text-2xl font-black text-orange-400 leading-none">
@@ -806,7 +796,7 @@ export default async function HomePage() {
                             </p>
                             <p className="text-[10px] text-gray-600 mt-0.5">
                               {m.releaseDate
-                                ? new Date(m.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+                                ? formatReleaseDate(m.releaseDate, m.releaseDatePrecision, "short")
                                 : ""}
                               {days > 0 ? ` · ${days}d` : ""}
                             </p>
@@ -894,7 +884,7 @@ export default async function HomePage() {
                     const released  = rdStr ? new Date(rdStr) <= _now : false;
                     const isToday   = rdStr ? new Date(rdStr).toDateString() === _now.toDateString() : false;
                     const dateLabel = rdStr
-                      ? (isRe ? "Re-Release: " : "") + new Date(rdStr).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+                      ? (isRe ? "Re-Release: " : "") + formatReleaseDate(rdStr, isRe ? m.reReleaseDatePrecision : m.releaseDatePrecision, "short")
                       : "TBA";
                     const hasVerdict = m.verdict && !["Upcoming","Released",""].includes(m.verdict);
 

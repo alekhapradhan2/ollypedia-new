@@ -7,6 +7,8 @@ export interface SongData {
   lyrics?: string;
   description?: string;
   thumbnailUrl?: string;
+  duration?: string;   // ISO 8601 duration e.g. "PT3M45S" — used in MusicRecording & VideoObject schemas
+  slug?: string;       // URL-safe song slug — used to build 3-segment canonical URLs
 }
 
 export interface MovieData {

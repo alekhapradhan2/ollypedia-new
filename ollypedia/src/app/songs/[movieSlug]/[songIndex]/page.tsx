@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
-import { buildMeta } from "@/lib/seo";
+import { buildSongMeta, generateSongJsonLd } from "@/lib/songSeo";
 import { SongDetailClient } from "./SongDetailClient";
 import type { MovieData, SongData } from "./types";
 
@@ -11,21 +11,25 @@ export const revalidate = 600;
 export const dynamicParams = true;
 
 export async function generateStaticParams() {
-  await connectDB();
-  const rows: { movieSlug: string; songIndex: string }[] = [];
-  const movies = await (Movie as any)
-    .find({ "media.songs.0": { $exists: true } }, "slug media.songs._id")
-    .sort({ releaseDate: -1 })
-    .limit(5)
-    .lean();
-  for (const m of movies) {
-    const count = m.media?.songs?.length || 0;
-    for (let i = 0; i < count && rows.length < 15; i++) {
-      rows.push({ movieSlug: m.slug || String(m._id), songIndex: String(i) });
+  try {
+    await connectDB();
+    const rows: { movieSlug: string; songIndex: string }[] = [];
+    const movies = await (Movie as any)
+      .find({ "media.songs.0": { $exists: true } }, "slug media.songs._id")
+      .sort({ releaseDate: -1 })
+      .limit(5)
+      .lean();
+    for (const m of movies) {
+      const count = m.media?.songs?.length || 0;
+      for (let i = 0; i < count && rows.length < 15; i++) {
+        rows.push({ movieSlug: m.slug || String(m._id), songIndex: String(i) });
+      }
+      if (rows.length >= 15) break;
     }
-    if (rows.length >= 15) break;
+    return rows;
+  } catch (err) {
+    return [];
   }
-  return rows;
 }
 
 // Re-export for [songSlug]/page.tsx to import
@@ -60,64 +64,29 @@ export async function generateMetadata({
   const song  = movie?.media?.songs?.[idx];
 
   if (!movie || !song) {
-    return buildMeta({
+    return {
       title: "Song Not Found – Ollypedia",
       description: "The requested Odia song could not be found.",
-      url: `/songs/${params.movieSlug}/${params.songIndex}`,
-    });
+      robots: { index: false, follow: false },
+    };
   }
 
-  const year      = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
-  const singerStr = song.singer ? ` by ${song.singer}` : "";
-  const mdStr     = song.musicDirector ? ` | Music: ${song.musicDirector}` : "";
-  const thumb     = song.thumbnailUrl
-    || (song.ytId ? `https://img.youtube.com/vi/${song.ytId}/hqdefault.jpg` : null)
-    || movie.posterUrl;
-
-  const title       = `${song.title}${singerStr} – ${movie.title}${year ? ` (${year})` : ""} Odia Song`;
-  const description = [
-    `Listen to "${song.title}"${singerStr} from the Odia film "${movie.title}"${year ? ` (${year})` : ""}.`,
-    song.lyrics?.trim() ? " Read the full lyrics." : "",
-    song.description ? ` ${song.description.slice(0, 120)}` : "",
-    ` ${mdStr}. Watch on YouTube, explore the full playlist and related Odia songs on Ollypedia.`,
-  ].join("").replace(/\s+/g, " ").trim();
-
-  const keywords = [
-    song.title,
-    `${song.title} lyrics`,
-    `${song.title} song`,
-    song.singer && `${song.singer} songs`,
-    song.musicDirector && `${song.musicDirector} music`,
-    `${movie.title} songs`,
-    `${movie.title} album`,
-    "Odia song",
-    "Ollywood song",
-    "Odia film song",
-    year && `Odia songs ${year}`,
-    ...(movie.genre || []).map((g: string) => `${g} Odia film`),
-  ].filter(Boolean) as string[];
-
-  const url = `/songs/${movie.slug}/${idx}`;
-
-  return {
-    ...buildMeta({ title, description, keywords, url }),
-    openGraph: {
-      title,
-      description,
-      url: `${SITE_URL}${url}`,
-      type: "music.song",
-      images: thumb ? [{ url: thumb, width: 1280, height: 720, alt: song.title }] : [],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: thumb ? [thumb] : [],
-    },
-    alternates: {
-      canonical: `${SITE_URL}${url}`,
-    },
-  };
+  // Delegate to the dedicated songSeo module
+  // buildSongMeta generates canonical with songSlug (3-segment URL) matching sitemap format
+  return buildSongMeta({
+    title: song.title || `Song ${idx + 1}`,
+    singer: song.singer,
+    musicDirector: song.musicDirector,
+    lyricist: song.lyricist,
+    duration: song.duration,
+    ytId: song.ytId,
+    movieTitle: movie.title,
+    movieSlug: movie.slug || String(movie._id),
+    posterUrl: movie.posterUrl,
+    releaseDate: movie.releaseDate,
+    songIndex: idx,
+    songSlug: song.slug || undefined,
+  });
 }
 
 export default async function SongDetailPage({
@@ -135,62 +104,31 @@ export default async function SongDetailPage({
 
   const relatedMovies = await getRelatedMovies(movie);
 
-  const thumb = song.thumbnailUrl
-    || (song.ytId ? `https://img.youtube.com/vi/${song.ytId}/hqdefault.jpg` : null)
-    || movie.posterUrl;
-  const year  = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : undefined;
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "MusicRecording",
-        "@id": `${SITE_URL}/songs/${movie.slug}/${idx}#song`,
-        "name": song.title,
-        "description": song.description || `${song.title} is a song from the Odia film ${movie.title}${year ? ` (${year})` : ""}.`,
-        ...(song.singer && { "byArtist": { "@type": "MusicGroup", "name": song.singer } }),
-        ...(thumb && { "thumbnailUrl": thumb }),
-        ...(song.ytId && {
-          "url": `https://www.youtube.com/watch?v=${song.ytId}`,
-          "sameAs": `https://www.youtube.com/watch?v=${song.ytId}`,
-        }),
-        "inAlbum": {
-          "@type": "MusicAlbum",
-          "name": `${movie.title} Original Soundtrack`,
-          "byArtist": song.musicDirector
-            ? { "@type": "Person", "name": song.musicDirector }
-            : undefined,
-        },
-      },
-      {
-        "@type": "MusicAlbum",
-        "name": `${movie.title} Original Soundtrack`,
-        "numTracks": movie.media.songs.length,
-        "track": movie.media.songs.map((s: any, i: number) => ({
-          "@type": "MusicRecording",
-          "name": s.title,
-          "url": `${SITE_URL}/songs/${movie.slug}/${i}`,
-          ...(s.ytId && { "sameAs": `https://www.youtube.com/watch?v=${s.ytId}` }),
-        })),
-      },
-      {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "Home",      "item": `${SITE_URL}/` },
-          { "@type": "ListItem", "position": 2, "name": "Songs",     "item": `${SITE_URL}/songs` },
-          { "@type": "ListItem", "position": 3, "name": movie.title, "item": `${SITE_URL}/movie/${movie.slug}` },
-          { "@type": "ListItem", "position": 4, "name": song.title,  "item": `${SITE_URL}/songs/${movie.slug}/${idx}` },
-        ],
-      },
-    ],
-  };
+  // Use generateSongJsonLd from songSeo.ts — includes VideoObject for the YouTube embed
+  const jsonLdSchemas = generateSongJsonLd({
+    title: song.title || `Song ${idx + 1}`,
+    singer: song.singer,
+    musicDirector: song.musicDirector,
+    lyricist: song.lyricist,
+    duration: song.duration,
+    ytId: song.ytId,
+    movieTitle: movie.title,
+    movieSlug: movie.slug || String(movie._id),
+    posterUrl: movie.posterUrl,
+    releaseDate: movie.releaseDate,
+    songIndex: idx,
+    songSlug: song.slug || undefined,
+  });
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      {jsonLdSchemas.map((schema: any, i: number) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      ))}
       <SongDetailClient
         movie={movie}
         initialSongIndex={idx}

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
+import { mongoDateExpr } from "@/lib/dateUtils";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
@@ -40,9 +43,7 @@ export async function GET(req: NextRequest) {
           {
             $addFields: {
               _hasDated: { $cond: [hasRealDate("$releaseDate"), 1, 0] },
-              _releaseDateObj: {
-                $toDate: { $cond: [hasRealDate("$releaseDate"), "$releaseDate", "9999-12-31"] },
-              },
+              _releaseDateObj: mongoDateExpr("$releaseDate", "9999-12-31"),
             },
           },
           { $sort: { _hasDated: -1, _releaseDateObj: 1 } },
@@ -58,9 +59,7 @@ export async function GET(req: NextRequest) {
           { $project: { reviews: 0 } },
           {
             $addFields: {
-              _releaseDateObj: {
-                $toDate: { $cond: [hasRealDate("$releaseDate"), "$releaseDate", "1900-01-01"] },
-              },
+              _releaseDateObj: mongoDateExpr("$releaseDate", "1900-01-01"),
             },
           },
           { $sort: { _releaseDateObj: -1, _id: -1 } },

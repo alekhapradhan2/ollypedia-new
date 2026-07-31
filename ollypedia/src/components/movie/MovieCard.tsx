@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Calendar, Star, Loader2 } from "lucide-react";
 import { PlatformLogo } from "@/components/ui/PlatformLogo";
 import { getPlatformInfo } from "@/lib/platforms";
+import { formatReleaseDate } from "@/lib/dateUtils";
 
 interface MovieCardProps {
   movie: {
@@ -48,12 +49,7 @@ export function MovieCard({ movie, variant = "portrait", hrefPrefix }: MovieCard
   const defaultHref = isOtt ? `/ott/${movie.slug || movie._id}` : `/movie/${movie.slug || movie._id}`;
   const href  = hrefPrefix ? `${hrefPrefix}/${movie.slug || movie._id}` : defaultHref;
   const image = movie.posterUrl || movie.thumbnailUrl || "/placeholder-movie.jpg";
-  const displayDate = (() => {
-    if (!movie.releaseDate || movie.releaseDate.trim() === "") return "TBA";
-    const d = new Date(movie.releaseDate);
-    if (isNaN(d.getTime())) return "TBA";
-    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-  })();
+  const displayDate = formatReleaseDate(movie.releaseDate, (movie as any).releaseDatePrecision, "short") || "TBA";
   const rating = movie.reviews?.length
     ? (movie.reviews.reduce((s, r) => s + (r.rating || 0), 0) / movie.reviews.length).toFixed(1)
     : movie.imdbRating || null;

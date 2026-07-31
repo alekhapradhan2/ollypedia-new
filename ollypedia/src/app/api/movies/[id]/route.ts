@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 
+export const dynamic = 'force-dynamic';
+
 function isOid(s: string) {
   return /^[a-f0-9]{24}$/i.test(s);
 }

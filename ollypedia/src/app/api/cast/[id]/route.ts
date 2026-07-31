@@ -3,6 +3,8 @@ import { connectDB } from "@/lib/db";
 import Cast from "@/models/Cast";
 import Movie from "@/models/Movie";
 
+export const dynamic = 'force-dynamic';
+
 function isOid(s: string) {
   return /^[a-f0-9]{24}$/i.test(s);
 }

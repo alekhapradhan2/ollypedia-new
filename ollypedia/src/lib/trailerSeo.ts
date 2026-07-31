@@ -4,6 +4,7 @@
 // Used by: /trailers and /trailers/[movieSlug] pages
 
 import { buildMeta, SITE_URL } from "./seo";
+import { formatReleaseDate, getReleaseYear } from "./dateUtils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -93,18 +94,14 @@ export function hasAnyVideo(m: TrailerMovieDoc) {
   return !!getPrimaryVideo(m);
 }
 
-export function fmtDate(iso?: string): string {
+export function fmtDate(iso?: string, precision?: string): string {
   if (!iso) return "TBA";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "TBA";
-  return d.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+  return formatReleaseDate(iso, precision, "long") || "TBA";
 }
 
 export function getTrailerYear(m: TrailerMovieDoc): number {
-  if (m.releaseDate) {
-    const d = new Date(m.releaseDate);
-    if (!isNaN(d.getTime())) return d.getFullYear();
-  }
+  const y = getReleaseYear(m.releaseDate);
+  if (y) return parseInt(y, 10);
   return new Date().getFullYear();
 }
 

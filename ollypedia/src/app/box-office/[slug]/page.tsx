@@ -9,6 +9,7 @@ import { connectDB }      from "@/lib/db";
 import Movie              from "@/models/Movie";
 import Blog               from "@/models/Blog";
 import BoxOfficeClient    from "./BoxOfficeClient";
+import { buildBoxOfficeMeta, generateBoxOfficeJsonLd } from "@/lib/boxOfficeSeo";
 
 export const revalidate    = 3600;        // 1hr — BO data updates once/day; 60s was hammering DB
 export const dynamicParams = true;
@@ -53,16 +54,19 @@ function fmtINR(val: unknown): string {
 // ─── Static params ────────────────────────────────────────────────────────────
 
 export async function generateStaticParams() {
-  await connectDB();
-  // Fetch the 15 most recent box-office movies to prevent memory overflow during build
-  const movies = await (Movie as any)
-    .find({ "boxOfficeDays.0": { $exists: true } }, "slug title")
-    .sort({ updatedAt: -1 })
-    .limit(15)
-    .lean();
-  return movies.map((m: any) => ({
-    slug: m.slug || String(m.title || "").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
-  }));
+  try {
+    await connectDB();
+    const movies = await (Movie as any)
+      .find({ "boxOfficeDays.0": { $exists: true } }, "slug title")
+      .sort({ updatedAt: -1 })
+      .limit(15)
+      .lean();
+    return movies.map((m: any) => ({
+      slug: m.slug || String(m.title || "").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
+    }));
+  } catch (err) {
+    return [];
+  }
 }
 
 // ─── Data fetch ───────────────────────────────────────────────────────────────
@@ -130,137 +134,18 @@ export async function generateMetadata({
   const totalNet   = days.reduce((s: number, d: any) => s + parseNum(d.net),   0);
   const totalGross = days.reduce((s: number, d: any) => s + parseNum(d.gross), 0);
   const lastDay    = days[days.length - 1]?.day || 0;
-  const year       = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
-  const day1Net    = days[0] ? parseNum(days[0].net) : 0;
-
-  // SEO title: movie name first → highest relevance signal
-  const title = lastDay
-    ? `${movie.title} Box Office Collection Day ${lastDay} — ${fmtINR(totalNet)} Net`
-    : `${movie.title} Box Office Collection | Odia Film`;
-
-  const description = totalNet
-    ? `${movie.title}${year ? ` (${year})` : ""} box office: ₹ ${fmtINR(totalNet)} net, ${fmtINR(totalGross)} gross in ${lastDay} days. Day 1 collection: ${fmtINR(day1Net)}. Full day-wise Odia (Ollywood) box office data on Ollypedia.`
-    : `Track ${movie.title} day-wise box office collection — net and gross earnings updated daily. Odia (Ollywood) cinema box office data on Ollypedia.`;
-
-  const image     = movie.bannerUrl || movie.posterUrl || `${SITE_URL}/default.jpg`;
-  const canonical = `${SITE_URL}/box-office/${slug}`;
-
-  // ★ Comprehensive keyword set — movie name first in every variant
-  const keywords = [
-    // ── Core box-office keywords (movie name first = highest relevance) ──
-    `${movie.title} box office collection`,
-    `${movie.title} box office`,
-    `${movie.title} collection`,
-    `${movie.title} total collection`,
-    `${movie.title} day wise collection`,
-    `${movie.title} 1st day collection`,
-    `${movie.title} first day collection`,
-    `${movie.title} first week collection`,
-    `${movie.title} opening day collection`,
-    `${movie.title} net collection`,
-    `${movie.title} gross collection`,
-    `${movie.title} worldwide collection`,
-    `${movie.title} earning`,
-
-    // ── Movie intent keywords ──────────────────────────────────────────────
-    `${movie.title} review`,
-    `${movie.title} full movie details`,
-    `${movie.title} story`,
-    `${movie.title} cast and crew`,
-    `${movie.title} cast`,
-    `${movie.title} director`,
-    `${movie.title} release date`,
-    `${movie.title} trailer`,
-    `${movie.title} songs`,
-    `${movie.title} movie`,
-    `${movie.title} film`,
-    `${movie.title} rating`,
-    `${movie.title} public review`,
-    `${movie.title} worth watching`,
-    `${movie.title} movie review`,
-    `${movie.title} movie story`,
-    `${movie.title} movie cast`,
-    `${movie.title} full movie review`,
-    `${movie.title} movie details`,
-    `${movie.title} movie rating ollypedia`,
-
-    // ── Regional + language ────────────────────────────────────────────────
-    `${movie.title} odia movie`,
-    `${movie.title} odia film`,
-    `${movie.title} ollywood`,
-    `${movie.title} ollywood movie`,
-    `${movie.title} odia cinema`,
-    `${movie.title} movie in odisha`,
-    `${movie.title} bhubaneswar release`,
-    `odia movie ${movie.title} review`,
-
-    // ── Long-tail intent ───────────────────────────────────────────────────
-    `${movie.title} movie review in odia`,
-    `${movie.title} movie public review`,
-    `${movie.title} movie worth watching`,
-    `${movie.title} movie rating ollypedia`,
-    year ? `latest odia movie ${movie.title} review ${year}` : "",
-    year ? `${movie.title} ${year} box office` : "",
-    year ? `${movie.title} ${year} collection` : "",
-    year ? `${movie.title} ${year} review` : "",
-    year ? `${movie.title} odia movie ${year}` : "",
-
-    // ── Director-based ────────────────────────────────────────────────────
-    movie.director ? `${movie.director} movie collection` : "",
-    movie.director ? `${movie.director} odia film` : "",
-    movie.director ? `${movie.director} new movie` : "",
-    movie.director ? `${movie.director} movie review` : "",
-
-    // ── General Odia box office ───────────────────────────────────────────
-    "odia box office collection",
-    "ollywood box office",
-    "odia film collection",
-    "odia movie box office",
-    "odia film box office report",
-    "ollywood hit movie",
-    year ? `odia movies ${year}` : "",
-    year ? `ollywood ${year} collection` : "",
-    year ? `odia box office ${year}` : "",
-    year ? `best odia movie ${year}` : "",
-
-    // ── Cast-based keywords — actor name + "new movie collection" = top search type ──
-    ...(movie.cast || []).slice(0, 4).flatMap((c: any) => [
-      `${c.name} new movie`,
-      `${c.name} new movie collection`,
-      `${c.name} movie ${year || ""}`.trim(),
-      `${c.name} odia movie`,
-    ]),
-
-    // ── Genre-based ──────────────────────────────────────────────────────
-    ...(movie.genre || []).map((g: string) => `${g} odia film box office`),
-    ...(movie.genre || []).map((g: string) => `${g} ollywood movie`),
-  ].filter(Boolean) as string[];
-
-  return {
-    title,
-    description,
-    keywords,
-    alternates: { canonical },
-    robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
-    openGraph: {
-      title,
-      description,
-      url:           canonical,
-      siteName:      "Ollypedia",
-      type:          "article",
-      locale:        "en_IN",
-      publishedTime: movie.createdAt ? new Date(movie.createdAt).toISOString() : undefined,
-      modifiedTime:  movie.updatedAt ? new Date(movie.updatedAt).toISOString() : undefined,
-      images: [{ url: image, width: 1200, height: 630, alt: `${movie.title} Box Office Collection` }],
-    },
-    twitter: {
-      card:        "summary_large_image",
-      title,
-      description,
-      site:        "@ollypedia",
-      images:      [image],
-    },
-  };
+  // Delegate to boxOfficeSeo module — clean, focused keyword set (no SpamBrain risk)
+  return buildBoxOfficeMeta({
+    movieTitle: movie.title,
+    movieSlug: slug,
+    totalNet: totalNet > 0 ? fmtINR(totalNet) : undefined,
+    totalGross: totalGross > 0 ? fmtINR(totalGross) : undefined,
+    day1Collection: days[0] ? fmtINR(parseNum(days[0].net)) : undefined,
+    verdict: movie.verdict,
+    releaseDate: movie.releaseDate,
+    daysCount: lastDay,
+    posterUrl: movie.bannerUrl || movie.posterUrl,
+  });
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ import { DisplayAd } from "@/components/ads/DisplayAd";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { AlbumCard } from "@/components/songs/AlbumCard";
 import { SongsClient } from "@/components/songs/SongsClient";
+import { mongoDateExpr } from "@/lib/dateUtils";
 
 export const revalidate = 600;
 
@@ -33,18 +34,7 @@ async function getAlbums() {
 
   const hasSongsFilter = { "media.songs.0": { $exists: true } };
 
-  const sortDateFallback = {
-    $cond: [
-      {
-        $and: [
-          { $ifNull: ["$releaseDate", false] },
-          { $ne: ["$releaseDate", ""] },
-        ],
-      },
-      { $toDate: "$releaseDate" },
-      null,
-    ],
-  };
+  const sortDateFallback = mongoDateExpr("$releaseDate", "1900-01-01");
 
   const [upcoming, latest, allMovies] = await Promise.all([
     // Upcoming

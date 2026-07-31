@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
+import { mongoDateExpr } from "@/lib/dateUtils";
 
 export const dynamic = 'force-dynamic';
 
@@ -108,9 +109,7 @@ export async function GET(req: NextRequest) {
       pipeline.push(
         {
           $addFields: {
-            _releaseDateObj: {
-              $cond: [hasRealDate("$releaseDate"), { $toDate: "$releaseDate" }, null],
-            },
+            _releaseDateObj: mongoDateExpr("$releaseDate", "1900-01-01"),
           },
         },
         { $sort: { _releaseDateObj: 1, _id: -1 } }
@@ -150,18 +149,7 @@ export async function GET(req: NextRequest) {
                 0,
               ],
             },
-            _releaseDateObj: {
-              $cond: [
-                {
-                  $and: [
-                    { $ifNull: ["$releaseDate", false] },
-                    { $ne: ["$releaseDate", ""] },
-                  ],
-                },
-                { $toDate: "$releaseDate" },
-                null,
-              ],
-            },
+            _releaseDateObj: mongoDateExpr("$releaseDate", "1900-01-01"),
           },
         },
         { $sort: { _isReleased: -1, _releaseDateObj: -1, _id: -1 } }

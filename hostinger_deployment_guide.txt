@@ -1,0 +1,117 @@
+================================================================================
+HOSTINGER DEPLOYMENT GUIDE FOR OLLYPEDIA (NEXT.JS FULL-STACK)
+================================================================================
+
+Based on the analysis of your codebase (`ollypedia-new/ollypedia`), your application is a Full-Stack Next.js application. It uses:
+- Frontend: Next.js (App Router), React, TailwindCSS
+- Backend: Next.js API Routes (`src/app/api`)
+- Database: MongoDB (via `mongoose`)
+
+--------------------------------------------------------------------------------
+1. WHICH HOSTING PLAN TO CHOOSE? (WEB HOSTING vs VPS)
+--------------------------------------------------------------------------------
+RECOMMENDATION: HOSTINGER VPS HOSTING (KVM 1 or KVM 2 plan)
+
+Why VPS?
+- Your app requires a running Node.js server (`npm run start`).
+- Standard Shared Web Hosting (like the Single or Premium plans in your screenshot) typically does not support running continuous Node.js background processes or installing custom software.
+- A VPS (Virtual Private Server) gives you "root" access, allowing you to install Node.js, PM2 (process manager), Nginx (reverse proxy), and properly run your Next.js application.
+
+--------------------------------------------------------------------------------
+2. SYSTEM REQUIREMENTS FOR VPS
+--------------------------------------------------------------------------------
+- OS: Ubuntu 22.04 or 24.04 (Standard for VPS)
+- RAM: At least 2GB-4GB (KVM 1 or KVM 2 plan is perfect)
+- Storage: 50GB NVMe is more than enough.
+- Node.js: Version 18.x or 20.x
+- Database: MongoDB (We recommend using free MongoDB Atlas cloud database instead of hosting it on the VPS to save RAM).
+
+--------------------------------------------------------------------------------
+3. STEP-BY-STEP DEPLOYMENT GUIDE
+--------------------------------------------------------------------------------
+
+STEP 1: BUY AND SETUP VPS
+1. Go to Hostinger and purchase a VPS plan (KVM 1 or KVM 2).
+2. Choose Ubuntu (22.04 or 24.04) as the operating system.
+3. Once ready, you will get an IP address, username (usually 'root'), and password.
+
+STEP 2: CONNECT TO YOUR VPS
+- Open your terminal (or command prompt) and run:
+  ssh root@YOUR_VPS_IP
+- Enter your password when prompted.
+
+STEP 3: INSTALL REQUIRED SOFTWARE ON VPS
+Run the following commands on your VPS terminal:
+1. Update packages:
+   apt update && apt upgrade -y
+2. Install Node.js (Version 20):
+   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+   apt install -y nodejs
+3. Install Git (to clone your code):
+   apt install -y git
+4. Install Nginx (to route traffic to your domain):
+   apt install -y nginx
+5. Install PM2 (to keep your app running forever):
+   npm install -g pm2
+
+STEP 4: CLONE YOUR CODEBASE
+1. Create a folder for your app:
+   mkdir /var/www && cd /var/www
+2. Clone your repository:
+   git clone https://github.com/alekhapradhan2/ollypedia-new.git
+3. Go into the project directory:
+   cd ollypedia-new/ollypedia
+
+STEP 5: ENVIRONMENT VARIABLES
+1. Create a .env file:
+   nano .env
+2. Add your environment variables (like MongoDB URI, API keys, etc.):
+   MONGODB_URI=your_mongodb_atlas_connection_string
+   (Save and exit: Press Ctrl+X, then Y, then Enter)
+
+STEP 6: BUILD AND RUN THE APP
+1. Install dependencies:
+   npm install
+2. Build the Next.js app:
+   npm run build
+3. Start the app using PM2:
+   pm2 start npm --name "ollypedia" -- run start
+4. Save PM2 to start on server reboot:
+   pm2 startup
+   pm2 save
+
+STEP 7: CONFIGURE NGINX AND DOMAIN
+1. Create a new Nginx configuration file:
+   nano /etc/nginx/sites-available/ollypedia
+2. Paste the following configuration (replace 'yourdomain.com' with your actual domain):
+
+   server {
+       listen 80;
+       server_name yourdomain.com www.yourdomain.com;
+
+       location / {
+           proxy_pass http://localhost:3000;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_cache_bypass $http_upgrade;
+       }
+   }
+
+3. Enable the site and restart Nginx:
+   ln -s /etc/nginx/sites-available/ollypedia /etc/nginx/sites-enabled/
+   nginx -t
+   systemctl restart nginx
+
+STEP 8: ADD SSL CERTIFICATE (HTTPS)
+1. Install Certbot:
+   apt install -y certbot python3-certbot-nginx
+2. Generate SSL certificate:
+   certbot --nginx -d yourdomain.com -d www.yourdomain.com
+3. Follow the prompts to force HTTPS.
+
+--------------------------------------------------------------------------------
+CONCLUSION
+--------------------------------------------------------------------------------
+Your code is now running securely on a Hostinger VPS with Nginx as a reverse proxy, PM2 keeping the Node process alive, and SSL enabled.

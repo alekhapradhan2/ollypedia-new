@@ -1,6 +1,5 @@
-// app/movie/[slug]/page.tsx
-// Full redesign — improved readability, AdSense-ready SEO content, rich structured data
 import { SITE_URL } from "@/lib/seo";
+import { formatReleaseDate } from "@/lib/dateUtils";
 
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
@@ -9,7 +8,8 @@ import Link from "next/link";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 import Blog from "@/models/Blog";
-import { buildMeta, movieJsonLd, breadcrumbJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd } from "@/lib/seo";
+import { buildMovieMeta } from "@/lib/movieSeo";
 import { YouTubeEmbed }  from "@/components/ui/YouTubeEmbed";
 import { Breadcrumb }    from "@/components/ui/Breadcrumb";
 import { getPrimaryVideo } from "@/lib/trailerSeo";
@@ -44,11 +44,9 @@ function toSlug(str?: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-function fmtDate(iso?: string): string {
+function fmtDate(iso?: string, precision?: string): string {
   if (!iso) return "";
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric", month: "long", year: "numeric",
-  });
+  return formatReleaseDate(iso, precision, "long");
 }
 
 const OTT_LOGOS: Record<string, string> = {
@@ -305,100 +303,14 @@ async function getMovieBlogs(movieTitle: string) {
 // getMisspellings was removed — Google handles misspelling matching automatically.
 // Intentional misspellings in <meta keywords> trigger spam/keyword-stuffing penalties.
 
-// ─── Metadata ─────────────────────────────────────────────────────────────
+// ─── Metadata — delegates to movieSeo.ts ─────────────────────────────────────
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const movie = await getMovie(params.slug);
   if (!movie) return { robots: { index: false, follow: false } };
   if (!movie.title?.trim()) return { robots: { index: false, follow: false } };
 
-  const year      = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
-  const yearStr   = year ? ` (${year})` : "";
-
-  // OTT helpers for title/description
-  const ottPlatform = movie.ott?.platform || movie.streamingOn || "";
-  const ottDate     = movie.ott?.releaseDate || movie.ottReleaseDate || "";
-  const isTBA       = ottDate === "TBA";
-  const isOttLive   = !isTBA && (!ottDate || new Date(ottDate) <= new Date());
-  const isOttComing = !isTBA && !!ottDate && new Date(ottDate) > new Date();
-  const ottFmtDate  = (ottDate && ottDate !== "TBA") ? new Date(ottDate).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"}) : "";
-
-  // Dynamic title: append OTT info when available
-  const ottTitleSuffix = ottPlatform
-    ? isOttLive
-      ? ` | Now on ${ottPlatform}`
-      : isOttComing
-      ? ` | OTT ${ottFmtDate}`
-      : isTBA
-      ? ` | OTT Release Soon`
-      : ""
-    : "";
-  const title = `${movie.title}${yearStr} – Cast, Songs & Review${ottTitleSuffix}`;
-
-  // Dynamic description: weave in OTT info
-  const ottDescPart = ottPlatform
-    ? isOttLive
-      ? ` Now streaming on ${ottPlatform}.`
-      : isOttComing
-      ? ` OTT release on ${ottPlatform} from ${ottFmtDate}.`
-      : isTBA
-      ? ` OTT release on ${ottPlatform} — date to be announced.`
-      : ""
-    : "";
-  const description = (
-    movie.synopsis
-      ? movie.synopsis.slice(0, 130) + ottDescPart
-      : `Complete info about Odia film ${movie.title}${yearStr}${ottDescPart} Cast, songs, trailer, box office & reviews on Ollypedia.`
-  ).slice(0, 160);
-
-  const image     = movie.posterUrl || movie.thumbnailUrl || `${SITE_URL}/default.jpg`;
-  const canonical = `${SITE_URL}/movie/${movie.slug || movie._id}`;
-
-  // ── OTT keywords (trimmed — Google ignores meta keywords but SpamBrain
-  //    penalises excessive stuffing; keep only 3 essential OTT terms) ────────
-  const ottKw: string[] = ottPlatform
-    ? [
-        `${movie.title} ott release date`,
-        `${movie.title} ${ottPlatform}`,
-        `${movie.title} where to watch`,
-      ]
-    : [
-        `${movie.title} ott release date`,
-        `${movie.title} where to watch`,
-      ];
-
-  // ── Core keyword matrix ─────────────────────────────────────────────────────
-  const directorName = getDirectorFromCast(movie.cast || []) || movie.director;
-  const producerName = getProducerFromCast(movie.cast || []) || movie.producer;
-
-  // ── Trimmed keyword list (~15 terms max) ─────────────────────────────────
-  // Google ignores <meta keywords> for ranking. Keep a short, clean list
-  // to avoid SpamBrain penalties from keyword stuffing.
-  const keywords = [
-    movie.title,
-    `${movie.title} odia movie`,
-    `${movie.title} cast`,
-    `${movie.title} songs`,
-    `${movie.title} box office collection`,
-    year ? `${movie.title} ${year}` : null,
-    directorName ? `${directorName} odia film` : null,
-    "Odia movie", "Ollywood", "Odia cinema",
-    year ? `Ollywood ${year}` : null,
-    ...(movie.genre || []).slice(0, 2).map((g: string) => `${g} Odia film`),
-    ...ottKw,
-  ].filter(Boolean) as string[];
-
-  return {
-    title, description, keywords,
-    metadataBase: new URL(SITE_URL),
-    alternates: { canonical },
-    robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-snippet": -1, "max-image-preview": "large" } },
-    openGraph: {
-      title, description, url: canonical, siteName: "Ollypedia",
-      type: "video.movie",
-      images: [{ url: movie.bannerUrl || image, width: 1200, height: 630, alt: movie.title }],
-    },
-    twitter: { card: "summary_large_image", title, description, images: [image] },
-  };
+  // Delegate to the dedicated movieSeo module
+  return buildMovieMeta(movie);
 }
 
 // ─── JSON-LD helpers ──────────────────────────────────────────────────────
@@ -640,7 +552,9 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
       { name: movie.title, url: `/movie/${movie.slug || movie._id}` },
     ]),
     buildFaqJsonLd(movie, year, avgRating, songs, directorName, producerName),
-    ...(avgRating !== null ? [buildAggregateRatingJsonLd(movie, avgRating as number)] : []),
+    // NOTE: aggregateRating is now merged into enrichedMovieSchema above.
+    // buildAggregateRatingJsonLd removed — it emitted a duplicate @type:Movie
+    // entity for the same URL, which could confuse Google's entity resolution.
     ...(blogs.length > 0 ? [{
       "@context": "https://schema.org",
       "@type": "ItemList",
@@ -803,13 +717,13 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 {movie.releaseDate && (
                   <StatChip
                     label="Release"
-                    value={new Date(movie.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    value={formatReleaseDate(movie.releaseDate, movie.releaseDatePrecision, "short")}
                   />
                 )}
                 {movie.isReRelease && movie.reReleaseDate && (
                   <StatChip
                     label="Re-Release"
-                    value={new Date(movie.reReleaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    value={formatReleaseDate(movie.reReleaseDate, movie.reReleaseDatePrecision, "short")}
                     accent={true}
                   />
                 )}
@@ -1045,9 +959,9 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Info className="w-3.5 h-3.5" /> Movie Info
               </h2>
-              <InfoRow icon={Calendar}     label="Release Date"  value={fmtDate(movie.releaseDate) || (movie.releaseTBA ? "TBA" : undefined)} />
+              <InfoRow icon={Calendar}     label="Release Date"  value={fmtDate(movie.releaseDate, movie.releaseDatePrecision) || (movie.releaseTBA ? "TBA" : undefined)} />
               {movie.isReRelease && movie.reReleaseDate && (
-                <InfoRow icon={Calendar} label="Re-Release Date" value={fmtDate(movie.reReleaseDate)} />
+                <InfoRow icon={Calendar} label="Re-Release Date" value={fmtDate(movie.reReleaseDate, movie.reReleaseDatePrecision)} />
               )}
               <InfoRow icon={Clock}        label="Runtime"       value={movie.runtime} />
               <InfoRow icon={Globe}        label="Language"      value={movie.language || "Odia"} />
@@ -1733,7 +1647,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                     {
                       q: `What is the release date of ${movie.title}?`,
                       a: movie.releaseDate
-                        ? `${movie.title} was released on ${new Date(movie.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.`
+                        ? `${movie.title} was released on ${formatReleaseDate(movie.releaseDate, movie.releaseDatePrecision, "long")}.`
                         : movie.releaseTBA
                         ? `The release date of ${movie.title} is yet to be announced (TBA). Follow Ollypedia for the latest updates.`
                         : `Release date information for ${movie.title} is available on Ollypedia.`,

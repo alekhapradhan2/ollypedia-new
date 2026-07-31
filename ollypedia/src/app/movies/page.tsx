@@ -14,6 +14,7 @@ import {
   Clock, Flame, PlayCircle, BookOpen, Mic2,
 } from "lucide-react";
 import { DisplayAd } from "@/components/ads/DisplayAd";
+import { mongoDateExpr } from "@/lib/dateUtils";
 
 export const revalidate = 600;
 
@@ -105,9 +106,7 @@ async function getMovies({ genre, verdict, year, sort, page }: {
         {
           $addFields: {
             _hasDated: { $cond: [hasRealDate("$releaseDate"), 1, 0] },
-            _releaseDateObj: {
-              $toDate: { $cond: [hasRealDate("$releaseDate"), "$releaseDate", "9999-12-31"] },
-            },
+            _releaseDateObj: mongoDateExpr("$releaseDate", "9999-12-31"),
           },
         },
         { $sort: { _hasDated: -1, _releaseDateObj: 1 } },
@@ -126,9 +125,7 @@ async function getMovies({ genre, verdict, year, sort, page }: {
         { $project: { reviews: 0 } },
         {
           $addFields: {
-            _releaseDateObj: {
-              $toDate: { $cond: [hasRealDate("$releaseDate"), "$releaseDate", "1900-01-01"] },
-            },
+            _releaseDateObj: mongoDateExpr("$releaseDate", "1900-01-01"),
           },
         },
         { $sort: { _releaseDateObj: -1, _id: -1 } },
@@ -772,14 +769,7 @@ async function UpcomingStrip() {
             1, 0,
           ],
         },
-        _releaseDateObj: {
-          $toDate: {
-            $cond: [
-              { $and: [{ $ifNull: ["$releaseDate", false] }, { $ne: ["$releaseDate", ""] }] },
-              "$releaseDate", "9999-12-31",
-            ],
-          },
-        },
+        _releaseDateObj: mongoDateExpr("$releaseDate", "9999-12-31"),
       },
     },
     { $sort: { _hasDated: -1, _releaseDateObj: 1 } },
@@ -793,9 +783,7 @@ async function UpcomingStrip() {
       <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
         {upcoming.map((m: any) => (
           <div key={String(m._id)} className="flex-shrink-0 w-32 sm:w-36">
-            <LoadingCard borderRadius={10}>
-              <MovieCard movie={m} />
-            </LoadingCard>
+            <MovieCard movie={m} />
           </div>
         ))}
         <Link

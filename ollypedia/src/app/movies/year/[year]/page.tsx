@@ -13,6 +13,7 @@ import {
   BookOpen, HelpCircle, Globe, Award, Sparkles,
 } from "lucide-react";
 import { YearDropdown } from "./YearDropdown";
+import { formatReleaseDate, mongoDateExpr } from "@/lib/dateUtils";
 
 export const revalidate = 600;
 
@@ -165,23 +166,20 @@ function BreadcrumbJsonLd({ year }: { year: number }) {
 async function getMoviesByYear(year: number) {
   await connectDB();
 
-  const startDate = new Date(`${year}-01-01`);
-  const endDate   = new Date(`${year}-12-31T23:59:59`);
-  const currentYear = new Date().getFullYear();
+  const startDateStr = `${year}-01-01`;
+  const endDateStr   = `${year}-12-31`;
+  const currentYear  = new Date().getFullYear();
 
-  // For the current year we also include TBA movies (releaseTBA:true or
-  // releaseDate:"") that are marked Upcoming — they have no date yet but
-  // clearly belong to this year's slate.
+  const yearDateMatches = [
+    { releaseDate: { $regex: `^${year}` } },
+    { releaseDate: { $gte: startDateStr, $lte: endDateStr } },
+  ];
+
   const matchStage =
     year === currentYear
       ? {
           $or: [
-            {
-              releaseDate: {
-                $gte: startDate.toISOString().split("T")[0],
-                $lte: endDate.toISOString().split("T")[0],
-              },
-            },
+            ...yearDateMatches,
             { releaseTBA: true },
             {
               $and: [
@@ -192,10 +190,7 @@ async function getMoviesByYear(year: number) {
           ],
         }
       : {
-          releaseDate: {
-            $gte: startDate.toISOString().split("T")[0],
-            $lte: endDate.toISOString().split("T")[0],
-          },
+          $or: yearDateMatches,
         };
 
   const movies = await Movie.aggregate([
@@ -204,13 +199,7 @@ async function getMoviesByYear(year: number) {
     {
       $addFields: {
         // Guard against empty/null releaseDate (TBA movies) — sort them to the bottom
-        _releaseDateObj: {
-          $cond: {
-            if: { $and: [{ $ifNull: ["$releaseDate", false] }, { $ne: ["$releaseDate", ""] }] },
-            then: { $toDate: "$releaseDate" },
-            else: new Date("9999-12-31"),
-          },
-        },
+        _releaseDateObj: mongoDateExpr("$releaseDate", "9999-12-31"),
         // Resolve director: use top-level field first, then fall back to
         // the first cast/crew entry whose role contains "director" (case-insensitive)
         director: {
@@ -288,21 +277,7 @@ const VERDICT_CONFIG: Record<string, { color: string; icon: React.ElementType }>
   Upcoming:    { color: "text-sky-400    bg-sky-500/15    border-sky-500/30",    icon: Calendar },
 };
 
-// ─── Format release date ────────────────────────────────────────────────────────
-function formatReleaseDate(dateStr: string, isTBA?: boolean): string {
-  if (isTBA || !dateStr || dateStr.trim() === "") return "TBA";
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return "TBA";
-    return d.toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
-    return "TBA";
-  }
-}
+
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 export default async function MoviesByYearPage({
@@ -312,7 +287,7 @@ export default async function MoviesByYearPage({
 }) {
   const year = Number(params.year);
 
-  if (isNaN(year) || !VALID_YEARS.includes(year)) {
+  if (isNaN(year) || year < 1900 || year > 2100) {
     notFound();
   }
 
@@ -327,8 +302,8 @@ export default async function MoviesByYearPage({
   }
 
   const currentYear = new Date().getFullYear();
-  const prevYear    = VALID_YEARS[VALID_YEARS.indexOf(year) + 1];
-  const nextYear    = VALID_YEARS[VALID_YEARS.indexOf(year) - 1];
+  const prevYear    = year - 1 >= 1936 ? year - 1 : null;
+  const nextYear    = year + 1 <= currentYear + 5 ? year + 1 : null;
 
   return (
     <>
@@ -629,7 +604,7 @@ export default async function MoviesByYearPage({
                             {/* Release date */}
                             <td className="px-2 sm:px-4 py-3 text-gray-400 text-[11px] tabular-nums whitespace-nowrap align-top">
                               <time dateTime={movie.releaseDate || ""}>
-                                {formatReleaseDate(movie.releaseDate, movie.releaseTBA)}
+                                {movie.releaseTBA ? "TBA" : formatReleaseDate(movie.releaseDate, movie.releaseDatePrecision, "short") || "TBA"}
                               </time>
                             </td>
 

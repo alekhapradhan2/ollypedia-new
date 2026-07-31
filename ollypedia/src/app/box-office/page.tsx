@@ -8,6 +8,7 @@ import { connectDB }     from "@/lib/db";
 import Movie             from "@/models/Movie";
 import Blog              from "@/models/Blog";
 import { DisplayAd }     from "@/components/ads/DisplayAd";
+import { formatReleaseDate } from "@/lib/dateUtils";
 
 export const revalidate = 600;
 
@@ -89,15 +90,15 @@ function fmtINR(n: number): string {
   return `₹${n.toLocaleString("en-IN")}`;
 }
 
-function fmtDate(dateStr: string | Date | undefined | null): string {
+function fmtDate(dateStr: string | Date | undefined | null, precision?: string): string {
   if (!dateStr) return "—";
-  const s = String(dateStr).trim();
-  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return `${parseInt(iso[3], 10)} ${MONTHS[parseInt(iso[2], 10) - 1]} ${iso[1]}`;
-  const d = new Date(s);
-  if (isNaN(d.getTime())) return "—";
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  if (typeof dateStr === "string") return formatReleaseDate(dateStr, precision, "short") || "—";
+  try {
+    const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return `${dateStr.getDate()} ${MONTHS[dateStr.getMonth()]} ${dateStr.getFullYear()}`;
+  } catch {
+    return "—";
+  }
 }
 
 function dateTs(dateStr: string | undefined | null): number {

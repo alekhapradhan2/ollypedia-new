@@ -12,6 +12,7 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { PlatformLogo } from "@/components/ui/PlatformLogo";
 import { getPlatformInfo } from "@/lib/platforms";
 import { DisplayAd } from "@/components/ads/DisplayAd";
+import { formatReleaseDate } from "@/lib/dateUtils";
 
 export const revalidate = 600;
 
@@ -94,7 +95,7 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
   const isUpcoming = ott.status === "Upcoming" || (ott.releaseDate && new Date(ott.releaseDate) > now);
   const isStreaming = !isUpcoming && (ott.status === "Streaming" || ott.watchUrl !== "");
   const formattedDate = ott.releaseDate && ott.releaseDate !== "TBA" 
-    ? new Date(ott.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })
+    ? formatReleaseDate(ott.releaseDate, (ott as any).releaseDatePrecision, "long") || "TBA"
     : "TBA";
 
   // Derive director — prefer the `director` text field, fall back to cast array
@@ -332,7 +333,7 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
               </li>
               <li>
                 <span className="block text-gray-500 text-sm">Theatrical Release</span>
-                <span className="text-white">{m.releaseDate ? new Date(m.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "TBA"}</span>
+                <span className="text-white">{m.releaseDate ? (formatReleaseDate(m.releaseDate, (m as any).releaseDatePrecision, "short") || "TBA") : "TBA"}</span>
               </li>
               <li>
                 <span className="block text-gray-500 text-sm">Box Office</span>

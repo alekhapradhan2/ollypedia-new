@@ -12,7 +12,8 @@ import Cast from "@/models/Cast";
 import Movie from "@/models/Movie";
 import News from "@/models/News";
 import Blog from "@/models/Blog";
-import { buildMeta } from "@/lib/seo";
+import { buildCastMeta } from "@/lib/castSeo";
+import { formatReleaseDate } from "@/lib/dateUtils";
 import { DisplayAd } from "@/components/ads/DisplayAd";
 import {
   Film, Calendar, MapPin, User,
@@ -47,9 +48,13 @@ function vs(v?: string) {
 
 // ─── Static params ────────────────────────────────────────────────────────────
 export async function generateStaticParams() {
-  await connectDB();
-  const cast = await Cast.find({}, "_id").limit(15).lean();
-  return cast.map((c: any) => ({ id: String(c._id) }));
+  try {
+    await connectDB();
+    const cast = await Cast.find({}, "_id").limit(15).lean();
+    return cast.map((c: any) => ({ id: String(c._id) }));
+  } catch (err) {
+    return [];
+  }
 }
 
 // ─── Data fetching ────────────────────────────────────────────────────────────
@@ -124,50 +129,19 @@ function getDerivedRoles(person: any, movies: any[]): string[] {
 // getMisspellings REMOVED — Google handles misspelling matching automatically.
 // Intentional misspellings in <meta keywords> trigger spam/keyword-stuffing penalties.
 
-// ─── Metadata ─────────────────────────────────────────────────────────────────
+// ─── Metadata — delegates to castSeo.ts ───────────────────────────────────────────
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const person = await getCastMember(params.id);
   if (!person) return { robots: { index: false, follow: false } };
 
-  const movies   = (person.moviesList || []) as any[];
-  const rolesArr = getDerivedRoles(person, movies);
-  const roles    = rolesArr.join(", ");
-  const hits     = movies.filter((m: any) => ["Hit", "Super Hit", "Blockbuster"].includes(m.verdict));
-  const debutYear = movies.length
-    ? new Date(movies[movies.length - 1].releaseDate || Date.now()).getFullYear()
-    : null;
-  const genres = [...new Set(movies.flatMap((m: any) => m.genre || []))].slice(0, 3).join(", ");
-
-  const title = `${person.name} – Odia ${roles} | Biography, Movies & Career`;
-  const description =
-    person.bio?.slice(0, 155) ||
-    `${person.name} is a celebrated Odia ${roles.toLowerCase()} in Ollywood with ${movies.length} films${debutYear ? `, active since ${debutYear}` : ""}. Discover their full biography, filmography, songs and career on Ollypedia.`;
-  const canonical = `${SITE_URL}/cast/${String(person._id)}`;
-
-  return {
-    title, description,
-    keywords: [
-      person.name, `${person.name} movies`, `${person.name} biography`,
-      ...(person.alternateNames || []),
-      ...(movies.slice(0, 5).map((m: any) => `${m.title} movie cast ${person.name}`)),
-      ...(movies.slice(0, 5).map((m: any) => m.title)),
-      `${person.name} Ollywood`, `${person.name} odia film`,
-      `Odia ${person.type?.toLowerCase() || "artist"}`,
-      "Ollywood cast", "Odia cinema", genres,
-    ].filter(Boolean),
-    alternates: { canonical },
-    robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
-    openGraph: {
-      title, description, url: canonical, siteName: "Ollypedia", type: "profile",
-      ...(person.photo && { images: [{ url: person.photo, width: 800, height: 1000, alt: person.name }] }),
-    },
-    twitter: { card: "summary_large_image", title, description, ...(person.photo && { images: [person.photo] }) },
-  };
+  // Delegate to the dedicated castSeo module
+  return buildCastMeta(person);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function fmtDate(d?: string | Date) {
+function fmtDate(d?: string | Date, precision?: string) {
   if (!d) return "";
+  if (typeof d === "string") return formatReleaseDate(d, precision, "short");
   try { return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }
   catch { return String(d); }
 }
@@ -784,7 +758,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                       {movies.map((m: any) => {
                         const entry = (m.cast || []).find((c: any) => String(c.castId) === String(person._id));
                         const style = vs(m.verdict);
-                        const releaseDate = m.releaseDate ? fmtDate(m.releaseDate) : "TBA";
+                        const releaseDate = m.releaseDate ? fmtDate(m.releaseDate, m.releaseDatePrecision) : "TBA";
                         return (
                           <tr key={String(m._id)}
                             className="group border-b border-[#1a1a1a] last:border-0 hover:bg-orange-500/3 transition-colors">
