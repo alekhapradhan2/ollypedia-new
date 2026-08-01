@@ -1,9 +1,19 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI!;
+const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable in .env.local");
+  throw new Error(
+    "Please define MONGODB_URI in your environment before running the app. For PM2 on Linux, put it in .env.production or export it in ecosystem.config.js."
+  );
+}
+
+const mongoUri = MONGODB_URI.trim();
+
+if (!mongoUri) {
+  throw new Error(
+    "MONGODB_URI is empty. Set it to a valid MongoDB connection string before starting the app with PM2."
+  );
 }
 
 interface MongooseCache {
@@ -27,7 +37,7 @@ export async function connectDB() {
 
   if (!cached.promise) {
     cached.promise = mongoose
-      .connect(MONGODB_URI, {
+      .connect(mongoUri, {
         bufferCommands: false,
         maxPoolSize: 2,
         minPoolSize: 1,
