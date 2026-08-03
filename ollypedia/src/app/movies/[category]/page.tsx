@@ -385,7 +385,6 @@ export default async function MovieCategoryPage({
                 { label: "Odia Songs 2026",        href: "/songs/2026" },
                 { label: "Top Singers",            href: "/songs/singers" },
                 { label: "Cast & Crew",            href: "/cast" },
-                { label: "Ollywood News",          href: "/news" },
                 { label: "Know About Odia Movies", href: "/blog/odia-movies" },
                 { label: "History of Ollywood",    href: "/blog/history-of-ollywood" },
               ].map((l) => (

@@ -297,7 +297,6 @@ export default async function SongCategoryPage({ params }: any) {
                 { label: "Upcoming Movies",    href: "/movies/upcoming" },
                 { label: "Blockbuster Movies", href: "/movies/blockbuster" },
                 { label: "Latest Movies",      href: "/movies/latest" },
-                { label: "Ollywood News",      href: "/news" },
                 { label: "Cast & Crew",        href: "/cast" },
                 { label: "Best Odia Songs",    href: "/blog/odia-guides/best-odia-songs" },
               ].map((l) => (

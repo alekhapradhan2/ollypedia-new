@@ -10,7 +10,6 @@ import { LoadingCard } from "@/components/ui/LoadingCard";
 import { connectDB } from "@/lib/db";
 import Cast from "@/models/Cast";
 import Movie from "@/models/Movie";
-import News from "@/models/News";
 import Blog from "@/models/Blog";
 import { buildCastMeta } from "@/lib/castSeo";
 import { formatReleaseDate } from "@/lib/dateUtils";
@@ -56,7 +55,7 @@ async function getCastMember(id: string) {
 
     const escapedName = member.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-    const [movies, news, blogs] = await Promise.all([
+    const [movies, blogs] = await Promise.all([
       Movie.find(
         {
           $or: [
@@ -66,7 +65,6 @@ async function getCastMember(id: string) {
         },
         "title slug posterUrl thumbnailUrl releaseDate genre verdict imdbRating cast"
       ).sort({ releaseDate: -1 }).lean(),
-      News.find({ castId: member._id }).sort({ createdAt: -1 }).limit(12).lean(),
       Blog.find(
         {
           $and: [
@@ -84,7 +82,7 @@ async function getCastMember(id: string) {
         "title slug excerpt coverImage category tags createdAt readTime views"
       ).sort({ createdAt: -1 }).limit(9).lean(),
     ]);
-    return JSON.parse(JSON.stringify({ ...member, moviesList: movies, newsList: news, blogsList: blogs }));
+    return JSON.parse(JSON.stringify({ ...member, moviesList: movies, blogsList: blogs }));
   } catch (err) {
     console.error("getCastMember Error:", err);
     return null;
@@ -121,7 +119,7 @@ function getDerivedRoles(person: any, movies: any[]): string[] {
 // ─── Metadata — delegates to castSeo.ts ───────────────────────────────────────────
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const person = await getCastMember(params.id);
-  if (!person) return { robots: { index: false, follow: false } };
+  if (!person) notFound();
 
   // Delegate to the dedicated castSeo module
   return buildCastMeta(person);
@@ -323,7 +321,6 @@ export default async function CastDetailPage({ params }: { params: { id: string 
   if (!person.name?.trim()) notFound();
 
   const movies   = (person.moviesList || []) as any[];
-  const newsList = (person.newsList   || []) as any[];
   const blogsList = (person.blogsList || []) as any[];
   const roles    = getDerivedRoles(person, movies);
   const rolesStr = roles.join(", ");
@@ -945,33 +942,6 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                         <p className="text-xs font-semibold text-white group-hover:text-orange-400 transition-colors line-clamp-1">{t.movieTitle}</p>
                       </div>
                     </a>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* ── Related News ── */}
-            {newsList.length > 0 && (
-              <section aria-label={`News about ${person.name}`}>
-                <SectionHeading icon={Newspaper} title="Related News" count={newsList.length} />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {newsList.slice(0, 6).map((n: any) => (
-                    <Link key={String(n._id)} href={`/news/${String(n._id)}`}
-                      className="group flex gap-3 bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl p-3 transition-all">
-                      <div className="relative w-20 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-[#1a1a1a]">
-                        {n.imageUrl ? (
-                          <Image src={n.imageUrl} alt={n.title} fill className="object-cover" sizes="80px" />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center text-xl">📰</div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        {n.category && (
-                          <span className="text-[9px] font-bold text-orange-500 uppercase tracking-wider">{n.category}</span>
-                        )}
-                        <p className="text-xs font-semibold text-white group-hover:text-orange-400 transition-colors line-clamp-2 mt-0.5 leading-snug">{n.title}</p>
-                      </div>
-                    </Link>
                   ))}
                 </div>
               </section>

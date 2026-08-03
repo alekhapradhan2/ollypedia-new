@@ -2,7 +2,7 @@ import { SITE_URL } from "@/lib/seo";
 import { formatReleaseDate } from "@/lib/dateUtils";
 
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound, redirect, permanentRedirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { connectDB } from "@/lib/db";
@@ -303,8 +303,16 @@ async function getMovieBlogs(movieTitle: string) {
 // ─── Metadata — delegates to movieSeo.ts ─────────────────────────────────────
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const movie = await getMovie(params.slug);
-  if (!movie) return { robots: { index: false, follow: false } };
-  if (!movie.title?.trim()) return { robots: { index: false, follow: false } };
+  
+  if (!movie) notFound();
+  
+  if (movie.isRedirect && movie.redirectSlug) {
+    // Next.js will throw an error here, catching it early and sending an HTTP 308 Permanent Redirect header
+    // rather than rendering a 200 OK + meta refresh tag.
+    permanentRedirect(`/movie/${movie.redirectSlug}`); // Sends HTTP 308
+  }
+
+  if (!movie.title?.trim()) notFound();
 
   // Delegate to the dedicated movieSeo module
   return buildMovieMeta(movie);

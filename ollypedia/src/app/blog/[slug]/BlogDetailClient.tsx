@@ -376,14 +376,14 @@ function injectInArticleAds(html: string): string {
       // Only inject if NEITHER current block nor upcoming block contains a heading
       if (!hasHeadingInCurrent && !hasHeadingInNext) {
         result += `
-<div class="in-article-ad-container" style="clear: both; width: 100%; display: block; margin: 36px 0; min-height: 280px; background: #0d0d0d; border: 1px solid #222; border-radius: 16px; padding: 12px; text-align: center; overflow: hidden; transition: all 0.3s ease;" aria-label="Advertisement" data-nosnippet="true">
+<div class="in-article-ad-container" style="clear: both; width: 100%; display: block; margin: 36px 0; min-height: 280px; background: #0d0d0d; border: 1px solid #222; border-radius: 16px; padding: 12px; text-align: center; transition: all 0.3s ease;" aria-label="Advertisement" data-nosnippet="true">
   <span style="display: block; text-align: center; font-size: 10px; color: #666; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; width: 100%;">Advertisement</span>
   <ins class="adsbygoogle"
        style="display:block; text-align:center; width:100%; clear:both;"
+       data-ad-layout="in-article"
+       data-ad-format="fluid"
        data-ad-client="ca-pub-5823659147566885"
-       data-ad-slot="8191172163"
-       data-ad-format="auto"
-       data-full-width-responsive="true"></ins>
+       data-ad-slot="8191172163"></ins>
 </div>
 `;
         adsInjected++;
