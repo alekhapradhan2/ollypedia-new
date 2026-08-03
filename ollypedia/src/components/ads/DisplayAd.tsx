@@ -14,7 +14,7 @@ export function DisplayAd({
   const { adLoaded, adUnfilled, insRef, pathname, isMounted } = useAdSense();
 
   return (
-    <div className={`adsense-container w-full min-h-[250px] overflow-hidden block transition-all duration-700 ${className} ${adLoaded ? "bg-[#111111]" : "bg-transparent"} ${adUnfilled ? "ad-unfilled" : ""}`} aria-hidden="true">
+    <div className={`adsense-container w-full min-h-[250px] block transition-all duration-700 ${className} ${adLoaded ? "bg-[#111111]" : "bg-transparent"} ${adUnfilled ? "ad-unfilled" : ""}`} aria-hidden="true">
       {isMounted && (
         <ins key={pathname}
              ref={insRef}

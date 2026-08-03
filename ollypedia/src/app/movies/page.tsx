@@ -24,19 +24,28 @@ export async function generateMetadata({
   searchParams: { page?: string };
 }): Promise<Metadata> {
   const page = parseInt(searchParams.page || "1", 10);
-  const pageLabel = page > 1 ? ` | Page ${page}` : "";
+
+  // ★ Pages 2+ are blocked by robots.txt (Disallow: /*?page=).
+  // Return noindex for them to avoid "submitted URL blocked by robots.txt" errors
+  // in Search Console. Page 1 (/movies) is the canonical indexable page.
+  if (page > 1) {
+    return {
+      robots: { index: false, follow: true },
+      title: `Odia Movies – Page ${page} | Ollypedia`,
+    };
+  }
 
   return buildMeta({
-    title: `Odia Movies – Complete Ollywood Film Database${pageLabel}`,
+    title: `Odia Movies – Complete Ollywood Film Database`,
     description:
-      `Browse the complete list of Odia (Ollywood) movies${page > 1 ? ` (Page ${page})` : ""}. Filter by genre, year, verdict and more. Find your favourite Odia films with full cast, songs, box office collection, trailers and reviews.`,
+      `Browse the complete list of Odia (Ollywood) movies. Filter by genre, year, verdict and more. Find your favourite Odia films with full cast, songs, box office collection, trailers and reviews.`,
     keywords: [
       "Odia movies list", "Ollywood films", "Odia movies 2024", "Odia movies 2025", "Odia movies 2026",
       "Odia cinema database", "Ollywood box office", "Odia film reviews",
       "best Odia movies", "new Odia movies", "Odia movie cast",
       "upcoming Odia movies", "Odia blockbuster movies", "latest Ollywood films",
     ],
-    url: page > 1 ? `/movies?page=${page}` : "/movies",
+    url: "/movies",
   });
 }
 

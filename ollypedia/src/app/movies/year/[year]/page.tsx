@@ -15,7 +15,7 @@ import {
 import { YearDropdown } from "./YearDropdown";
 import { formatReleaseDate, mongoDateExpr } from "@/lib/dateUtils";
 
-export const revalidate = 600;
+export const revalidate = 86400; // 24 hours — historical year archives rarely change
 
 // ─── Valid years ───────────────────────────────────────────────────────────────
 const _OLDEST_YEAR = 1936;
@@ -40,11 +40,19 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const year = Number(params.year);
   const page = parseInt(searchParams?.page || "1", 10);
-  const pageLabel = page > 1 ? ` | Page ${page}` : "";
+
+  // ★ Pages 2+ are blocked by robots.txt (Disallow: /*?page=).
+  // Return noindex to avoid "submitted URL blocked by robots.txt" errors.
+  if (page > 1) {
+    return {
+      robots: { index: false, follow: true },
+      title: `Odia Movies ${year} – Page ${page} | Ollypedia`,
+    };
+  }
 
   return buildMeta({
-    title: `Odia Movies ${year} A to Z – Complete Ollywood Films List${pageLabel}`,
-    description: `${year} Odia Movies A to Z full list${page > 1 ? ` (Page ${page})` : ""} – Browse all Ollywood films released in ${year} with movie names, directors, release dates, box office collection, cast, songs, and reviews. Complete ${year} Odia movie list.`,
+    title: `Odia Movies ${year} A to Z – Complete Ollywood Films List`,
+    description: `${year} Odia Movies A to Z full list – Browse all Ollywood films released in ${year} with movie names, directors, release dates, box office collection, cast, songs, and reviews. Complete ${year} Odia movie list.`,
     keywords: [
       // A-to-Z / list variants
       `Odia movies ${year} A to Z`,
@@ -80,7 +88,7 @@ export async function generateMetadata({
       `Odia film industry`,
       `Odia cinema`,
     ],
-    url: page > 1 ? `/movies/year/${year}?page=${page}` : `/movies/year/${year}`,
+    url: `/movies/year/${year}`,
   });
 }
 

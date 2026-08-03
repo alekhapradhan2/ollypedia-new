@@ -10,6 +10,7 @@ export function buildMeta({
   description,
   keywords,
   image,
+  imageAlt,
   url,
   type = "website",
 }: {
@@ -17,11 +18,14 @@ export function buildMeta({
   description: string;
   keywords?: string[];
   image?: string;
+  imageAlt?: string;
   url?: string;
   type?: string;
 }) {
   const canonical = url ? `${SITE_URL}${url}` : SITE_URL;
-  const ogImages = image ? [{ url: image, width: 1200, height: 630 }] : undefined;
+  const ogImages = image
+    ? [{ url: image, width: 1200, height: 630, alt: imageAlt || title }]
+    : undefined;
   const twitterImages = image ? [image] : undefined;
   return {
     title,
@@ -39,10 +43,18 @@ export function buildMeta({
       card: "summary_large_image",
       title,
       description,
+      site: "@ollypedia",
       ...(twitterImages && { images: twitterImages }),
     },
     alternates: { canonical },
-    robots: { index: true, follow: true },
+    robots: {
+      index: true,
+      follow: true,
+      // Unlock full snippet display, large image preview, and full video preview
+      "max-snippet": -1 as any,
+      "max-image-preview": "large" as any,
+      "max-video-preview": -1 as any,
+    },
   };
 }
 

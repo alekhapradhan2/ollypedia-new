@@ -127,14 +127,10 @@ export function generateMovieJsonLd(movie: MovieSeoDoc) {
     };
   }
 
-  // Add Box Office monetary info if available
-  if (movie.boxOffice?.total || movie.boxOffice?.netCollection) {
-    movieEntity.boxOffice = {
-      "@type": "MonetaryAmount",
-      currency: "INR",
-      value: movie.boxOffice.netCollection || movie.boxOffice.total,
-    };
-  }
+
+  // NOTE: boxOffice is NOT a standard schema.org/Movie property.
+  // Box office data is expressed via the Article schema on the /box-office/[slug] page instead.
+  // Removed invalid MonetaryAmount mapping to avoid structured data validation errors.
 
   // Breadcrumb
   const breadcrumb = {

@@ -52,14 +52,14 @@ function fmtINR(val: unknown): string {
 // suffixes = 1,380 spam keywords per page. This triggers SpamBrain penalties.
 
 // ─── Static params ────────────────────────────────────────────────────────────
-
+// Pre-render top 10 currently tracked box office pages at build time.
 export async function generateStaticParams() {
   try {
     await connectDB();
     const movies = await (Movie as any)
       .find({ "boxOfficeDays.0": { $exists: true } }, "slug title")
       .sort({ updatedAt: -1 })
-      .limit(15)
+      .limit(10)
       .lean();
     return movies.map((m: any) => ({
       slug: m.slug || String(m.title || "").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
@@ -186,8 +186,10 @@ export default async function BoxOfficePage({
       "name":  "Ollypedia",
       "logo":  { "@type": "ImageObject", "url": `${SITE_URL}/logo.png` },
     },
+    // ★ FIX: "@type": "@id" is invalid schema.org — caused Article rich result failure.
+    // Correct format uses "@type": "WebPage" with "@id" as the canonical URL.
     "mainEntityOfPage": {
-      "@type": "@id",
+      "@type": "WebPage",
       "@id":   `${SITE_URL}/box-office/${slug}`,
     },
     // ★ Link box-office page → movie entity with cast for Knowledge Panel

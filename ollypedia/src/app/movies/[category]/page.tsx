@@ -96,7 +96,7 @@ const CATEGORY_CONFIG: Record<
   },
 };
 
-export const revalidate = 600; // Revalidate every hour to keep data fresh
+export const revalidate = 3600; // 1 hour — keeps category lists fresh without excessive regeneration
 
 // ─── DB Query — mirrors your getBlog() pattern exactly ───────────────────────
 async function getMovies(category: string): Promise<MovieDoc[]> {
@@ -385,7 +385,6 @@ export default async function MovieCategoryPage({
                 { label: "Odia Songs 2026",        href: "/songs/2026" },
                 { label: "Top Singers",            href: "/songs/singers" },
                 { label: "Cast & Crew",            href: "/cast" },
-                { label: "Ollywood News",          href: "/news" },
                 { label: "Know About Odia Movies", href: "/blog/odia-movies" },
                 { label: "History of Ollywood",    href: "/blog/history-of-ollywood" },
               ].map((l) => (

@@ -188,7 +188,6 @@ const NAV_LINKS = {
     { label: "Songs", href: "/songs" },
     { label: "OTT Releases", href: "/ott" },
     { label: "Cast & Crew", href: "/cast" },
-    { label: "News", href: "/news" },
     { label: "Blog", href: "/blog" },
   ],
   Company: [
@@ -467,11 +466,7 @@ export async function Footer() {
               <Link href="/songs" className="text-gray-500 hover:text-orange-400 transition-colors">
                 hit Odia songs
               </Link>
-              , and follow the latest{" "}
-              <Link href="/news" className="text-gray-500 hover:text-orange-400 transition-colors">
-                Ollywood news
-              </Link>{" "}
-              and announcements. We cover music directors, cinematographers, directors, and every creative
+              , and follow the latest Ollywood announcements. We cover music directors, cinematographers, directors, and every creative
               talent shaping Odia cinema today.
             </p>
             <p>

@@ -11,11 +11,14 @@ import Link from "next/link";
 import Image from "next/image";
 
 export async function generateMetadata({ searchParams }: { searchParams: { q?: string } }): Promise<Metadata> {
-  return buildMeta({
+  return {
+    // ★ Search result pages must NEVER be indexed:
+    // Each ?q= param creates an infinite unique URL with dynamic thin content.
+    // Also blocked by robots.txt — both signals together prevent index pollution.
+    robots: { index: false, follow: false },
     title: searchParams.q ? `Search results for "${searchParams.q}"` : "Search Odia Movies, Actors & More",
     description: "Search Ollypedia's database of Odia movies, actors, directors, songs, and blog articles.",
-    url: "/search",
-  });
+  };
 }
 
 async function doSearch(q: string) {

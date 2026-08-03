@@ -14,7 +14,6 @@ import { connectDB } from "@/lib/db";
 import Movie         from "@/models/Movie";
 import Cast          from "@/models/Cast";
 import Blog          from "@/models/Blog";
-import News          from "@/models/News";
 import { SITE_URL }  from "@/lib/seo";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -74,7 +73,6 @@ export async function GET() {
     ["/ott/now-streaming",    "daily",   "0.85"],  // ← NEW OTT
     ["/songs",                "weekly",  "0.8"],
     ["/cast",                 "weekly",  "0.8"],
-    ["/news",                 "daily",   "0.8"],
     ["/blog",                 "daily",   "0.8"],
     ["/about",                "monthly", "0.4"],
     ["/contact",              "monthly", "0.4"],
@@ -97,7 +95,6 @@ export async function GET() {
     ["Reviews",    "weekly",  "0.75"],
     ["Actor",      "weekly",  "0.7"],
     ["Songs",      "weekly",  "0.7"],
-    ["News",       "daily",   "0.75"],
     ["Top Lists",  "monthly", "0.7"],
   ];
 
@@ -241,10 +238,6 @@ export async function GET() {
       const pri         = isBoxOffice ? "0.9"    : isFeatured ? "0.85" : "0.75";
       entries.push(urlEntry(`${SITE_URL}/blog/${b.slug}`, lastmod, freq, pri));
     });
-
-    // ── News articles ─────────────────────────────────────────────────────
-    // NOTE: Individual news article pages (/news/[slug]) have been removed.
-    // Only the /news listing page is submitted (already in static pages above).
 
   } catch (err) {
     console.error("Sitemap generation error:", err);
