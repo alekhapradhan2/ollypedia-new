@@ -7,30 +7,8 @@ import { buildSongMeta, generateSongJsonLd } from "@/lib/songSeo";
 import { SongDetailClient } from "./SongDetailClient";
 import type { MovieData, SongData } from "./types";
 
-export const revalidate = 600;
+export const revalidate = 86400; // 24 hours — on-demand ISR
 export const dynamicParams = true;
-
-export async function generateStaticParams() {
-  try {
-    await connectDB();
-    const rows: { movieSlug: string; songIndex: string }[] = [];
-    const movies = await (Movie as any)
-      .find({ "media.songs.0": { $exists: true } }, "slug media.songs._id")
-      .sort({ releaseDate: -1 })
-      .limit(5)
-      .lean();
-    for (const m of movies) {
-      const count = m.media?.songs?.length || 0;
-      for (let i = 0; i < count && rows.length < 15; i++) {
-        rows.push({ movieSlug: m.slug || String(m._id), songIndex: String(i) });
-      }
-      if (rows.length >= 15) break;
-    }
-    return rows;
-  } catch (err) {
-    return [];
-  }
-}
 
 // Re-export for [songSlug]/page.tsx to import
 export type { MovieData, SongData };

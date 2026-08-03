@@ -22,7 +22,7 @@ import {
   BarChart2, MessageSquare,
 } from "lucide-react";
 
-export const revalidate    = 3600;
+export const revalidate    = 86400; // 24 hours — on-demand ISR
 export const dynamicParams = true;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -44,17 +44,6 @@ const VERDICT_STYLE: Record<string, { bg: string; text: string; border: string }
 
 function vs(v?: string) {
   return VERDICT_STYLE[v || ""] || { bg: "bg-orange-500/15", text: "text-orange-400", border: "border-orange-500/30" };
-}
-
-// ─── Static params ────────────────────────────────────────────────────────────
-export async function generateStaticParams() {
-  try {
-    await connectDB();
-    const cast = await Cast.find({}, "_id").limit(15).lean();
-    return cast.map((c: any) => ({ id: String(c._id) }));
-  } catch (err) {
-    return [];
-  }
 }
 
 // ─── Data fetching ────────────────────────────────────────────────────────────

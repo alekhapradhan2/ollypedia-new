@@ -1,0 +1,122 @@
+{
+  "http://localhost:3000/": {
+    "hasTitle": true,
+    "hasCanonical": true,
+    "hasAdSense": true,
+    "hasAdsComponent": true,
+    "hasSchema": true,
+    "hasMetaDesc": true,
+    "internalLinksCount": 146,
+    "length": 501080
+  },
+  "http://localhost:3000/movies": {
+    "hasTitle": true,
+    "hasCanonical": true,
+    "hasAdSense": true,
+    "hasAdsComponent": true,
+    "hasSchema": true,
+    "hasMetaDesc": true,
+    "internalLinksCount": 202,
+    "length": 578038
+  },
+  "http://localhost:3000/movie/aashiq": {
+    "hasTitle": true,
+    "hasCanonical": false,
+    "hasAdSense": true,
+    "hasAdsComponent": true,
+    "hasSchema": false,
+    "hasMetaDesc": true,
+    "internalLinksCount": 63,
+    "length": 135081
+  },
+  "http://localhost:3000/blog": {
+    "hasTitle": true,
+    "hasCanonical": true,
+    "hasAdSense": true,
+    "hasAdsComponent": true,
+    "hasSchema": true,
+    "hasMetaDesc": true,
+    "internalLinksCount": 111,
+    "length": 272654
+  },
+  "http://localhost:3000/blog/odia-cinema-history": {
+    "hasTitle": true,
+    "hasCanonical": false,
+    "hasAdSense": true,
+    "hasAdsComponent": true,
+    "hasSchema": false,
+    "hasMetaDesc": true,
+    "internalLinksCount": 63,
+    "length": 134895
+  },
+  "http://localhost:3000/songs": {
+    "hasTitle": true,
+    "hasCanonical": true,
+    "hasAdSense": true,
+    "hasAdsComponent": true,
+    "hasSchema": true,
+    "hasMetaDesc": true,
+    "internalLinksCount": 92,
+    "length": 255393
+  },
+  "http://localhost:3000/songs/aashiq": {
+    "hasTitle": true,
+    "hasCanonical": false,
+    "hasAdSense": true,
+    "hasAdsComponent": true,
+    "hasSchema": false,
+    "hasMetaDesc": true,
+    "internalLinksCount": 63,
+    "length": 134932
+  },
+  "http://localhost:3000/cast": {
+    "hasTitle": true,
+    "hasCanonical": true,
+    "hasAdSense": true,
+    "hasAdsComponent": true,
+    "hasSchema": true,
+    "hasMetaDesc": true,
+    "internalLinksCount": 203,
+    "length": 391390
+  },
+  "http://localhost:3000/cast/babushaan-mohanty": {
+    "hasTitle": true,
+    "hasCanonical": false,
+    "hasAdSense": true,
+    "hasAdsComponent": true,
+    "hasSchema": false,
+    "hasMetaDesc": true,
+    "internalLinksCount": 63,
+    "length": 134799
+  },
+  "http://localhost:3000/trailers": {
+    "hasTitle": true,
+    "hasCanonical": true,
+    "hasAdSense": true,
+    "hasAdsComponent": true,
+    "hasSchema": true,
+    "hasMetaDesc": true,
+    "internalLinksCount": 157,
+    "length": 771097
+  },
+  "http://localhost:3000/trailers/aashiq": {
+    "hasTitle": true,
+    "hasCanonical": false,
+    "hasAdSense": true,
+    "hasAdsComponent": true,
+    "hasSchema": false,
+    "hasMetaDesc": true,
+    "internalLinksCount": 63,
+    "length": 134877
+  },
+  "http://localhost:3000/ott": {
+    "hasTitle": true,
+    "hasCanonical": true,
+    "hasAdSense": true,
+    "hasAdsComponent": true,
+    "hasSchema": true,
+    "hasMetaDesc": true,
+    "internalLinksCount": 95,
+    "length": 258759
+  }
+}

@@ -204,10 +204,7 @@ function getProducerFromCast(castList: any[]): string | undefined {
   return found?.name;
 }
 
-// ─── Static params ─────────────────────────────────────────────────────────
-export async function generateStaticParams() {
-  return [];
-}
+
 
 // ─── Data helpers ─────────────────────────────────────────────────────────
 async function getMovie(slug: string) {

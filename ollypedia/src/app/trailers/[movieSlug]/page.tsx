@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { DisplayAd } from "@/components/ads/DisplayAd";
 
-export const revalidate    = 3600;
+export const revalidate    = 86400; // 24 hours — on-demand ISR
 export const dynamicParams = true;
 
 // ─── Params ───────────────────────────────────────────────────────────────────
@@ -108,26 +108,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return buildIndividualTrailerMeta(movie);
 }
 
-// ─── Static params (top 100 for ISR) ─────────────────────────────────────────
 
-export async function generateStaticParams() {
-  try {
-    await connectDB();
-    const movies = await Movie.find(
-      {
-        "media.videos.ytId": { $exists: true, $ne: "" },
-        slug: { $exists: true, $ne: "" },
-      },
-      "slug"
-    )
-      .sort({ updatedAt: -1 })
-      .limit(15)
-      .lean();
-    return movies.map((m: any) => ({ movieSlug: m.slug }));
-  } catch (err) {
-    return [];
-  }
-}
 
 // ─── Helper components ────────────────────────────────────────────────────────
 

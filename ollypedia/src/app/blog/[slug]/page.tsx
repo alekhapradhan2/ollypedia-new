@@ -20,7 +20,7 @@ import Blog from "@/models/Blog";
 import Movie from "@/models/Movie";
 import BlogDetailClient from "./BlogDetailClient";
 
-export const revalidate    = 600;  // 10 min — balances freshness with crawl performance
+export const revalidate    = 21600; // 6 hours
 export const dynamicParams = true;
 
 // ─── helpers ───────────────────────────────────────────────────
@@ -34,16 +34,14 @@ function toSlug(str?: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-// ArticleSSRPreview REMOVED — hidden duplicate content (aria-hidden + clip CSS)
-// is a cloaking risk. Next.js SSR already renders server components properly.
-
 // ─── Static params ─────────────────────────────────────────────
+// Pre-render top 10 most recently published blogs at build time (hybrid strategy).
 export async function generateStaticParams() {
   try {
     await connectDB();
     const blogs = await Blog.find({ published: true }, "slug")
       .sort({ createdAt: -1 })
-      .limit(15)
+      .limit(10)
       .lean();
     return blogs.map((b: any) => ({ slug: b.slug }));
   } catch (err) {
@@ -569,14 +567,20 @@ export default async function BlogPage({ params }: { params: { slug: string } })
         "description":     blog.excerpt || "",
         "datePublished":   blog.createdAt ? new Date(blog.createdAt).toISOString() : undefined,
         "dateModified":    blog.updatedAt ? new Date(blog.updatedAt).toISOString() : undefined,
-        "image":           blog.coverImage || `${SITE_URL}/default.jpg`,
+        // ★ Google requires ImageObject (not bare string) for NewsArticle Top Stories eligibility
+        "image": {
+          "@type":  "ImageObject",
+          "url":    blog.coverImage || `${SITE_URL}/default.jpg`,
+          "width":  1200,
+          "height": 630,
+        },
         "inLanguage":      "en-IN",
         "articleSection":  blog.category || "Entertainment",
         "wordCount":       wordCount || undefined,
-        // speakable — Google Assistant reads these sections aloud (voice search traffic)
+        // speakable — Google Assistant reads h1 aloud (voice search traffic)
         "speakable": {
-          "@type":   "SpeakableSpecification",
-          "cssSelector": ["h1", ".bp-article-title", ".bp-excerpt"],
+          "@type":       "SpeakableSpecification",
+          "cssSelector": ["h1"],
         },
         "author": {
           "@type":  "Person",

@@ -74,7 +74,6 @@ export async function GET() {
     ["/ott/now-streaming",    "daily",   "0.85"],  // ← NEW OTT
     ["/songs",                "weekly",  "0.8"],
     ["/cast",                 "weekly",  "0.8"],
-    ["/news",                 "daily",   "0.8"],
     ["/blog",                 "daily",   "0.8"],
     ["/about",                "monthly", "0.4"],
     ["/contact",              "monthly", "0.4"],

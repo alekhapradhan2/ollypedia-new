@@ -333,9 +333,13 @@ export default async function HomePage() {
               name: "Ollypedia",
               url: "https://www.ollypedia.in",
               description: "Ollypedia is the ultimate encyclopedia for Odia (Ollywood) cinema. Discover movies, actors, songs, reviews, box office, and news.",
+              // ★ Sitelinks Searchbox: target uses URI template format
               potentialAction: {
                 "@type": "SearchAction",
-                target: "https://www.ollypedia.in/search?q={search_term_string}",
+                target: {
+                  "@type": "EntryPoint",
+                  urlTemplate: "https://www.ollypedia.in/search?q={search_term_string}",
+                },
                 "query-input": "required name=search_term_string",
               },
             },
@@ -344,9 +348,19 @@ export default async function HomePage() {
               "@type": "Organization",
               name: "Ollypedia",
               url: "https://www.ollypedia.in",
-              logo: "https://www.ollypedia.in/logo.png",
+              // ★ Logo must be ImageObject with dimensions for proper Google display
+              logo: {
+                "@type": "ImageObject",
+                url: "https://www.ollypedia.in/logo.png",
+                width: 600,
+                height: 60,
+              },
+              // ★ Complete sameAs — Google uses this to match entity to Knowledge Graph
               sameAs: [
-                "https://www.instagram.com/ollypedia.in"
+                "https://www.instagram.com/ollypedia.in",
+                "https://www.facebook.com/ollypedia",
+                "https://twitter.com/ollypedia",
+                "https://www.youtube.com/@ollypedia",
               ],
             },
           ]),

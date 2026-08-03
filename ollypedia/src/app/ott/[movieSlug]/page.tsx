@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: { params: { movieSlug: string
       { streamingUrl: { $exists: true, $nin: ["", null] } },
     ]
   }).lean().exec();
-  if (!movie) return {};
+  if (!movie) return { robots: { index: false, follow: false }, title: "Not Found" };
   
   const m = movie as any;
   const ott = {

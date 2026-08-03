@@ -96,7 +96,7 @@ const CATEGORY_CONFIG: Record<
   },
 };
 
-export const revalidate = 600; // Revalidate every hour to keep data fresh
+export const revalidate = 3600; // 1 hour — keeps category lists fresh without excessive regeneration
 
 // ─── DB Query — mirrors your getBlog() pattern exactly ───────────────────────
 async function getMovies(category: string): Promise<MovieDoc[]> {

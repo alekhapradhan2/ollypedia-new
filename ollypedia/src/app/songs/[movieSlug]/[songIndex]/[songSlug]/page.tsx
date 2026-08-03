@@ -21,7 +21,7 @@ import Blog from "@/models/Blog";
 import { SongDetailClient } from "../SongDetailClient";
 import type { MovieData } from "../types";
 
-export const revalidate    = 3600;
+export const revalidate    = 86400; // 24 hours — on-demand ISR
 export const dynamicParams = true;
 
 // ─── Helpers ───────────────────────────────────────────────────
@@ -33,33 +33,6 @@ function toSlug(str?: string): string {
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/(^-|-$)/g, "");
-}
-
-// ─── Static params ─────────────────────────────────────────────
-export async function generateStaticParams() {
-  try {
-    await connectDB();
-    const rows: { movieSlug: string; songIndex: string; songSlug: string }[] = [];
-    const movies = await (Movie as any)
-      .find({ "media.songs.0": { $exists: true } }, "slug media.songs.title")
-      .sort({ releaseDate: -1 })
-      .limit(5)
-      .lean();
-    for (const m of movies) {
-      const songs = m.media?.songs || [];
-      for (let i = 0; i < songs.length && rows.length < 15; i++) {
-        rows.push({
-          movieSlug: m.slug || String(m._id),
-          songIndex: String(i),
-          songSlug:  toSlug(songs[i]?.title) || String(i),
-        });
-      }
-      if (rows.length >= 15) break;
-    }
-    return rows;
-  } catch (err) {
-    return [];
-  }
 }
 
 // ─── Data fetching ─────────────────────────────────────────────

@@ -25,6 +25,15 @@ export async function GET() {
 User-agent: *
 Allow: /
 
+# ★ IMPORTANT: Allow rules must come BEFORE their corresponding Disallow rules
+# because robots.txt is evaluated first-match-wins per path.
+# These specific URL patterns are canonical, keyword-targeted pages in the sitemap.
+Allow: /movies/year/
+Allow: /movies?genre=
+Allow: /movies/genre/
+Allow: /box-office?year=
+Allow: /blog?category=
+
 # Block thin/low-value pages from crawl budget
 Disallow: /api/
 Disallow: /admin/
@@ -33,13 +42,6 @@ Disallow: /_next/
 Disallow: /blog?
 Disallow: /*?sort=
 Disallow: /*?page=
-
-# Explicitly allowed (kept crawlable — these are canonical, not duplicates)
-Allow: /movies/year/
-Allow: /movies?genre=
-Allow: /movies/genre/
-Allow: /box-office?year=
-Allow: /blog?category=
 
 # ── AI training scrapers — block content harvesting ─────
 # These bots scrape content to train AI models without compensation.
