@@ -67,7 +67,7 @@ async function getCastMember(id: string) {
 
     const escapedName = member.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-    const [movies, blogs] = await Promise.all([
+    const [rawMovies, blogs] = await Promise.all([
       Movie.find(
         {
           $or: [
@@ -94,6 +94,20 @@ async function getCastMember(id: string) {
         "title slug excerpt coverImage category tags createdAt readTime views"
       ).sort({ createdAt: -1 }).limit(9).lean(),
     ]);
+
+    // Ensure member is actually present in movie.cast (fix desynced member.movies entries)
+    const memberIdStr = String(member._id);
+    const memberNameLower = (member.name || "").toLowerCase().trim();
+
+    const movies = rawMovies.filter((movie: any) => {
+      if (!Array.isArray(movie.cast) || movie.cast.length === 0) return false;
+      return movie.cast.some((c: any) => {
+        if (c.castId && String(c.castId) === memberIdStr) return true;
+        if (c.name && c.name.toLowerCase().trim() === memberNameLower) return true;
+        return false;
+      });
+    });
+
     return JSON.parse(JSON.stringify({ ...member, moviesList: movies, blogsList: blogs }));
   } catch (err) {
     console.error("getCastMember Error:", err);

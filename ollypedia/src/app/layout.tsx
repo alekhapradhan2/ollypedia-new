@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import "../styles/globals.css";
 import { Navbar } from "@/components/layout/Navbar";
@@ -6,8 +5,19 @@ import { Footer } from "@/components/layout/Footer";
 import { Toaster } from "react-hot-toast";
 import { SITE_NAME, SITE_URL } from "@/lib/seo";
 import NextTopLoader from 'nextjs-toploader';
-import { ScrollToTop } from "@/components/layout/ScrollToTop";
-import { GlobalLoader } from "@/components/layout/GlobalLoader";
+import dynamic from "next/dynamic";
+
+// ── Use dynamic imports (ssr:false) for components that call useSearchParams().
+// Static import + <Suspense> causes BAILOUT_TO_CLIENT_SIDE_RENDERING on every
+// page, which means Googlebot sees a placeholder div instead of the real Navbar.
+const GlobalLoader = dynamic(
+  () => import("@/components/layout/GlobalLoader").then((m) => ({ default: m.GlobalLoader })),
+  { ssr: false }
+);
+const ScrollToTop = dynamic(
+  () => import("@/components/layout/ScrollToTop").then((m) => ({ default: m.ScrollToTop })),
+  { ssr: false }
+);
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -48,14 +58,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="grain min-h-screen flex flex-col bg-[#0a0a0a]">
-        <Suspense fallback={null}>
-          <GlobalLoader />
-          <ScrollToTop />
-        </Suspense>
+        {/* GlobalLoader and ScrollToTop are rendered client-only (ssr:false dynamic import)
+            so they never trigger a Suspense SSR bailout. */}
+        <GlobalLoader />
+        <ScrollToTop />
         <NextTopLoader color="#f97316" showSpinner={false} easing="ease" speed={200} />
-        <Suspense fallback={<div className="h-16 border-b border-white/[0.07] bg-[#080808]/95" />}>
-          <Navbar />
-        </Suspense>
+        <Navbar />
         <main className="flex-1">{children}</main>
         <GlobalMultiplexWrapper />
         <Footer />

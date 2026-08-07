@@ -91,8 +91,15 @@ export function generateMovieJsonLd(movie: MovieSeoDoc) {
     : movie.imdbRating || null;
 
   // Directors & Actors
+  const dirCastMember = (movie.cast || []).find(
+    (c: any) => c.role?.toLowerCase().includes("director") || c.type?.toLowerCase().includes("director")
+  );
   const directorObj = movie.director
-    ? { "@type": "Person", name: movie.director, url: `${SITE_URL}/cast/${encodeURIComponent(movie.director)}` }
+    ? {
+        "@type": "Person",
+        name: movie.director,
+        ...(dirCastMember?.castId ? { url: `${SITE_URL}/cast/${dirCastMember.castId}` } : {}),
+      }
     : undefined;
 
   const actorList = (movie.cast || []).slice(0, 10).map((c) => ({

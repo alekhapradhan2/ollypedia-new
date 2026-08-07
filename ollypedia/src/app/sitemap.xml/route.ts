@@ -1,13 +1,20 @@
 // app/sitemap.xml/route.ts
 // ── What changed in this version ──────────────────────────────────────────────
 //  1. Cast URLs fixed to always use _id (route is /cast/[id], never slug)
-//  2. Genre pages added — /movies/genre/[genre] + /movies?genre= (10 genres)
+//  2. Genre pages added — /movies/genre/[genre] only (removed ?genre= duplicates)
 //  3. /movies/upcoming, /movies/latest, /movies/blockbuster added as statics
 //  4. News articles added from DB (/news/[slug])
 //  5. News model imported
 //  6. TODO items moved to "Evergreen guides" comment (upcoming/latest/blockbuster done)
 //  7. ★ Blog query now filters { published: true, indexed: { $ne: false } }
 //     so non-indexable day-wise box office articles are excluded from sitemap
+//  8. ★ SEO FIX: Song URLs now deduplicated by normalised title (per movie) AND
+//     capped at 10 songs per movie. This eliminates thousands of near-duplicate
+//     sitemap entries caused by YouTube search result metadata being stored as
+//     songs (e.g. the same song appearing 7× with different YouTube video titles).
+//  9. ★ SEO FIX: Removed /movies?genre= query-param URLs from sitemap.
+//     Canonical genre pages are at /movies/genre/[genre] — submitting both URLs
+//     sent contradictory canonical signals to Google.
 //  ✅ All previous fixes preserved (box-office, blog categories, song pages, priorities)
 
 import { connectDB } from "@/lib/db";
@@ -198,14 +205,47 @@ export async function GET() {
       }
 
       if (m.media?.songs?.length) {
-        m.media.songs.forEach((s: any, i: number) => {
-          if (!s?.title?.trim()) return;
+        // ─── Song URL quality guard ───────────────────────────────────────
+        // Problem: YouTube search result metadata gets stored as "songs", creating
+        // duplicate entries (same song with different YouTube video titles/suffixes
+        // like "kalinga-tv", "ktv", "by-singer-u0026-other"). These create thousands
+        // of thin, near-duplicate sitemap URLs that waste crawl budget and signal
+        // low content quality to Google.
+        //
+        // Fix 1 — Deduplicate by normalised title:
+        //   Strip common YouTube suffixes and normalise the title. If two songs
+        //   produce the same normalised title, only include the first occurrence.
+        // Fix 2 — Hard cap of 10 songs per movie:
+        //   A movie typically has 4–8 actual songs. Capping at 10 ensures any
+        //   remaining duplicates or extras don't bloat the sitemap.
+        const seenNormalised = new Set<string>();
+        let songCount = 0;
+        const MAX_SONGS_PER_MOVIE = 10;
+
+        for (let i = 0; i < m.media.songs.length; i++) {
+          if (songCount >= MAX_SONGS_PER_MOVIE) break;
+          const s = m.media.songs[i];
+          if (!s?.title?.trim()) continue;
+
+          // Normalise: lowercase, strip YouTube-channel suffixes, collapse spaces
+          const normalised = s.title
+            .toLowerCase()
+            .replace(/[-_\s]*(kalinga[\s-]*tv|ktv|full\s*video|official|audio|song|odia|u0026|&|\|)[-_\s]*/gi, " ")
+            .replace(/by\s+[\w\s.]+$/i, "")  // strip "by Singer Name" trailing suffix
+            .replace(/\s+/g, " ")
+            .trim();
+
+          if (!normalised || seenNormalised.has(normalised)) continue;
+          seenNormalised.add(normalised);
+
           const songSlug = s.slug || toSlug(s.title);
-          if (!songSlug) return;
+          if (!songSlug) continue;
+
           entries.push(
             urlEntry(`${SITE_URL}/songs/${movieSlug}/${i}/${songSlug}`, lastmod, "weekly", "0.7")
           );
-        });
+          songCount++;
+        }
       }
     });
 

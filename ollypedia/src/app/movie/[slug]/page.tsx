@@ -215,10 +215,12 @@ async function getMovie(slug: string) {
       ? await Movie.findById(slug)
           .populate("productionId", "name logo")
           .populate("collaborators", "name logo")
+          .populate("cast.castId", "name photo type roles bio")
           .lean()
       : await Movie.findOne({ slug })
           .populate("productionId", "name logo")
           .populate("collaborators", "name logo")
+          .populate("cast.castId", "name photo type roles bio")
           .lean();
           
     // Smart 301 Fallback Search if not found
@@ -242,6 +244,19 @@ async function getMovie(slug: string) {
     if (!raw) return null;
     
     const serialized = JSON.parse(JSON.stringify(raw));
+    if (Array.isArray(serialized.cast)) {
+      serialized.cast = serialized.cast.map((item: any) => {
+        if (item.castId && typeof item.castId === "object") {
+          return {
+            ...item,
+            name: item.castId.name || item.name,
+            photo: item.castId.photo || item.photo,
+            castId: item.castId._id || item.castId,
+          };
+        }
+        return item;
+      });
+    }
     if (serialized.productionId && typeof serialized.productionId === "object") {
       serialized._productionName = serialized.productionId.name || null;
       serialized._productionLogo = serialized.productionId.logo || null;
