@@ -368,15 +368,18 @@ export default async function HomePage() {
       />
 
       {/* ══ HERO CAROUSEL ══ */}
+      {/* Visually-hidden H1 tells Google this page is about the Odia Film Encyclopedia.
+          Hero carousel movie titles use h2 — a movie title is not the page topic. */}
+      <h1 className="sr-only">Ollypedia – Odia Film Encyclopedia | Ollywood Movies, Cast, Songs &amp; Box Office</h1>
       {heroMovies.length > 0 ? (
         <HeroCarousel movies={heroMovies} />
       ) : (
         <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-[#0a0a0a]">
           <div className="absolute inset-0 bg-gradient-to-br from-orange-900/20 via-[#0a0a0a] to-[#0a0a0a]" />
           <div className="relative z-10 text-center px-4">
-            <h1 className="font-display text-5xl md:text-7xl font-black text-white leading-none mb-4">
+            <p className="font-display text-5xl md:text-7xl font-black text-white leading-none mb-4">
               Discover <span className="text-orange-500">Odia</span> Cinema
-            </h1>
+            </p>
             <p className="text-gray-300 text-lg mb-6">
               Your ultimate guide to Ollywood — movies, actors, songs, and more.
             </p>

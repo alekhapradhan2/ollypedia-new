@@ -189,9 +189,9 @@ export default function HeroCarousel({ movies }: { movies: HeroMovie[] }) {
                     {movie.language   && <span className="hh-tag-gl">{movie.language}</span>}
                   </div>
 
-                  {/* Title — h1 only on active slide for SEO */}
+                  {/* Title — h2 for all slides; page.tsx supplies the real site-level h1 visually hidden */}
                   {i === heroIdx ? (
-                    <h1 className="hh-title">{movie.title}</h1>
+                    <h2 className="hh-title">{movie.title}</h2>
                   ) : (
                     <p className="hh-title" aria-hidden="true">{movie.title}</p>
                   )}

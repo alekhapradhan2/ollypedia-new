@@ -1,7 +1,7 @@
 // app/robots.txt/route.ts
 // ── What changed in this version ──────────────────────────────────────────────
 //  1. /blog? now blocks ALL query string variations (was only ?q= before)
-//  2. /movies?genre= blocked — duplicate of canonical /movies/genre/[genre]
+//  2. /movies?genre= removed — duplicate of canonical /movies/genre/[genre]
 //  3. /songs/category/ left crawlable (canonical), query dupes blocked
 //  4. ★ PerplexityBot REMOVED from block list — Perplexity is an AI search
 //     engine that cites sources and drives real referral traffic. Blocking it
@@ -16,6 +16,9 @@
 //     them — submitted-but-blocked is a wasted/contradictory signal. Only
 //     /blog?category= is allowed; all other /blog? query variants (e.g.
 //     /blog?q=, /blog?page=) remain blocked as before.
+//  7. ★ SEO FIX: Removed Allow: /movies?genre= — genre canonical is at
+//     /movies/genre/[genre]; allowing the ?genre= variant created a duplicate
+//     canonical signal and sent contradictory signals to Google.
 //  ✅ All other existing rules preserved (pure training scrapers still blocked)
 
 import { SITE_URL } from "@/lib/seo";
@@ -29,7 +32,6 @@ Allow: /
 # because robots.txt is evaluated first-match-wins per path.
 # These specific URL patterns are canonical, keyword-targeted pages in the sitemap.
 Allow: /movies/year/
-Allow: /movies?genre=
 Allow: /movies/genre/
 Allow: /box-office?year=
 Allow: /blog?category=

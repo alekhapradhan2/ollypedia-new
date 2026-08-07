@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import {
   Search, Menu, X, Film,
   Clapperboard, Users, BookOpen, Music2, TrendingUp, ChevronRight, ArrowRight, Calendar,
@@ -119,9 +119,7 @@ function toSuggestions(data: ApiResponse): Suggestion[] {
     id:       c._id,
     title:    c.name,
     subtitle: c.type ?? "Cast",
-    href:     c.slug
-                ? `/cast/${c.slug}`
-                : `/cast/${c.name.toLowerCase().replace(/\s+/g, "-")}`,
+    href:     `/cast/${c._id}`,
     image:    c.photo,
     category: "cast",
   }));
@@ -559,16 +557,27 @@ function BoxOfficeYearDropdown({ onClose, onNavigate }: { onClose: () => void; o
 // Navbar
 // ─────────────────────────────────────────────────────────────────────────────
 
+function SearchParamsResetter({ onReset }: { onReset: () => void }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    onReset();
+  }, [searchParams, onReset]);
+  return null;
+}
+
 export function Navbar() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
 
   const [loadingYear, setLoadingYear] = useState<number | null>(null);
 
+  const resetLoadingYear = useCallback(() => {
+    setLoadingYear(null);
+  }, []);
+
   useEffect(() => {
     setLoadingYear(null);
-  }, [pathname, searchParams]);
+  }, [pathname]);
 
   const [menuOpen,         setMenuOpen]         = useState(false);
   const [searchOpen,       setSearchOpen]       = useState(false);
@@ -724,10 +733,10 @@ export function Navbar() {
           <p className="text-orange-400 font-medium tracking-widest uppercase text-sm animate-pulse">Loading {loadingYear}...</p>
         </div>
       )}
-      <header
-        className="sticky top-0 z-50 bg-[#080808]/95 backdrop-blur-md border-b border-white/[0.07]"
-        role="banner"
-      >
+      <header className="sticky top-0 z-50 w-full border-b border-white/[0.07] bg-[#080808]/95 backdrop-blur-md">
+        <Suspense fallback={null}>
+          <SearchParamsResetter onReset={resetLoadingYear} />
+        </Suspense>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
