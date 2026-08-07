@@ -86,7 +86,11 @@ export async function GET() {
     urlEntry(`${SITE_URL}${p}`, today, f, pr)
   );
 
-  // ── Genre pages (Removed because route does not exist) ──────────────
+  // ── Genre pages ─────────────────────────────────────────────────────────────
+  const genres = ["action", "romance", "drama", "comedy", "thriller", "horror", "devotional", "family", "historical"];
+  genres.forEach((g) => {
+    entries.push(urlEntry(`${SITE_URL}/movies/genre/${g}`, today, "weekly", "0.8"));
+  });
 
   // ── Blog category pages ────────────────────────────────────────────────────
   // Each is a unique keyword-targeted page. Box Office gets daily crawl priority.

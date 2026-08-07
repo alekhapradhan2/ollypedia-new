@@ -35,7 +35,7 @@ export interface CastSeoDoc {
  */
 export function buildCastMeta(person: CastSeoDoc): Metadata {
   const profession = person.type || "Odia Film Actor & Artist";
-  const title = `${person.name} (${profession}) – Biography, Age, Movies, Photos & Profile | ${SITE_NAME}`;
+  const title = `${person.name} (${profession}) – Biography, Age, Movies, Photos & Profile`;
   const desc = `${person.name} is a renowned ${profession} in the Odia (Ollywood) film industry. Read ${person.name}'s complete biography, age, date of birth, upcoming & past Odia movies list, photos, and news on Ollypedia.`;
 
   return buildMeta({

@@ -110,7 +110,7 @@ export function getTrailerYear(m: TrailerMovieDoc): number {
 export function buildTrailerMeta() {
   const year = new Date().getFullYear();
   return buildMeta({
-    title: `Latest Ollywood Movie Trailers (${year}) | Upcoming Odia Movie Teasers | Ollypedia`,
+    title: `Latest Ollywood Movie Trailers (${year}) | Upcoming Odia Movie Teasers`,
     description:
       `Watch the latest Ollywood movie trailers, teasers, first looks, and upcoming Odia movie previews. Explore complete cast, crew, release dates, posters, production details, and trailer updates only on Ollypedia.`,
     keywords: [
@@ -137,7 +137,7 @@ export function buildTrailerMeta() {
 export function buildIndividualTrailerMeta(m: TrailerMovieDoc) {
   const year = getTrailerYear(m);
   const genres = (m.genre || []).slice(0, 2).join(", ");
-  const titleLine = `${m.title} Official Trailer | Odia ${genres || "Movie"} ${year} | Ollypedia`;
+  const titleLine = `${m.title} Official Trailer | Odia ${genres || "Movie"} ${year}`;
   const desc = m.synopsis
     ? `Watch the official trailer of ${m.title} (${year}). ${m.synopsis.slice(0, 120)}… See cast, crew, songs, release date, and more on Ollypedia.`
     : `Watch the official trailer, teaser & first look of the Odia movie ${m.title} (${year}). Cast, crew, release date, songs, and complete movie details on Ollypedia.`;

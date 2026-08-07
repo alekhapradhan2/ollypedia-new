@@ -50,8 +50,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="grain min-h-screen flex flex-col bg-[#0a0a0a]">
         <Suspense fallback={null}>
           <GlobalLoader />
+          <ScrollToTop />
         </Suspense>
-        <ScrollToTop />
         <NextTopLoader color="#f97316" showSpinner={false} easing="ease" speed={200} />
         <Suspense fallback={<div className="h-16 border-b border-white/[0.07] bg-[#080808]/95" />}>
           <Navbar />

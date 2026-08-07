@@ -22,7 +22,7 @@ export interface BoxOfficeSeoDoc {
  * Builds rich metadata for Box Office details page
  */
 export function buildBoxOfficeMeta(bo: BoxOfficeSeoDoc): Metadata {
-  const title = `${bo.movieTitle} Box Office Collection Day Wise – Total Net & Gross | ${SITE_NAME}`;
+  const title = `${bo.movieTitle} Box Office Collection Day Wise – Total Net & Gross`;
   const totalNetFormatted = bo.totalNet ? `Total net collection is ${bo.totalNet}.` : "";
   const desc = `${bo.movieTitle} Box Office Collection report: Check day-wise net and gross collections, Day 1 opening collection, hit or flop verdict, and total box office earnings in Odia (Ollywood) theaters on Ollypedia. ${totalNetFormatted}`;
 

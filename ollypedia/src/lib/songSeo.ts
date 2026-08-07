@@ -24,7 +24,7 @@ export interface SongSeoDoc {
  * Builds rich metadata for song details page
  */
 export function buildSongMeta(song: SongSeoDoc): Metadata {
-  const title = `${song.title} Song MP3 Lyrics & Video – ${song.movieTitle} | ${SITE_NAME}`;
+  const title = `${song.title} Song MP3 Lyrics & Video – ${song.movieTitle}`;
   const artists = [song.singer, song.musicDirector, song.lyricist].filter(Boolean).join(", ");
   const desc = `Listen to ${song.title} full Odia song from ${song.movieTitle}. ${artists ? `Sung by ${artists}.` : ""} Watch official video, read lyrics, and view full audio credits on Ollypedia.`;
 

@@ -26,7 +26,7 @@ export interface OTTMovie {
 export function buildOttMeta(movie: OTTMovie): Metadata {
   const platform = movie.ott?.platform || "OTT";
   const status = movie.ott?.status || "Upcoming";
-  const title = `Watch ${movie.title} Online | ${platform} Release Date, Streaming Details | Ollypedia`;
+  const title = `Watch ${movie.title} Online | ${platform} Release Date, Streaming Details`;
   const desc = `Find where to watch ${movie.title} online. Check ${platform} release date, streaming languages, subtitles, trailer, and complete OTT information on Ollypedia.`;
 
   return buildMeta({
