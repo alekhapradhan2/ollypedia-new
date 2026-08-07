@@ -20,20 +20,12 @@ export async function generateMetadata({ params }: { params: { movieSlug: string
   await connectDB();
   const isOid = /^[a-f0-9]{24}$/i.test(params.movieSlug);
   const queryMatch = isOid ? { _id: params.movieSlug } : { slug: params.movieSlug };
-  const movie = await Movie.findOne({ 
-    ...queryMatch,
-    $or: [
-      { "ott.platform": { $exists: true, $nin: ["", null] } },
-      { streamingOn: { $exists: true, $nin: ["", null] } },
-      { "ott.watchUrl": { $exists: true, $nin: ["", null] } },
-      { streamingUrl: { $exists: true, $nin: ["", null] } },
-    ]
-  }).lean().exec();
-  if (!movie) return { robots: { index: false, follow: false }, title: "Not Found" };
+  const movie = await Movie.findOne(queryMatch).lean().exec();
+  if (!movie) notFound();
   
   const m = movie as any;
   const ott = {
-    platform: m.ott?.platform || m.streamingOn || "",
+    platform: m.ott?.platform || m.streamingOn || "Odia OTT",
     releaseDate: m.ott?.releaseDate || m.ottReleaseDate || "",
     status: (m.ott?.watchUrl || m.streamingUrl) ? "Streaming" : (m.ott?.status || "Upcoming"),
     watchUrl: m.ott?.watchUrl || m.streamingUrl || "",
@@ -45,18 +37,9 @@ export async function generateMetadata({ params }: { params: { movieSlug: string
 export default async function OttMovieDetailPage({ params }: { params: { movieSlug: string } }) {
   await connectDB();
   
-  // Find movie that has OTT data — either new ott.platform or legacy streamingOn
   const isOid = /^[a-f0-9]{24}$/i.test(params.movieSlug);
   const queryMatch = isOid ? { _id: params.movieSlug } : { slug: params.movieSlug };
-  const movie = await Movie.findOne({ 
-    ...queryMatch,
-    $or: [
-      { "ott.platform": { $exists: true, $nin: ["", null] } },
-      { streamingOn: { $exists: true, $nin: ["", null] } },
-      { "ott.watchUrl": { $exists: true, $nin: ["", null] } },
-      { streamingUrl: { $exists: true, $nin: ["", null] } },
-    ]
-  }).lean().exec();
+  const movie = await Movie.findOne(queryMatch).lean().exec();
   
   if (!movie) return notFound();
 

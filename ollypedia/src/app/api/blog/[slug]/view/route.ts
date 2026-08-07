@@ -18,10 +18,11 @@ import Blog from "@/models/Blog";
 
 export async function POST(
   _req: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }  // ← Promise in Next.js 15
+  { params }: { params: { slug: string } | Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = await params;  // ← must be awaited
+    const resolvedParams = await Promise.resolve(params);
+    const { slug } = resolvedParams;
     if (!slug?.trim()) {
       return NextResponse.json({ error: "Missing slug" }, { status: 400 });
     }

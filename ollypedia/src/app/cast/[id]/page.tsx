@@ -47,10 +47,22 @@ function vs(v?: string) {
 
 // ─── Data fetching ────────────────────────────────────────────────────────────
 async function getCastMember(id: string) {
-  if (!id || typeof id !== "string" || !/^[a-f0-9]{24}$/i.test(id)) return null;
+  if (!id || typeof id !== "string") return null;
   try {
     await connectDB();
-    const member: any = await Cast.findById(id).lean();
+    const isOid = /^[a-f0-9]{24}$/i.test(id);
+    const decoded = decodeURIComponent(id).trim();
+    const nameRegex = new RegExp("^" + decoded.replace(/-/g, "[\\s-]*"), "i");
+    
+    const member: any = isOid
+      ? await Cast.findById(id).lean()
+      : await Cast.findOne({
+          $or: [
+            { slug: decoded },
+            { name: nameRegex }
+          ]
+        }).lean();
+
     if (!member) return null;
 
     const escapedName = member.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

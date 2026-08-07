@@ -1,22 +1,27 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 export function ScrollToTop() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Force scroll to top immediately
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    
-    // Fallback for when the DOM takes a tick to fully render
-    const timeout = setTimeout(() => {
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    }, 50);
+    // Force reset scroll position to top across window, html, and body
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
 
-    return () => clearTimeout(timeout);
-  }, [pathname]);
+    // Secondary tick for late component hydration / image layout shifts
+    const timer = setTimeout(() => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [pathname, searchParams]);
 
   return null;
 }

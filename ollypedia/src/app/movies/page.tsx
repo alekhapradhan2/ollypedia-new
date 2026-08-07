@@ -21,18 +21,25 @@ export const revalidate = 600;
 export async function generateMetadata({
   searchParams,
 }: {
-  searchParams: { page?: string };
+  searchParams: { page?: string; genre?: string };
 }): Promise<Metadata> {
   const page = parseInt(searchParams.page || "1", 10);
+  const genre = searchParams.genre;
 
-  // ★ Pages 2+ are blocked by robots.txt (Disallow: /*?page=).
-  // Return noindex for them to avoid "submitted URL blocked by robots.txt" errors
-  // in Search Console. Page 1 (/movies) is the canonical indexable page.
   if (page > 1) {
     return {
       robots: { index: false, follow: true },
-      title: `Odia Movies – Page ${page} | Ollypedia`,
+      title: `Odia Movies – Page ${page}`,
     };
+  }
+
+  if (genre) {
+    const genreCap = genre.charAt(0).toUpperCase() + genre.slice(1).toLowerCase();
+    return buildMeta({
+      title: `Odia ${genreCap} Movies – Ollywood ${genreCap} Films List`,
+      description: `Browse all Odia ${genreCap} movies in Ollywood cinema with cast, songs, box office, and reviews.`,
+      url: `/movies/genre/${genre.toLowerCase()}`,
+    });
   }
 
   return buildMeta({

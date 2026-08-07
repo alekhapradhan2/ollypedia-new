@@ -38,7 +38,6 @@ Allow: /blog?category=
 Disallow: /api/
 Disallow: /admin/
 Disallow: /search
-Disallow: /_next/
 Disallow: /blog?
 Disallow: /*?sort=
 Disallow: /*?page=

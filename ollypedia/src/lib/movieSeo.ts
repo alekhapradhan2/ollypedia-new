@@ -53,7 +53,7 @@ export interface MovieSeoDoc {
 export function buildMovieMeta(movie: MovieSeoDoc): Metadata {
   const year = movie.releaseDate ? movie.releaseDate.slice(0, 4) : "";
   const yearLabel = year ? ` (${year})` : "";
-  const title = `${movie.title}${yearLabel} Odia Movie – Cast, Story, Songs, Box Office & Review | ${SITE_NAME}`;
+  const title = `${movie.title}${yearLabel} Odia Movie – Cast, Story, Songs, Box Office & Review`;
   const genres = (movie.genre || []).join(", ") || "Odia";
   const desc = `${movie.title} (${year || "Odia Movie"}) – Full cast & crew, director ${movie.director || ""}, ${genres} movie story, release date, box office collection, hit or flop verdict, songs, and reviews on Ollypedia.`;
 
