@@ -386,19 +386,13 @@ function ShareModal({
       const ctx = canvas.getContext("2d")!;
       ctx.scale(SCALE, SCALE);
 
-      // ── Background ──
+      // ── Background Gradient - Simple, sleek dark slate palette ──
       const bgGrad = ctx.createLinearGradient(0, 0, CARD_W, CARD_H);
-      bgGrad.addColorStop(0, "#18100a");
-      bgGrad.addColorStop(0.4, "#0f0b06");
-      bgGrad.addColorStop(1, "#090909");
+      bgGrad.addColorStop(0, "#0f172a");
+      bgGrad.addColorStop(0.5, "#0b0f19");
+      bgGrad.addColorStop(1, "#020617");
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, CARD_W, CARD_H);
-
-      // Film grain
-      for (let i = 0; i < 10000; i++) {
-        ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.015})`;
-        ctx.fillRect(Math.random() * CARD_W, Math.random() * CARD_H, 1, 1);
-      }
 
       // ── Gold bars top & bottom ──
       const barGrad = ctx.createLinearGradient(0, 0, CARD_W, 0);
@@ -444,7 +438,7 @@ function ShareModal({
       ctx.letterSpacing = "1.5px";
       ctx.fillText("OLLYPEDIA", WM_X, LOGO_Y + 26);
       ctx.letterSpacing = "0px";
-      ctx.fillStyle = "rgba(245,158,11,0.45)";
+      ctx.fillStyle = "rgba(245,158,11,0.6)";
       ctx.font = "10.5px 'Georgia', serif";
       ctx.fillText("Your Odia Cinema Universe", WM_X, LOGO_Y + 40);
 
@@ -464,7 +458,7 @@ function ShareModal({
 
       // ── divider ──
       const divider = (y: number) => {
-        ctx.strokeStyle = "rgba(245,158,11,0.12)"; ctx.lineWidth = 1;
+        ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(PAD, y); ctx.lineTo(CARD_W - PAD, y); ctx.stroke();
       };
       divider(curY); curY += DIV;
@@ -501,47 +495,45 @@ function ShareModal({
       let   ry  = POSTER_Y + 4;
 
       // "MY RATING" micro-label — sits on its own line ABOVE the title
- // "MY RATING"
-ctx.fillStyle = "rgba(245,158,11,0.55)";
-ctx.font = "bold 9px Georgia";
-ctx.fillText("MY RATING", RX, ry);
+      ctx.fillStyle = "rgba(245,158,11,0.7)";
+      ctx.font = "bold 9px Georgia";
+      ctx.fillText("MY RATING", RX, ry);
 
-// 👉 Push title down more
-ry += 30; // 🔥 adjust this (28–35 if you want fine control)
+      ry += 30;
 
-// Title
-ctx.fillStyle = "#ffffff";
-ctx.font = "bold 20px Georgia";
+      // Title
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 20px Georgia";
 
-const lineHeight = 24;
-const maxWidth = RW;
+      const lineHeight = 24;
+      const maxWidth = RW;
 
-const words = (movieTitle || "Movie Review").split(" ");
-let line = "";
-const lines: string[] = [];
+      const words = (movieTitle || "Movie Review").split(" ");
+      let line = "";
+      const lines: string[] = [];
 
-for (let i = 0; i < words.length; i++) {
-  const testLine = line ? line + " " + words[i] : words[i];
-  const testWidth = ctx.measureText(testLine).width;
+      for (let i = 0; i < words.length; i++) {
+        const testLine = line ? line + " " + words[i] : words[i];
+        const testWidth = ctx.measureText(testLine).width;
 
-  if (testWidth > maxWidth && line) {
-    lines.push(line);
-    line = words[i];
-    if (lines.length === 2) break;
-  } else {
-    line = testLine;
-  }
-}
+        if (testWidth > maxWidth && line) {
+          lines.push(line);
+          line = words[i];
+          if (lines.length === 2) break;
+        } else {
+          line = testLine;
+        }
+      }
 
-if (line && lines.length < 2) lines.push(line);
+      if (line && lines.length < 2) lines.push(line);
 
-// Draw title
-lines.forEach((l, i) => {
-  ctx.fillText(l, RX, ry + i * lineHeight);
-});
+      // Draw title
+      lines.forEach((l, i) => {
+        ctx.fillText(l, RX, ry + i * lineHeight);
+      });
 
-// Move ry after title
-ry += lines.length * lineHeight + 12;
+      // Move ry after title
+      ry += lines.length * lineHeight + 12;
 
       // Stars
       const SS = 22; const SG = 4;
@@ -552,8 +544,8 @@ ry += lines.length * lineHeight + 12;
       }
       ry += SS + 10;
 
-      // Rating badge
-      const rateTxt = `${displayStars}/5`;
+      // Rating badge - Shows rating out of 5 stars
+      const rateTxt = `${displayStars} / 5 Stars`;
       ctx.font = "bold 12px 'Georgia', serif";
       const rateW = ctx.measureText(rateTxt).width + 18;
       ctx.fillStyle = "rgba(245,158,11,0.12)";
@@ -570,13 +562,13 @@ ry += lines.length * lineHeight + 12;
       const BOX_W = CARD_W - PAD * 2;
       const BOX_Y = curY;
 
-      ctx.fillStyle = "rgba(255,255,255,0.025)";
+      ctx.fillStyle = "rgba(255,255,255,0.035)";
       ctx.beginPath(); roundRect(ctx, BOX_X, BOX_Y, BOX_W, BOX_H, 14); ctx.fill();
-      ctx.strokeStyle = "rgba(255,255,255,0.07)"; ctx.lineWidth = 1; ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.09)"; ctx.lineWidth = 1; ctx.stroke();
 
       // Left gold bar
-      ctx.fillStyle = "rgba(245,158,11,0.6)";
-      ctx.beginPath(); roundRect(ctx, BOX_X, BOX_Y + 12, 3, BOX_H - 24, 2); ctx.fill();
+      ctx.fillStyle = "#f59e0b";
+      ctx.beginPath(); roundRect(ctx, BOX_X, BOX_Y + 12, 3.5, BOX_H - 24, 2); ctx.fill();
 
       // Giant quote glyph
       ctx.fillStyle = "rgba(245,158,11,0.08)";
@@ -584,7 +576,7 @@ ry += lines.length * lineHeight + 12;
       ctx.fillText("\u201C", BOX_X + 14, BOX_Y + 58);
 
       // Quote text
-      ctx.fillStyle = "rgba(255,255,255,0.86)";
+      ctx.fillStyle = "#f1f5f9";
       ctx.font = `italic ${FONT_SIZE}px 'Georgia', serif`;
       qLines.forEach((ln, i) => {
         const prefix = i === 0 ? "\u201C" : "";
@@ -592,10 +584,37 @@ ry += lines.length * lineHeight + 12;
         ctx.fillText(`${prefix}${ln}${suffix}`, BOX_X + BOX_PAD + 6, BOX_Y + BOX_PAD + 12 + i * lineH);
       });
 
-      // Attribution
-      ctx.fillStyle = "rgba(255,255,255,0.3)";
+      // Prominent User Name Attribution
+      const attrY = BOX_Y + BOX_H - 18;
+      const avatarX = BOX_X + BOX_PAD + 14;
+      const avatarY = attrY - 5;
+
+      // Avatar Circle Badge
+      ctx.fillStyle = "rgba(245, 158, 11, 0.18)";
+      ctx.beginPath();
+      ctx.arc(avatarX, avatarY, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(245, 158, 11, 0.45)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Avatar Icon
+      ctx.fillStyle = "#f59e0b";
+      ctx.font = "11px sans-serif";
+      ctx.fillText("👤", avatarX - 5, avatarY + 4);
+
+      // User Name (Bright Pure White & Bold)
+      const userNameStr = review.user || "Anonymous";
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 14px 'Georgia', serif";
+      ctx.fillText(userNameStr, avatarX + 18, attrY);
+
+      // Date & Site tag in soft gold
+      const userNameW = ctx.measureText(userNameStr).width;
+      const dtStr = review.date ? ` · ${review.date.split("T")[0]}` : "";
+      ctx.fillStyle = "rgba(245, 158, 11, 0.75)";
       ctx.font = "12px 'Georgia', serif";
-      ctx.fillText(`— ${review.user || "Anonymous"} · ollypedia.in`, BOX_X + BOX_PAD + 6, BOX_Y + BOX_H - 14);
+      ctx.fillText(`${dtStr} · ollypedia.in`, avatarX + 18 + userNameW + 4, attrY);
 
       curY += BOX_H + 16 + gap;
       divider(curY); curY += DIV;
@@ -806,16 +825,24 @@ ry += lines.length * lineHeight + 12;
             }}>
               &ldquo;{review.text}&rdquo;
             </p>
-            <p style={{
-              fontSize: "0.68rem", color: "rgba(255,255,255,.3)",
-              marginTop: 10, marginBottom: 0,
-              display: "flex", alignItems: "center", gap: 6,
+            <div style={{
+              marginTop: 12, paddingTop: 10,
+              borderTop: "1px solid rgba(255,255,255,.08)",
+              display: "flex", alignItems: "center", gap: 8,
             }}>
-              <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="rgba(245,158,11,.4)" strokeWidth={2}>
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-              </svg>
-              {review.user || "Anonymous"} &nbsp;·&nbsp; ollypedia.in
-            </p>
+              <div style={{
+                width: 22, height: 22, borderRadius: "50%",
+                background: "rgba(245,158,11,.18)", border: "1px solid rgba(245,158,11,.4)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "0.65rem", color: "#f59e0b", flexShrink: 0,
+              }}>👤</div>
+              <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#ffffff" }}>
+                {review.user || "Anonymous"}
+              </div>
+              <div style={{ fontSize: "0.72rem", color: "rgba(245,158,11,.75)" }}>
+                {review.date ? `· ${new Date(review.date).toISOString().split("T")[0]}` : ""} · ollypedia.in
+              </div>
+            </div>
           </div>
         </div>
 
