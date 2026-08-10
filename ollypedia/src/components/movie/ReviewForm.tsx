@@ -327,16 +327,20 @@ function ShareModal({
       }
 
       // ── Pre-load images ──
-      let faviconImg: HTMLImageElement | null = null;
-      let posterImg:  HTMLImageElement | null = null;
+      let siteLogoImg: HTMLImageElement | null = null;
+      let posterImg:   HTMLImageElement | null = null;
 
       await Promise.allSettled([
-        // favicon
+        // Website Logo
         (async () => {
-          const fi = new Image();
-          fi.crossOrigin = "anonymous";
-          await new Promise<void>((res, rej) => { fi.onload = () => res(); fi.onerror = rej; fi.src = `/api/img-proxy?url=${encodeURIComponent(window.location.origin + "/favicon.ico")}`; });
-          faviconImg = fi;
+          const li = new Image();
+          li.crossOrigin = "anonymous";
+          await new Promise<void>((res, rej) => {
+            li.onload = () => res();
+            li.onerror = rej;
+            li.src = `/api/img-proxy?url=${encodeURIComponent(window.location.origin + "/logo.png")}`;
+          });
+          siteLogoImg = li;
         })(),
         // poster
         moviePoster ? (async () => {
@@ -405,42 +409,58 @@ function ShareModal({
       ctx.fillRect(0, 0, CARD_W, 4);
       ctx.fillRect(0, CARD_H - 4, CARD_W, 4);
 
-      // ── HEADER ──
+      // ── HEADER — Website Logo ──
       let curY = 4;
-      const LOGO_SIZE = 42;
-      const LOGO_X    = PAD;
-      const LOGO_Y    = curY + (HDR_H - LOGO_SIZE) / 2;
+      const LOGO_X = PAD;
 
-      if (faviconImg) {
-        ctx.save();
-        ctx.beginPath();
-        roundRect(ctx, LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE, 10);
-        ctx.clip();
-        ctx.drawImage(faviconImg, LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE);
-        ctx.restore();
-        ctx.strokeStyle = "rgba(245,158,11,0.55)";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        roundRect(ctx, LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE, 10);
-        ctx.stroke();
+      if (siteLogoImg && (siteLogoImg as HTMLImageElement).width > 0) {
+        const aspect = (siteLogoImg as HTMLImageElement).width / (siteLogoImg as HTMLImageElement).height;
+        if (aspect > 1.3) {
+          // Horizontal brand logo (logo.png)
+          const drawH = 44;
+          const drawW = Math.min(drawH * aspect, 240);
+          const drawY = curY + (HDR_H - drawH) / 2;
+          ctx.drawImage(siteLogoImg, LOGO_X, drawY, drawW, drawH);
+        } else {
+          // Icon/square logo
+          const iconSize = 44;
+          const iconY = curY + (HDR_H - iconSize) / 2;
+          ctx.save();
+          ctx.beginPath();
+          roundRect(ctx, LOGO_X, iconY, iconSize, iconSize, 10);
+          ctx.clip();
+          ctx.drawImage(siteLogoImg, LOGO_X, iconY, iconSize, iconSize);
+          ctx.restore();
+
+          const WM_X = LOGO_X + iconSize + 12;
+          ctx.fillStyle = "#f59e0b";
+          ctx.font = "bold 19px 'Georgia', serif";
+          ctx.fillText("OLLYPEDIA", WM_X, iconY + 24);
+          ctx.fillStyle = "rgba(245,158,11,0.6)";
+          ctx.font = "10.5px 'Georgia', serif";
+          ctx.fillText("Your Odia Cinema Universe", WM_X, iconY + 39);
+        }
       } else {
+        // Fallback logo
+        const LOGO_SIZE = 42;
+        const LOGO_Y    = curY + (HDR_H - LOGO_SIZE) / 2;
         const lg = ctx.createLinearGradient(LOGO_X, LOGO_Y, LOGO_X + LOGO_SIZE, LOGO_Y + LOGO_SIZE);
         lg.addColorStop(0, "#f59e0b"); lg.addColorStop(1, "#b45309");
         ctx.fillStyle = lg;
         ctx.beginPath(); roundRect(ctx, LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE, 10); ctx.fill();
         ctx.font = "22px serif";
         ctx.fillText("🎬", LOGO_X + 8, LOGO_Y + 30);
-      }
 
-      const WM_X = LOGO_X + LOGO_SIZE + 10;
-      ctx.fillStyle = "#f59e0b";
-      ctx.font = "bold 19px 'Georgia', serif";
-      ctx.letterSpacing = "1.5px";
-      ctx.fillText("OLLYPEDIA", WM_X, LOGO_Y + 26);
-      ctx.letterSpacing = "0px";
-      ctx.fillStyle = "rgba(245,158,11,0.6)";
-      ctx.font = "10.5px 'Georgia', serif";
-      ctx.fillText("Your Odia Cinema Universe", WM_X, LOGO_Y + 40);
+        const WM_X = LOGO_X + LOGO_SIZE + 10;
+        ctx.fillStyle = "#f59e0b";
+        ctx.font = "bold 19px 'Georgia', serif";
+        ctx.letterSpacing = "1.5px";
+        ctx.fillText("OLLYPEDIA", WM_X, LOGO_Y + 26);
+        ctx.letterSpacing = "0px";
+        ctx.fillStyle = "rgba(245,158,11,0.6)";
+        ctx.font = "10.5px 'Georgia', serif";
+        ctx.fillText("Your Odia Cinema Universe", WM_X, LOGO_Y + 40);
+      }
 
       // MY REVIEW badge (right)
       ctx.font = "bold 9.5px 'Georgia', serif";
@@ -688,30 +708,18 @@ function ShareModal({
         }}>
           {/* Ollypedia Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{
-              width: 32, height: 32,
-              background: "linear-gradient(135deg, #f59e0b, #b45309)",
-              borderRadius: 9,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 3px 10px rgba(245,158,11,.35)",
-              fontSize: 16,
-            }}>🎬</div>
-            <div>
-              <div style={{
-                fontFamily: "'Georgia', serif",
-                fontWeight: 800,
-                fontSize: "1rem",
-                letterSpacing: "0.04em",
-                color: "#f59e0b",
-                lineHeight: 1.1,
-              }}>OLLYPEDIA</div>
-              <div style={{
-                fontSize: "0.55rem",
-                color: "rgba(245,158,11,.45)",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-              }}>Your Odia Cinema Universe</div>
-            </div>
+            <img
+              src="/logo.png"
+              alt="Ollypedia Logo"
+              style={{ height: 32, width: "auto", objectFit: "contain" }}
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.dataset.tried) {
+                  target.dataset.tried = "true";
+                  target.src = "https://www.ollypedia.in/logo.png";
+                }
+              }}
+            />
           </div>
 
           {/* Success badge */}
