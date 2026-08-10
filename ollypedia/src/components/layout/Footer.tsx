@@ -194,7 +194,6 @@ const NAV_LINKS = {
     { label: "About Us", href: "/about" },
     { label: "Contact", href: "/contact" },
     { label: "Privacy Policy", href: "/privacy" },
-    { label: "Terms of Service", href: "/terms" },
     { label: "HTML Sitemap", href: "/sitemap" },
     { label: "Terms & Conditions", href: "/terms-and-conditions" },
   ],
@@ -202,12 +201,12 @@ const NAV_LINKS = {
 
 const SEO_LINKS = {
   "Explore Movies & Songs": [
-    { label: "Odia Movies 2026", href: "/movies" },
-    { label: "Odia Movies 2025", href: "/movies" },
-    { label: "Odia Movies 2024", href: "/movies" },
-    { label: "Upcoming Odia Movies", href: "/movies" },
-    { label: "Latest Odia Movies", href: "/movies" },
-    { label: "Blockbuster Odia Movies", href: "/movies" },
+    { label: "Odia Movies 2026", href: "/movies/year/2026" },
+    { label: "Odia Movies 2025", href: "/movies/year/2025" },
+    { label: "Odia Movies 2024", href: "/movies/year/2024" },
+    { label: "Upcoming Odia Movies", href: "/movies/upcoming" },
+    { label: "Latest Odia Movies", href: "/movies/latest" },
+    { label: "Blockbuster Odia Movies", href: "/movies/blockbuster" },
     { label: "Ollywood Trailers 2026", href: "/trailers" },
     { label: "Upcoming Movie Trailers", href: "/trailers?status=upcoming" },
     { label: "Official Odia Teasers", href: "/trailers?type=teaser" },
@@ -259,13 +258,13 @@ export async function Footer() {
                       >
                         {/* Glow sweep effect on hover */}
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transform -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
-                        
+
                         {/* Animated glowing dot indicator */}
                         <div className="relative flex items-center justify-center w-1.5 h-1.5 ml-0.5">
                           <div className="absolute inset-0 rounded-full bg-orange-500 opacity-0 group-hover:opacity-40 group-hover:animate-ping" style={{ animationDuration: '2s' }} />
                           <div className="relative w-1.5 h-1.5 rounded-full bg-gray-600 group-hover:bg-orange-400 transition-colors shadow-[0_0_0_rgba(249,115,22,0)] group-hover:shadow-[0_0_6px_rgba(249,115,22,0.8)]" />
                         </div>
-                        
+
                         <span className="relative z-10 text-[11px] sm:text-xs font-semibold text-gray-400 group-hover:text-orange-50 transition-colors tracking-wide">
                           {link.label}
                         </span>

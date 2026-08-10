@@ -81,6 +81,26 @@ export function generateCastJsonLd(person: CastSeoDoc) {
     ...(m.releaseDate ? { datePublished: m.releaseDate } : {}),
   }));
 
+  // ★ SEO FIX: schema.org description must be PLAIN TEXT, not HTML.
+  // The bio field stores rich HTML (e.g., <p><strong>...) which violates
+  // Google's structured data guidelines and can suppress rich results.
+  function stripHtml(html?: string): string {
+    if (!html) return "";
+    return html
+      .replace(/<[^>]+>/g, " ")   // replace tags with spaces
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, "\"")
+      .replace(/&#x27;/g, "'")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 500); // cap at 500 chars for schema.org
+  }
+
+  const plainBio = stripHtml(person.bio) || `${person.name} is an Odia film industry artist.`;
+
   const personSchema: Record<string, any> = {
     "@context": "https://schema.org",
     "@type": "Person",
@@ -88,7 +108,7 @@ export function generateCastJsonLd(person: CastSeoDoc) {
     url: url,
     image: person.photo || undefined,
     jobTitle: person.type || "Odia Film Artist",
-    description: person.bio || `${person.name} is an Odia film industry artist.`,
+    description: plainBio,
     ...(person.dob ? { birthDate: person.dob } : {}),
     ...(person.birthPlace ? { birthPlace: { "@type": "Place", name: person.birthPlace } } : {}),
     ...(sameAs.length > 0 && { sameAs: sameAs }),

@@ -8,6 +8,8 @@ import Link from "next/link";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 import Blog from "@/models/Blog";
+import Cast from "@/models/Cast";
+import Production from "@/models/Production";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import { buildMovieMeta } from "@/lib/movieSeo";
 import { YouTubeEmbed }  from "@/components/ui/YouTubeEmbed";
@@ -454,14 +456,38 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
   );
 }
 
-function StatChip({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+function StatChip({
+  label,
+  value,
+  variant = "default",
+  customClass = "",
+}: {
+  label: string;
+  value: string;
+  variant?: "default" | "orange" | "indigo" | "green" | "blue";
+  customClass?: string;
+}) {
+  const styles = {
+    default: "bg-[#121212] border-[#222] text-white",
+    orange:  "bg-gradient-to-r from-orange-500/10 via-orange-500/5 to-transparent border-l-2 border-l-orange-500 border-y border-r border-orange-500/20 text-white",
+    indigo:  "bg-gradient-to-r from-indigo-500/10 via-indigo-500/5 to-transparent border-l-2 border-l-indigo-500 border-y border-r border-indigo-500/20 text-white",
+    green:   "bg-gradient-to-r from-green-500/10 via-emerald-500/5 to-transparent border-l-2 border-l-green-500 border-y border-r border-green-500/20 text-green-400",
+    blue:    "bg-gradient-to-r from-blue-500/10 via-sky-500/5 to-transparent border-l-2 border-l-blue-500 border-y border-r border-blue-500/20 text-blue-400",
+  }[variant];
+
+  const labelColors = {
+    default: "text-gray-500",
+    orange:  "text-orange-400/80",
+    indigo:  "text-indigo-400/80",
+    green:   "text-green-400/80",
+    blue:    "text-blue-400/80",
+  }[variant];
+
   return (
-    <div className={`flex items-center gap-2 rounded-lg px-3 py-2 border ${
-      accent ? "bg-orange-500/8 border-orange-500/20" : "bg-[#111] border-[#1f1f1f]"
-    }`}>
-      <div className="min-w-0">
-        <p className="text-[9px] text-gray-600 uppercase tracking-widest leading-none mb-0.5">{label}</p>
-        <p className={`text-xs font-bold truncate leading-snug ${accent ? "text-orange-400" : "text-white"}`}>{value}</p>
+    <div className={`flex items-center gap-2 rounded-xl px-3 py-2 border min-w-0 ${styles} ${customClass}`}>
+      <div className="min-w-0 w-full">
+        <p className={`text-[9px] uppercase tracking-widest leading-none mb-0.5 font-semibold ${labelColors}`}>{label}</p>
+        <p className="text-xs font-bold truncate leading-snug">{value}</p>
       </div>
     </div>
   );
@@ -631,9 +657,9 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
           </div>
 
           {/* ── Poster + Title row + Box Office (right on lg+) ── */}
-          <div className="flex gap-4 sm:gap-6 lg:gap-0 pt-5 pb-6 sm:pb-8 lg:grid lg:grid-cols-[1fr_320px] lg:items-start">
-          {/* Left column: poster + title */}
-          <div className="flex gap-4 sm:gap-6 lg:pr-8">
+          <div className="pt-5 pb-6 sm:pb-8 lg:grid lg:grid-cols-[1fr_320px] lg:items-start">
+          {/* Left column: poster + title + stats + countdown + share */}
+          <div className="flex flex-wrap sm:flex-nowrap gap-3 sm:gap-6 lg:pr-8">
 
             {/* Poster — fixed sizes per breakpoint, never overflows */}
             <div className="flex-shrink-0 self-start">
@@ -648,262 +674,210 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
               </div>
             </div>
 
-            {/* Title + meta — takes remaining width */}
-            <div className="flex-1 min-w-0">
+            {/* Wrapper: behaves as 'contents' on mobile (< sm) so stats drop full-width below poster, 
+                and as flex-col column on desktop (sm+) so all details sit beside poster */}
+            <div className="contents sm:flex sm:flex-col sm:flex-1 sm:min-w-0">
 
-              {/* Genre + language badges */}
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {(movie.genre || []).map((g: string) => (
-                  <Link key={g} href={`/movies?genre=${g}`}>
-                    <span className="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-0.5 sm:py-1 bg-orange-950 border border-orange-900 text-orange-400 rounded-full hover:bg-orange-900 transition-colors">
-                      {g}
+              {/* Title + core identity info */}
+              <div className="flex-1 min-w-0 sm:w-full">
+
+                {/* Genre + language badges */}
+                <div className="flex flex-wrap gap-1 mb-1.5 sm:mb-2">
+                  {(movie.genre || []).map((g: string) => (
+                    <Link key={g} href={`/movies/genre/${encodeURIComponent(g.toLowerCase())}`}>
+                      <span className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 sm:px-3 sm:py-1 bg-orange-950/80 border border-orange-900/60 text-orange-400 rounded-full hover:bg-orange-900 transition-colors">
+                        {g}
+                      </span>
+                    </Link>
+                  ))}
+                  {movie.language && (
+                    <span className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 sm:px-3 sm:py-1 bg-blue-950/80 border border-blue-900/60 text-blue-400 rounded-full">
+                      {movie.language}
                     </span>
-                  </Link>
-                ))}
-                {movie.language && (
-                  <span className="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-950 border border-blue-900 text-blue-400 rounded-full">
-                    {movie.language}
-                  </span>
-                )}
-                {movie.contentRating && (
-                  <span className="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-0.5 sm:py-1 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded-full">
-                    {movie.contentRating}
-                  </span>
-                )}
-              </div>
-
-              {/* Title — scales smoothly across all screens */}
-              <h1 className="font-display font-black text-white leading-tight mb-1
-                text-xl sm:text-3xl md:text-4xl lg:text-5xl">
-                {movie.title}
-              </h1>
-
-              {/* Production House(s) — branded tag right below the title.
-                  Shows every production house (primary + collaborators), not
-                  just the primary productionId, joined naturally with "&". */}
-              {movie._allProductionNames?.length > 0 && (
-                <div className="inline-flex items-center gap-1.5 mt-1 mb-2 flex-wrap">
-                  <span className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-widest font-medium">A</span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-[3px] border-l-2 border-orange-500 bg-gradient-to-r from-orange-500/10 to-transparent text-orange-300 text-[10px] sm:text-xs font-semibold tracking-wide">
-                    {movie._allProductionNames.length === 1
-                      ? movie._allProductionNames[0]
-                      : movie._allProductionNames.length === 2
-                      ? movie._allProductionNames.join(" & ")
-                      : `${movie._allProductionNames.slice(0, -1).join(", ")} & ${movie._allProductionNames[movie._allProductionNames.length - 1]}`}
-                  </span>
-                  <span className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-widest font-medium">Presentation</span>
+                  )}
+                  {movie.contentRating && (
+                    <span className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 sm:px-3 sm:py-1 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded-full">
+                      {movie.contentRating}
+                    </span>
+                  )}
                 </div>
-              )}
 
-              {year && (
-                <p className="text-zinc-500 text-xs sm:text-sm md:text-base mb-3">
-                  ({year}) · Odia Film
-                </p>
-              )}
+                {/* Title */}
+                <h1 className="font-display font-black text-white leading-tight mb-1 text-xl sm:text-3xl md:text-4xl lg:text-5xl">
+                  {movie.title}
+                </h1>
 
-              {/* Interested count — shows for every movie, released or not,
-                  as long as at least one vote exists. Rating badge joins it
-                  once the movie has actually released (there's nothing to
-                  rate before that), so both can appear together post-release. */}
-              {(((movie.interestedYes || 0) + (movie.interestedNo || 0)) > 0 || (!isUnreleased && avgRating !== null)) && (
-                <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  {((movie.interestedYes || 0) + (movie.interestedNo || 0)) > 0 && (
-                    <>
-                      <div className="flex items-center gap-1.5 bg-[#111] border border-[#1f1f1f] rounded-lg px-2 py-1 sm:px-3 sm:py-1.5">
-                        <Users className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
-                        <span className="font-bold text-white text-sm sm:text-base">
+                {/* Production House(s) */}
+                {movie._allProductionNames?.length > 0 && (
+                  <div className="inline-flex items-center gap-1.5 mt-0.5 mb-1.5 flex-wrap">
+                    <span className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-widest font-medium">A</span>
+                    <span className="inline-flex items-center gap-1.5 px-2 py-[2px] sm:px-2.5 sm:py-[3px] rounded-[3px] border-l-2 border-orange-500 bg-gradient-to-r from-orange-500/10 to-transparent text-orange-300 text-[10px] sm:text-xs font-semibold tracking-wide">
+                      {movie._allProductionNames.length === 1
+                        ? movie._allProductionNames[0]
+                        : movie._allProductionNames.length === 2
+                        ? movie._allProductionNames.join(" & ")
+                        : `${movie._allProductionNames.slice(0, -1).join(", ")} & ${movie._allProductionNames[movie._allProductionNames.length - 1]}`}
+                    </span>
+                    <span className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-widest font-medium">Presentation</span>
+                  </div>
+                )}
+
+                {year && (
+                  <p className="text-zinc-400 text-xs sm:text-sm md:text-base mb-2 font-medium">
+                    ({year}) · Odia Film
+                  </p>
+                )}
+
+                {/* Interested count / Rating */}
+                {(((movie.interestedYes || 0) + (movie.interestedNo || 0)) > 0 || (!isUnreleased && avgRating !== null)) && (
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    {((movie.interestedYes || 0) + (movie.interestedNo || 0)) > 0 && (
+                      <div className="inline-flex items-center gap-1.5 bg-[#111] border border-[#1f1f1f] rounded-lg px-2 py-1 sm:px-3 sm:py-1.5">
+                        <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-400" />
+                        <span className="font-bold text-white text-xs sm:text-sm md:text-base">
                           {(movie.interestedYes || 0).toLocaleString("en-IN")}
                         </span>
+                        <span className="text-[10px] sm:text-xs text-zinc-400">interested</span>
                       </div>
-                      <span className="text-[10px] sm:text-xs text-zinc-500">people interested</span>
-                    </>
-                  )}
-                  {!isUnreleased && avgRating !== null && (
-                    <>
-                      <div className="flex items-center gap-1.5 bg-[#111] border border-[#1f1f1f] rounded-lg px-2 py-1 sm:px-3 sm:py-1.5">
-                        <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
-                        <span className="font-bold text-white text-sm sm:text-base">{(avgRating as number).toFixed(1)}</span>
+                    )}
+                    {!isUnreleased && avgRating !== null && (
+                      <div className="inline-flex items-center gap-1.5 bg-[#111] border border-[#1f1f1f] rounded-lg px-2 py-1 sm:px-3 sm:py-1.5">
+                        <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
+                        <span className="font-bold text-white text-xs sm:text-sm md:text-base">{(avgRating as number).toFixed(1)}</span>
                         <span className="text-zinc-500 text-[10px] sm:text-xs">/10</span>
+                        <span className="text-[10px] sm:text-xs text-zinc-400 ml-0.5">({movie.reviews?.length})</span>
                       </div>
-                      <span className="hidden sm:block"><StarRating rating={avgRating as number} /></span>
-                      <span className="text-[10px] sm:text-xs text-zinc-500">{movie.reviews?.length} reviews</span>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Stat chips — 2 per row on mobile, inline on sm+ */}
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {movie.releaseDate && (
-                  <StatChip
-                    label="Release"
-                    value={formatReleaseDate(movie.releaseDate, movie.releaseDatePrecision, "short")}
-                  />
-                )}
-                {movie.isReRelease && movie.reReleaseDate && (
-                  <StatChip
-                    label="Re-Release"
-                    value={formatReleaseDate(movie.reReleaseDate, movie.reReleaseDatePrecision, "short")}
-                    accent={true}
-                  />
-                )}
-                {movie.runtime && <StatChip label="Runtime" value={movie.runtime} />}
-                {/* Director: prefer cast list, fallback to movie.director field */}
-                {(() => {
-                  const dirFromCast = getDirectorFromCast(movie.cast || []);
-                  const dirName = dirFromCast || movie.director;
-                  return dirName ? (
-                    <div className="flex items-center gap-2 rounded-lg px-3 py-2 border border-orange-500/20 bg-orange-500/8">
-                      <div className="min-w-0">
-                        <p className="text-[9px] text-orange-400/70 uppercase tracking-widest leading-none mb-0.5">Director</p>
-                        <p className="text-xs font-bold text-white truncate">{dirName}</p>
-                      </div>
-                    </div>
-                  ) : null;
-                })()}
-                {/* Producer: prefer cast list, fallback to movie.producer field */}
-                {(() => {
-                  const prodFromCast = getProducerFromCast(movie.cast || []);
-                  const prodName = prodFromCast || movie.producer;
-                  return prodName ? (
-                    <div className="flex items-center gap-2 rounded-lg px-3 py-2 border border-[#1f1f1f] bg-[#111]">
-                      <div className="min-w-0">
-                        <p className="text-[9px] text-gray-600 uppercase tracking-widest leading-none mb-0.5">Producer</p>
-                        <p className="text-xs font-bold text-white truncate">{prodName}</p>
-                      </div>
-                    </div>
-                  ) : null;
-                })()}
-                {/* Verdict shown here ONLY when no box office data exists yet
-                    (e.g. "Upcoming" movies) — once box office numbers exist,
-                    the verdict already appears in the Box Office card/strip
-                    below, so we skip it here to avoid showing it twice. */}
-                {movie.verdict && !(movie.boxOffice?.opening || movie.boxOffice?.total || movie.boxOfficeDays?.length > 0) && (
-                  <div className={`flex items-center gap-2 rounded-lg px-3 py-2 border ${vs.bg} ${vs.border}`}>
-                    <div className="min-w-0">
-                      <p className="text-[9px] text-gray-600 uppercase tracking-widest leading-none mb-0.5">Verdict</p>
-                      <p className={`text-xs font-bold truncate ${vs.text}`}>{movie.verdict}</p>
-                    </div>
+                    )}
                   </div>
                 )}
-              </div>
 
-              {/* Synopsis — only on md+ to avoid cramping mobile layout */}
-              {movie.synopsis && (
-                <p className="hidden md:block text-zinc-400 text-sm leading-relaxed line-clamp-3 max-w-2xl mt-3">
-                  {movie.synopsis.length > 220 ? movie.synopsis.slice(0, 220).trimEnd() + "…" : movie.synopsis}
-                </p>
-              )}
+              </div>{/* end title & identity */}
 
-              {/* Release countdown — live client-side timer for Upcoming movies */}
-              {movie.verdict === "Upcoming" && movie.releaseDate && !movie.releaseTBA && (
-                <ReleaseCountdown releaseDate={movie.releaseDate} title={movie.title} />
-              )}
+              {/* Details block (underneath poster on mobile, inside info column beside poster on desktop) */}
+              <div className="w-full mt-3.5 sm:mt-4 space-y-3 sm:space-y-4">
 
-              {/* Share buttons + OTT Watch button */}
-              <div className="flex flex-wrap items-center gap-2 mt-3">
-                <ShareButtons
-                  title={`${movie.title}${year ? ` (${year})` : ""} – Odia Movie`}
-                  url={canonical}
-                />
-                {movie.streamingOn && movie.streamingUrl && (
-                  <a
-                    href={movie.streamingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
-                      bg-orange-500 hover:bg-orange-400 active:bg-orange-600
-                      text-black transition-colors duration-150 shadow-md shadow-orange-900/40
-                      border border-orange-400/30"
-                  >
-                    <OttLogoImg platform={movie.streamingOn} size="sm" />
-                    Watch on {movie.streamingOn}
-                  </a>
+                {/* Accent Cards Grid (Netflix / HBO Max Style) */}
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+                  {movie.releaseDate && (
+                    <StatChip
+                      label="Release"
+                      value={formatReleaseDate(movie.releaseDate, movie.releaseDatePrecision, "short")}
+                      variant="default"
+                    />
+                  )}
+                  {movie.isReRelease && movie.reReleaseDate && (
+                    <StatChip
+                      label="Re-Release"
+                      value={formatReleaseDate(movie.reReleaseDate, movie.reReleaseDatePrecision, "short")}
+                      variant="orange"
+                    />
+                  )}
+                  {movie.runtime && (
+                    <StatChip label="Runtime" value={movie.runtime} variant="default" />
+                  )}
+                  {/* Director — Glowing Orange Accent Card */}
+                  {(() => {
+                    const dirFromCast = getDirectorFromCast(movie.cast || []);
+                    const dirName = dirFromCast || movie.director;
+                    return dirName ? (
+                      <StatChip label="Director" value={dirName} variant="orange" />
+                    ) : null;
+                  })()}
+                  {/* Producer — Glowing Indigo Accent Card */}
+                  {(() => {
+                    const prodFromCast = getProducerFromCast(movie.cast || []);
+                    const prodName = prodFromCast || movie.producer;
+                    return prodName ? (
+                      <StatChip label="Producer" value={prodName} variant="indigo" />
+                    ) : null;
+                  })()}
+                  {/* Verdict */}
+                  {movie.verdict && !(movie.boxOffice?.opening || movie.boxOffice?.total || movie.boxOfficeDays?.length > 0) && (
+                    <StatChip label="Verdict" value={movie.verdict} variant="green" />
+                  )}
+                </div>
+
+                {/* Synopsis — shown on md+ */}
+                {movie.synopsis && (
+                  <p className="hidden md:block text-zinc-400 text-sm leading-relaxed line-clamp-3 max-w-2xl mt-3">
+                    {movie.synopsis.length > 220 ? movie.synopsis.slice(0, 220).trimEnd() + "…" : movie.synopsis}
+                  </p>
                 )}
-                {movie.streamingOn && !movie.streamingUrl && (
-                  <span
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
-                      bg-[#111] border border-orange-500/25 text-orange-400 cursor-default"
-                  >
-                    <OttLogoImg platform={movie.streamingOn} size="sm" />
-                    Coming soon on {movie.streamingOn}
-                  </span>
+
+                {/* Release countdown — live client-side timer for Upcoming movies */}
+                {movie.verdict === "Upcoming" && movie.releaseDate && !movie.releaseTBA && (
+                  <ReleaseCountdown releaseDate={movie.releaseDate} title={movie.title} />
                 )}
-              </div>
-            </div>
+
+                {/* Interest Card for unreleased movies (Mobile view) */}
+                {isUnreleased ? (
+                  <div className="lg:hidden mt-3 bg-[#111] border border-[#1f1f1f] rounded-2xl p-4 space-y-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-5 bg-orange-500 rounded flex-shrink-0" />
+                      <h2 className="text-sm font-extrabold text-white flex items-center gap-1.5">
+                        <Users className="w-4 h-4 text-orange-500" />
+                        Are You Interested?
+                      </h2>
+                    </div>
+                    <p className="text-xs text-gray-400 leading-normal">
+                      {movie.title} hasn&apos;t released yet, so reviews aren&apos;t open. Let us know if you&apos;re looking forward to it!
+                    </p>
+                    <VoteButtons
+                      movieId={String(movie._id)}
+                      initialYes={movie.interestedYes || 0}
+                      initialNo={movie.interestedNo || 0}
+                    />
+                  </div>
+                ) : (
+                  /* Review section for released movies (Mobile Hero view - Form only) */
+                  <div className="lg:hidden mt-3">
+                    <ReviewForm
+                      movieId={String(movie._id)}
+                      movieTitle={movie.title}
+                      moviePoster={movie.posterUrl}
+                      initialReviews={movie.reviews ?? []}
+                      mode="form-only"
+                    />
+                  </div>
+                )}
+
+              </div>{/* end details block */}
+
+            </div>{/* end wrapper div */}
+
             </div>{/* end left col flex */}
 
-            {/* ── Box Office card — right column on lg+, hidden on mobile (stays in sidebar) ── */}
-            {(movie.boxOffice?.opening || movie.boxOffice?.total || movie.boxOfficeDays?.length > 0) && (
-              <div className="hidden lg:block bg-[#111] border border-[#1f1f1f] rounded-2xl p-5 self-start">
-                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-3.5 h-3.5 text-orange-500" /> Box Office
-                </h2>
-                <div className="space-y-0">
-                  {[
-                    ["Opening Day",  movie.boxOffice?.opening],
-                    ["First Week",   movie.boxOffice?.firstWeek],
-                    ["Total Net",    movie.boxOffice?.total],
-                  ].filter(([, v]) => v && v !== "TBA").map(([label, val]) => (
-                    <div key={String(label)} className="flex justify-between items-center py-2.5 border-b border-[#1f1f1f] last:border-0">
-                      <span className="text-xs text-gray-500">{label}</span>
-                      <span className="text-sm font-bold text-green-400">{val}</span>
-                    </div>
-                  ))}
-                </div>
-                {movie.boxOfficeDays?.length > 0 && (
-                  <BoxOfficeDaysChart days={movie.boxOfficeDays} />
-                )}
-                {movie.verdict && (
-                  <div className={`mt-4 text-center py-2 rounded-xl border ${vs.bg} ${vs.border}`}>
-                    <span className={`text-sm font-black ${vs.text}`}>{movie.verdict}</span>
+            {/* ── Desktop Right Column (lg+): ONLY Write Review Section (or Interest for upcoming) ── */}
+            <div className="hidden lg:block self-start">
+              {isUnreleased ? (
+                <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-5 sm:p-6 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1 h-6 bg-orange-500 rounded flex-shrink-0" />
+                    <h2 className="text-base font-extrabold text-white flex items-center gap-2">
+                      <Users className="w-4 h-4 text-orange-500" />
+                      Are You Interested?
+                    </h2>
                   </div>
-                )}
-                {movie.slug && (
-                  <Link href={`/box-office/${movie.slug}`}
-                    className="mt-3 flex items-center justify-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 transition-colors font-semibold">
-                    Full box office data <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                )}
-              </div>
-            )}
-          </div>{/* end hero 2-col grid */}
-
-          {/* ── Mobile-only box office strip — compact row below hero ── */}
-          {(movie.boxOffice?.opening || movie.boxOffice?.total || movie.boxOfficeDays?.length > 0) && (
-            <div className="lg:hidden mt-1 mb-4 flex items-stretch gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {/* TrendingUp icon pill */}
-              <div className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-orange-500/10 border border-orange-500/20 rounded-xl">
-                <TrendingUp className="w-3.5 h-3.5 text-orange-400" />
-                <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest whitespace-nowrap">Box Office</span>
-              </div>
-              {/* Stat pills */}
-              {[
-                ["Opening", movie.boxOffice?.opening],
-                ["Week 1",  movie.boxOffice?.firstWeek],
-                ["Total",   movie.boxOffice?.total],
-              ].filter(([, v]) => v && v !== "TBA").map(([label, val]) => (
-                <div key={String(label)} className="flex-shrink-0 flex flex-col justify-center px-3 py-2 bg-[#111] border border-[#1f1f1f] rounded-xl">
-                  <span className="text-[9px] text-gray-500 uppercase tracking-widest leading-none mb-0.5">{label}</span>
-                  <span className="text-xs font-black text-green-400 whitespace-nowrap">{val}</span>
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    {movie.title} hasn&apos;t released yet, so reviews aren&apos;t open. Let us know if you&apos;re looking forward to it — the review section unlocks once it&apos;s out.
+                  </p>
+                  <VoteButtons
+                    movieId={String(movie._id)}
+                    initialYes={movie.interestedYes || 0}
+                    initialNo={movie.interestedNo || 0}
+                  />
                 </div>
-              ))}
-              {/* Verdict pill */}
-              {movie.verdict && (
-                <div className={`flex-shrink-0 flex items-center px-3 py-2 rounded-xl border ${vs.bg} ${vs.border}`}>
-                  <span className={`text-xs font-black whitespace-nowrap ${vs.text}`}>{movie.verdict}</span>
-                </div>
-              )}
-              {/* Full data link pill */}
-              {movie.slug && (
-                <Link href={`/box-office/${movie.slug}`}
-                  className="flex-shrink-0 flex items-center gap-1 px-3 py-2 bg-[#111] border border-[#1f1f1f] hover:border-orange-500/30 rounded-xl transition-colors ml-auto">
-                  <span className="text-[10px] font-semibold text-orange-400 whitespace-nowrap">Full data</span>
-                  <ChevronRight className="w-3 h-3 text-orange-400" />
-                </Link>
+              ) : (
+                <ReviewForm
+                  movieId={String(movie._id)}
+                  movieTitle={movie.title}
+                  moviePoster={movie.posterUrl}
+                  initialReviews={movie.reviews ?? []}
+                  mode="form-only"
+                />
               )}
             </div>
-          )}
+          </div>{/* end hero 2-col grid */}
 
         </div>
       </div>
@@ -972,7 +946,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
 
           {/* ── SIDEBAR ── */}
-          <aside className="lg:col-span-1 space-y-4 order-2 lg:order-1 self-start lg:sticky lg:top-4">
+          <aside className="lg:col-span-1 space-y-4 order-2 lg:order-1 self-start lg:sticky lg:top-28">
 
             {/* Movie Info card */}
             <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-5">
@@ -1107,7 +1081,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   { label: "Odia Songs",             href: "/songs" },
                   { label: "Movie Reviews",          href: "/blog/category/movie-review" },
                   ...(year ? [{ label: `Odia Movies ${year}`, href: `/movies/year/${year}` }] : []),
-                  ...(movie.genre?.[0] ? [{ label: `${movie.genre[0]} Odia Films`, href: `/movies?genre=${encodeURIComponent(movie.genre[0])}` }] : []),
+                  ...(movie.genre?.[0] ? [{ label: `${movie.genre[0]} Odia Films`, href: `/movies/genre/${encodeURIComponent(movie.genre[0].toLowerCase())}` }] : []),
                   ...(directorName ? [{ label: `${directorName} Films`, href: `/movies?director=${encodeURIComponent(directorName)}` }] : []),
                   // Dynamic: top 2 cast members
                   ...((movie.cast || [])
@@ -1198,7 +1172,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                     <div className="px-6 pb-5 flex flex-wrap gap-2">
                       <span className="text-[10px] text-gray-600 self-center mr-1">Watch if you like:</span>
                       {(movie.genre as string[]).map((g) => (
-                        <Link key={g} href={`/movies?genre=${encodeURIComponent(g)}`}
+                        <Link key={g} href={`/movies/genre/${encodeURIComponent(g.toLowerCase())}`}
                           className="text-[10px] font-semibold text-orange-400/80 hover:text-orange-400
                             bg-orange-500/8 border border-orange-500/15 px-2 py-0.5 rounded-full transition-colors">
                           {g}
@@ -1481,11 +1455,13 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   </h2>
                 </div>
                 <p className="text-sm text-gray-500 mb-4">
-                  {movie.title} hasn't released yet, so reviews aren't open. Let us know if you're looking forward to it —
-                  the review section unlocks once it's out.
+                  {movie.title} hasn&apos;t released yet, so reviews aren&apos;t open. Let us know if you&apos;re looking forward to it — the review section unlocks once it&apos;s out.
                 </p>
-                <VoteButtons movieId={String(movie._id)}
-                  initialYes={movie.interestedYes || 0} initialNo={movie.interestedNo || 0} />
+                <VoteButtons
+                  movieId={String(movie._id)}
+                  initialYes={movie.interestedYes || 0}
+                  initialNo={movie.interestedNo || 0}
+                />
               </section>
             ) : (
               <section aria-label={`User reviews for ${movie.title}`}>
@@ -1494,6 +1470,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   movieTitle={movie.title}
                   moviePoster={movie.posterUrl}
                   initialReviews={movie.reviews ?? []}
+                  mode="reviews-only"
                 />
               </section>
             )}
@@ -1590,7 +1567,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                     </Link>
                   )}
                   {(movie.genre || []).map((g: string) => (
-                    <Link key={g} href={`/movies?genre=${encodeURIComponent(g)}`}
+                    <Link key={g} href={`/movies/genre/${encodeURIComponent(g.toLowerCase())}`}
                       className="text-xs text-orange-400/80 hover:text-orange-400 bg-orange-500/8 border border-orange-500/15 px-2.5 py-1 rounded-full transition-colors">
                       🎭 {g} Films
                     </Link>
@@ -1757,7 +1734,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   More {(movie.genre?.[0] || "Odia")} Movies
                 </h2>
               </div>
-              <Link href={movie.genre?.[0] ? `/movies?genre=${movie.genre[0]}` : "/movies"}
+              <Link href={movie.genre?.[0] ? `/movies/genre/${encodeURIComponent(movie.genre[0].toLowerCase())}` : "/movies"}
                 className="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 transition-colors font-semibold">
                 View all <ChevronRight className="w-3.5 h-3.5" />
               </Link>

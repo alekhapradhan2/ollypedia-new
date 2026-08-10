@@ -305,14 +305,14 @@ async function getHomeData() {
 
 // ── Category pills for blog ───────────────────────────────────────
 const BLOG_CATEGORIES = [
-  { label: "Movie Review",    href: "/blog?cat=Movie+Review",    emoji: "🎬" },
-  { label: "Actor Spotlight", href: "/blog?cat=Actor+Spotlight", emoji: "🌟" },
-  { label: "Top 10",          href: "/blog?cat=Top+10",          emoji: "🏆" },
-  { label: "Behind the Scenes",href: "/blog?cat=Behind+the+Scenes",emoji: "🎥" },
-  { label: "Music",           href: "/blog?cat=Music",           emoji: "🎵" },
-  { label: "Opinion",         href: "/blog?cat=Opinion",         emoji: "💬" },
-  { label: "Box Office",      href: "/blog?cat=General",         emoji: "📊" },
-  { label: "Industry News",   href: "/blog?cat=Industry+News",   emoji: "📰" },
+  { label: "Movie Review",    href: "/blog?category=Movie+Review",    emoji: "🎬" },
+  { label: "Actor Spotlight", href: "/blog?category=Actor+Spotlight", emoji: "🌟" },
+  { label: "Top 10",          href: "/blog?category=Top+10",          emoji: "🏆" },
+  { label: "Behind the Scenes",href: "/blog?category=Behind+the+Scenes",emoji: "🎥" },
+  { label: "Music",           href: "/blog?category=Music",           emoji: "🎵" },
+  { label: "Opinion",         href: "/blog?category=Opinion",         emoji: "💬" },
+  { label: "Box Office",      href: "/blog?category=Box+Office",      emoji: "📊" },
+  { label: "Industry News",   href: "/blog?category=News",            emoji: "📰" },
 ];
 
 export default async function HomePage() {

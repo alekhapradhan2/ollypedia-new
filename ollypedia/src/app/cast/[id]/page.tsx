@@ -3,7 +3,7 @@
 import { SITE_URL } from "@/lib/seo";
 
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { LoadingCard } from "@/components/ui/LoadingCard";
@@ -146,6 +146,9 @@ function getDerivedRoles(person: any, movies: any[]): string[] {
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const person = await getCastMember(params.id);
   if (!person) notFound();
+  if (params.id !== String(person._id)) {
+    permanentRedirect(`/cast/${person._id}`);
+  }
 
   // Delegate to the dedicated castSeo module
   return buildCastMeta(person);
@@ -345,6 +348,9 @@ export default async function CastDetailPage({ params }: { params: { id: string 
   const person = await getCastMember(params.id);
   if (!person) notFound();
   if (!person.name?.trim()) notFound();
+  if (params.id !== String(person._id)) {
+    permanentRedirect(`/cast/${person._id}`);
+  }
 
   const movies   = (person.moviesList || []) as any[];
   const blogsList = (person.blogsList || []) as any[];
@@ -1193,7 +1199,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
                     📊 Box Office
                   </Link>
                   {genres[0] && (
-                    <Link href={`/movies?genre=${encodeURIComponent(genres[0][0])}`}
+                    <Link href={`/movies/genre/${encodeURIComponent(genres[0][0].toLowerCase())}`}
                       className="text-xs text-orange-400/80 hover:text-orange-400 bg-orange-500/8 border border-orange-500/15 px-2.5 py-1 rounded-full transition-colors">
                       🎭 {genres[0][0]} Films
                     </Link>

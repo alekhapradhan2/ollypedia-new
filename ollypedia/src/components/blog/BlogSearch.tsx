@@ -1,21 +1,23 @@
 "use client";
 // components/blog/BlogSearch.tsx
+// useSearchParams is isolated inside BlogSearchInner and wrapped in Suspense
+// to prevent BAILOUT_TO_CLIENT_SIDE_RENDERING on the blog page.
 
+import { Suspense, useTransition, useRef, useState, useEffect } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useTransition, useRef, useState, useEffect } from "react";
 import { Search, X, Loader2 } from "lucide-react";
 
 interface BlogSearchProps {
   initialQuery?: string;
 }
 
-export function BlogSearch({ initialQuery = "" }: BlogSearchProps) {
+// ── Inner: uses useSearchParams() ────────────────────────────────────────────
+function BlogSearchInner({ initialQuery = "" }: BlogSearchProps) {
   const router       = useRouter();
   const pathname     = usePathname();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams(); // ← requires Suspense boundary
   const [isPending, startTransition] = useTransition();
 
-  // Controlled input — user sees every keystroke immediately
   const [value, setValue] = useState(initialQuery);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -26,7 +28,7 @@ export function BlogSearch({ initialQuery = "" }: BlogSearchProps) {
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const newVal = e.target.value;
-    setValue(newVal); // update input immediately so text shows
+    setValue(newVal);
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -36,7 +38,7 @@ export function BlogSearch({ initialQuery = "" }: BlogSearchProps) {
       } else {
         params.delete("q");
       }
-      params.delete("page"); // reset to page 1
+      params.delete("page");
       startTransition(() => {
         router.push(`${pathname}?${params.toString()}`);
       });
@@ -54,7 +56,6 @@ export function BlogSearch({ initialQuery = "" }: BlogSearchProps) {
     });
   }
 
-  // Also support pressing Enter immediately (no wait for debounce)
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -74,7 +75,6 @@ export function BlogSearch({ initialQuery = "" }: BlogSearchProps) {
   return (
     <div role="search" aria-label="Search blog articles">
       <div className="relative flex items-center">
-        {/* Icon */}
         <div className="absolute left-3 flex items-center pointer-events-none z-10">
           {isPending ? (
             <Loader2 className="w-4 h-4 text-orange-400 animate-spin" />
@@ -83,7 +83,6 @@ export function BlogSearch({ initialQuery = "" }: BlogSearchProps) {
           )}
         </div>
 
-        {/* Controlled input */}
         <input
           type="text"
           value={value}
@@ -92,11 +91,10 @@ export function BlogSearch({ initialQuery = "" }: BlogSearchProps) {
           placeholder="Search articles, actors, movies…"
           aria-label="Search articles"
           autoComplete="off"
-          spellCheck="false"
+          spellCheck={false}
           className="w-full pl-9 pr-9 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
         />
 
-        {/* Clear button */}
         {value && (
           <button
             type="button"
@@ -113,5 +111,30 @@ export function BlogSearch({ initialQuery = "" }: BlogSearchProps) {
         {isPending ? "Searching…" : value ? `Showing results for ${value}` : ""}
       </p>
     </div>
+  );
+}
+
+// ── Exported component: wraps inner in Suspense ───────────────────────────────
+export function BlogSearch({ initialQuery = "" }: BlogSearchProps) {
+  return (
+    <Suspense fallback={
+      <div role="search" aria-label="Search blog articles">
+        <div className="relative flex items-center">
+          <div className="absolute left-3 flex items-center pointer-events-none z-10">
+            <Search className="w-4 h-4 text-zinc-500" />
+          </div>
+          <input
+            type="text"
+            defaultValue={initialQuery}
+            placeholder="Search articles, actors, movies…"
+            aria-label="Search articles"
+            disabled
+            className="w-full pl-9 pr-9 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm placeholder:text-zinc-500 focus:outline-none transition-all opacity-70"
+          />
+        </div>
+      </div>
+    }>
+      <BlogSearchInner initialQuery={initialQuery} />
+    </Suspense>
   );
 }

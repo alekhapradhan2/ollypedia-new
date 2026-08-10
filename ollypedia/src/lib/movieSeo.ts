@@ -109,6 +109,27 @@ export function generateMovieJsonLd(movie: MovieSeoDoc) {
     ...(c.castId ? { url: `${SITE_URL}/cast/${c.castId}` } : {}),
   }));
 
+  // ★ SEO FIX: Convert runtime string to ISO 8601 duration (required by schema.org/Movie)
+  // Examples: "2h 15m" → "PT2H15M", "90 min" → "PT1H30M", "145" → "PT2H25M"
+  function toIsoDuration(raw?: string): string | undefined {
+    if (!raw) return undefined;
+    // Already ISO format
+    if (/^PT/i.test(raw)) return raw.toUpperCase();
+    let h = 0, m = 0;
+    const hMatch = raw.match(/(\d+)\s*h/i);
+    const mMatch = raw.match(/(\d+)\s*m(?:in)?/i);
+    // Pure minutes: "90 min" or just "90"
+    if (!hMatch && !mMatch) {
+      const mins = parseInt(raw);
+      if (!isNaN(mins)) { h = Math.floor(mins / 60); m = mins % 60; }
+    } else {
+      if (hMatch) h = parseInt(hMatch[1]);
+      if (mMatch) m = parseInt(mMatch[1]);
+    }
+    if (h === 0 && m === 0) return undefined;
+    return `PT${h > 0 ? h + "H" : ""}${m > 0 ? m + "M" : ""}`;
+  }
+
   const movieEntity: Record<string, any> = {
     "@context": "https://schema.org",
     "@type": "Movie",
@@ -119,18 +140,21 @@ export function generateMovieJsonLd(movie: MovieSeoDoc) {
     datePublished: movie.releaseDate || undefined,
     inLanguage: movie.language || "Odia",
     genre: movie.genre || ["Odia Movie"],
-    duration: movie.runtime || undefined,
+    duration: toIsoDuration(movie.runtime),
     ...(directorObj && { director: directorObj }),
     ...(actorList.length > 0 && { actor: actorList }),
   };
 
-  if (avgRating) {
+  // ★ SEO FIX: Only output aggregateRating if there are REAL reviews.
+  // The previous fallback of || 10 sent false data to Google, which
+  // violates structured data guidelines and can cause rich-result penalties.
+  if (avgRating && movie.reviews && movie.reviews.length > 0) {
     movieEntity.aggregateRating = {
       "@type": "AggregateRating",
       ratingValue: avgRating,
       bestRating: "10",
       worstRating: "1",
-      ratingCount: movie.reviews?.length || 10,
+      ratingCount: movie.reviews.length,
     };
   }
 
