@@ -1,8 +1,10 @@
 import mongoose, { Schema, model, models } from "mongoose";
 import "./Production"; // Register Production model
+import "./Cast";       // Register Cast model
 
 const ReviewSchema = new Schema({
   user:    { type: String, default: "Anonymous" },
+  email:   { type: String, default: "" },
   rating:  Number,
   text:    String,
   date:    String,
@@ -105,6 +107,10 @@ const MovieSchema = new Schema(
   },
   { timestamps: true }
 );
+
+if (models.Movie && !(models.Movie.schema as any).path("reviews.email")) {
+  delete (models as any).Movie;
+}
 
 export const Movie = models.Movie || model("Movie", MovieSchema);
 export default Movie;

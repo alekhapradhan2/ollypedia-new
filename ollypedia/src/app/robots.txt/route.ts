@@ -35,6 +35,9 @@ Allow: /movies/year/
 Allow: /movies/genre/
 Allow: /box-office?year=
 Allow: /blog?category=
+Allow: /blog?cat=
+Allow: /blog?q=
+Allow: /blog?movie=
 
 # Block thin/low-value pages from crawl budget
 Disallow: /api/
@@ -42,7 +45,6 @@ Disallow: /admin/
 Disallow: /search
 Disallow: /blog?
 Disallow: /*?sort=
-Disallow: /*?page=
 
 # ── AI training scrapers — block content harvesting ─────
 # These bots scrape content to train AI models without compensation.

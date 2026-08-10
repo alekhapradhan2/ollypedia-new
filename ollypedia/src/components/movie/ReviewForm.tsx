@@ -9,6 +9,7 @@ interface ReviewFormProps {
   moviePoster?: string;
   onSuccess?: (review: Review) => void;
   initialReviews?: Review[]; // ← NEW: pass existing reviews from page.tsx
+  mode?: "all" | "form-only" | "reviews-only";
 }
 
 interface Review {
@@ -100,8 +101,12 @@ function StarRating({
 
 // ─── ReviewCard (compact — renders a single review, stars out of 5) ─────────
 function ReviewCard({ review }: { review: Review }) {
+  const [expanded, setExpanded] = useState(false);
   // DB stores 1–10; convert to 1–5 for display
   const stars = Math.round(review.rating / 2);
+  const CHAR_LIMIT = 180;
+  const isLong = review.text.length > CHAR_LIMIT;
+  const displayText = isLong && !expanded ? review.text.slice(0, CHAR_LIMIT) + "…" : review.text;
 
   return (
     <div
@@ -112,104 +117,131 @@ function ReviewCard({ review }: { review: Review }) {
         padding: "12px 14px",
         height: "100%",
         boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
       }}
     >
-      {/* Top row: avatar + name/date + star badge */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 7,
-          gap: 8,
-        }}
-      >
-        {/* Avatar + name + date (single line) */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          <div
-            style={{
-              width: 26,
-              height: 26,
-              background: "rgba(245,158,11,.15)",
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth={2}>
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </div>
-          <p
-            style={{
-              fontSize: "0.78rem",
-              color: "#fff",
-              margin: 0,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              minWidth: 0,
-            }}
-          >
-            <span style={{ fontWeight: 700 }}>{review.user || "Anonymous"}</span>
-            {review.date && (
-              <span style={{ color: "#6b7280", fontWeight: 400 }}>
-                {" "}· {new Date(review.date).toLocaleDateString("en-IN")}
-              </span>
-            )}
-          </p>
-        </div>
-
-        {/* Star badge — shows X/5 not X/10 */}
+      <div>
+        {/* Top row: avatar + name/date + star badge */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 2,
-            background: "rgba(234,179,8,.08)",
-            border: "1px solid rgba(234,179,8,.2)",
-            borderRadius: 6,
-            padding: "3px 6px",
-            flexShrink: 0,
+            justifyContent: "space-between",
+            marginBottom: 7,
+            gap: 8,
           }}
         >
-          {[1, 2, 3, 4, 5].map((s) => (
-            <svg
-              key={s}
-              width={9}
-              height={9}
-              viewBox="0 0 24 24"
-              fill={s <= stars ? "#f59e0b" : "none"}
-              stroke={s <= stars ? "#f59e0b" : "#374151"}
-              strokeWidth="1.5"
+          {/* Avatar + name + date (single line) */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+            <div
+              style={{
+                width: 26,
+                height: 26,
+                background: "rgba(245,158,11,.15)",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
             >
-              <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-            </svg>
-          ))}
-          <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#f59e0b", marginLeft: 2 }}>
-            {stars}/5
-          </span>
+              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth={2}>
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </div>
+            <p
+              style={{
+                fontSize: "0.78rem",
+                color: "#fff",
+                margin: 0,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                minWidth: 0,
+              }}
+            >
+              <span style={{ fontWeight: 700 }}>{review.user || "Anonymous"}</span>
+              {review.date && (
+                <span style={{ color: "#6b7280", fontWeight: 400 }}>
+                  {" "}· {new Date(review.date).toLocaleDateString("en-IN")}
+                </span>
+              )}
+            </p>
+          </div>
+
+          {/* Star badge — shows X/5 not X/10 */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              background: "rgba(234,179,8,.08)",
+              border: "1px solid rgba(234,179,8,.2)",
+              borderRadius: 6,
+              padding: "3px 6px",
+              flexShrink: 0,
+            }}
+          >
+            {[1, 2, 3, 4, 5].map((s) => (
+              <svg
+                key={s}
+                width={9}
+                height={9}
+                viewBox="0 0 24 24"
+                fill={s <= stars ? "#f59e0b" : "none"}
+                stroke={s <= stars ? "#f59e0b" : "#374151"}
+                strokeWidth="1.5"
+              >
+                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+              </svg>
+            ))}
+            <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#f59e0b", marginLeft: 2 }}>
+              {stars}/5
+            </span>
+          </div>
         </div>
+
+        {/* Review text */}
+        <p
+          style={{
+            fontSize: "0.8rem",
+            color: "#d1d5db",
+            lineHeight: 1.5,
+            margin: 0,
+            whiteSpace: "pre-line",
+            wordBreak: "break-word",
+          }}
+        >
+          {displayText}
+        </p>
       </div>
 
-      {/* Review text — clamped so very long reviews don't blow up card height */}
-      <p
-        style={{
-          fontSize: "0.8rem",
-          color: "#d1d5db",
-          lineHeight: 1.5,
-          margin: 0,
-          display: "-webkit-box",
-          WebkitLineClamp: 4,
-          WebkitBoxOrient: "vertical",
-          overflow: "hidden",
-        }}
-      >
-        {review.text}
-      </p>
+      {isLong && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            style={{
+              marginTop: 8,
+              fontSize: "0.72rem",
+              fontWeight: 700,
+              color: "#f59e0b",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 3,
+            }}
+          >
+            {expanded ? "Show less ↑" : "View full review ↓"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -917,16 +949,18 @@ export function ReviewForm({
   moviePoster,
   onSuccess,
   initialReviews = [], // ← NEW
+  mode = "all",
 }: ReviewFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [user, setUser] = useState("");
+  const [email, setEmail] = useState("");
   const [starRating, setStarRating] = useState(0); // 1–5 (UI)
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [shareReview, setShareReview] = useState<Review | null>(null);
-  // ← NEW: local review list, starts with whatever the server sent
+  // local review list, starts with whatever the server sent
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
   const [page, setPage] = useState(0); // 0-indexed, for the reviews list below
 
@@ -934,12 +968,31 @@ export function ReviewForm({
     e.preventDefault();
     setError("");
 
+    if (!user.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
+    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
     if (starRating === 0) {
       setError("Please select a star rating.");
       return;
     }
     if (!text.trim()) {
       setError("Please write your review.");
+      return;
+    }
+
+    const normEmail = email.trim().toLowerCase();
+
+    const alreadyInClient = reviews.some(
+      (r: any) => r.email && r.email.trim().toLowerCase() === normEmail
+    );
+
+    if (alreadyInClient) {
+      setError("A review with this email address has already been submitted for this movie.");
       return;
     }
 
@@ -952,7 +1005,8 @@ export function ReviewForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user: user.trim() || "Anonymous",
+          user: user.trim(),
+          email: email.trim(),
           rating: apiRating,
           text: text.trim(),
         }),
@@ -967,14 +1021,14 @@ export function ReviewForm({
 
       // The confirmed review from the server (rating is 1–10)
       const confirmedReview: Review = data.review ?? {
-        user: user.trim() || "Anonymous",
+        user: user.trim(),
         rating: apiRating,
         text: text.trim(),
         date: new Date().toISOString(),
         likes: 0,
       };
 
-      // ← NEW: instantly prepend to local list — no refresh needed
+      // instantly prepend to local list — no refresh needed
       setReviews((prev) => [confirmedReview, ...prev]);
       setPage(0); // jump back to page 1 so the new review is visible right away
 
@@ -985,14 +1039,11 @@ export function ReviewForm({
       setStarRating(0);
       setText("");
       setUser("");
+      setEmail("");
 
       // Show share modal
       setShareReview(confirmedReview);
 
-      // The route handler already revalidated this page's cache server-side
-      // (it derives the slug itself), so we need to refetch the Server Component
-      // to get the updated hero rating + review count. We do this when the
-      // modal CLOSES so it doesn't unmount the modal prematurely.
     } catch (err: any) {
       setError(err.message || "Could not save your review. Please try again.");
     } finally {
@@ -1023,122 +1074,123 @@ export function ReviewForm({
         />
       )}
 
-      {/* ── Live heading — count reflects local "reviews" state instantly,
-            so it bumps up the moment a submission succeeds (no reload needed) ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-        <div style={{ width: 4, height: 26, background: "#f59e0b", borderRadius: 4, flexShrink: 0 }} />
-        <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
-          <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth={2}>
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-          User Reviews
-          <span style={{ color: "#6b7280", fontWeight: 400, fontSize: "1rem" }}>({reviews.length})</span>
-        </h2>
-      </div>
-
-      {/* ── Existing reviews list — 2-column grid on wider screens to cut vertical height ── */}
-      {reviews.length > 0 ? (
+      {/* ── User Reviews List (only when mode is 'all' or 'reviews-only') ── */}
+      {(mode === "all" || mode === "reviews-only") && (
         <>
-          <div className="rv-grid" style={{ marginBottom: 14 }}>
-            {visibleReviews.map((r, i) => (
-              <ReviewCard key={r._id ?? pageStart + i} review={r} />
-            ))}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+            <div style={{ width: 4, height: 26, background: "#f59e0b", borderRadius: 4, flexShrink: 0 }} />
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth={2}>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              User Reviews
+              <span style={{ color: "#6b7280", fontWeight: 400, fontSize: "1rem" }}>({reviews.length})</span>
+            </h2>
           </div>
 
-          {/* Previous / Next — only shown once there's more than one page */}
-          {totalPages > 1 && (
+          {reviews.length > 0 ? (
+            <>
+              <div className="rv-grid" style={{ marginBottom: 14 }}>
+                {visibleReviews.map((r, i) => (
+                  <ReviewCard key={r._id ?? pageStart + i} review={r} />
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 14,
+                    marginBottom: 20,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={currentPage === 0}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: 8,
+                      border: "1px solid #2a2a2a",
+                      background: currentPage === 0 ? "#0d0d0d" : "#181818",
+                      color: currentPage === 0 ? "#3f3f46" : "#e5e7eb",
+                      fontSize: "0.8rem",
+                      fontWeight: 700,
+                      cursor: currentPage === 0 ? "not-allowed" : "pointer",
+                      transition: "background .15s, color .15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentPage !== 0) (e.target as HTMLElement).style.background = "#222";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentPage !== 0) (e.target as HTMLElement).style.background = "#181818";
+                    }}
+                  >
+                    ← Previous
+                  </button>
+
+                  <span style={{ fontSize: "0.78rem", color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>
+                    Page {currentPage + 1} of {totalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                    disabled={currentPage === totalPages - 1}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: 8,
+                      border: "1px solid #2a2a2a",
+                      background: currentPage === totalPages - 1 ? "#0d0d0d" : "#181818",
+                      color: currentPage === totalPages - 1 ? "#3f3f46" : "#e5e7eb",
+                      fontSize: "0.8rem",
+                      fontWeight: 700,
+                      cursor: currentPage === totalPages - 1 ? "not-allowed" : "pointer",
+                      transition: "background .15s, color .15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentPage !== totalPages - 1) (e.target as HTMLElement).style.background = "#222";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentPage !== totalPages - 1) (e.target as HTMLElement).style.background = "#181818";
+                    }}
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 14,
+                background: "#111",
+                border: "1px solid #1f1f1f",
+                borderRadius: 14,
+                padding: "20px 18px",
+                textAlign: "center",
                 marginBottom: 20,
               }}
             >
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-                disabled={currentPage === 0}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 8,
-                  border: "1px solid #2a2a2a",
-                  background: currentPage === 0 ? "#0d0d0d" : "#181818",
-                  color: currentPage === 0 ? "#3f3f46" : "#e5e7eb",
-                  fontSize: "0.8rem",
-                  fontWeight: 700,
-                  cursor: currentPage === 0 ? "not-allowed" : "pointer",
-                  transition: "background .15s, color .15s",
-                }}
-                onMouseEnter={(e) => {
-                  if (currentPage !== 0) (e.target as HTMLElement).style.background = "#222";
-                }}
-                onMouseLeave={(e) => {
-                  if (currentPage !== 0) (e.target as HTMLElement).style.background = "#181818";
-                }}
+              <svg
+                width={28}
+                height={28}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#374151"
+                strokeWidth={2}
+                style={{ display: "block", margin: "0 auto 8px" }}
               >
-                ← Previous
-              </button>
-
-              <span style={{ fontSize: "0.78rem", color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>
-                Page {currentPage + 1} of {totalPages}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                disabled={currentPage === totalPages - 1}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 8,
-                  border: "1px solid #2a2a2a",
-                  background: currentPage === totalPages - 1 ? "#0d0d0d" : "#181818",
-                  color: currentPage === totalPages - 1 ? "#3f3f46" : "#e5e7eb",
-                  fontSize: "0.8rem",
-                  fontWeight: 700,
-                  cursor: currentPage === totalPages - 1 ? "not-allowed" : "pointer",
-                  transition: "background .15s, color .15s",
-                }}
-                onMouseEnter={(e) => {
-                  if (currentPage !== totalPages - 1) (e.target as HTMLElement).style.background = "#222";
-                }}
-                onMouseLeave={(e) => {
-                  if (currentPage !== totalPages - 1) (e.target as HTMLElement).style.background = "#181818";
-                }}
-              >
-                Next →
-              </button>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <p style={{ fontSize: "0.85rem", color: "#6b7280", margin: 0 }}>
+                No reviews yet. Be the first to review{" "}
+                {movieTitle && <strong style={{ color: "#9ca3af" }}>{movieTitle}</strong>}!
+              </p>
             </div>
           )}
         </>
-      ) : (
-        <div
-          style={{
-            background: "#111",
-            border: "1px solid #1f1f1f",
-            borderRadius: 14,
-            padding: "20px 18px",
-            textAlign: "center",
-            marginBottom: 20,
-          }}
-        >
-          <svg
-            width={28}
-            height={28}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#374151"
-            strokeWidth={2}
-            style={{ display: "block", margin: "0 auto 8px" }}
-          >
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-          <p style={{ fontSize: "0.85rem", color: "#6b7280", margin: 0 }}>
-            No reviews yet. Be the first to review{" "}
-            {movieTitle && <strong style={{ color: "#9ca3af" }}>{movieTitle}</strong>}!
-          </p>
-        </div>
       )}
 
       <style>{`
@@ -1148,204 +1200,250 @@ export function ReviewForm({
         }
       `}</style>
 
-      {/* ── Write a review form ── */}
-      <div
-        style={{
-          background: "#131313",
-          border: "1px solid #222",
-          borderRadius: 16,
-          padding: "22px 22px 24px",
-        }}
-      >
-        <h3
+      {/* ── Write a review form (only when mode is 'all' or 'form-only') ── */}
+      {(mode === "all" || mode === "form-only") && (
+        <div
           style={{
-            fontWeight: 800,
-            fontSize: "1.05rem",
-            color: "#fff",
-            marginBottom: 20,
-            marginTop: 0,
+            background: "#131313",
+            border: "1px solid #222",
+            borderRadius: 14,
+            padding: "16px",
           }}
         >
-          ✍️ Write a Review
-        </h3>
-
-        <form
-          onSubmit={submit}
-          style={{ display: "flex", flexDirection: "column", gap: 16 }}
-        >
-          {/* Name */}
-          <div>
-            <label
-              style={{
-                fontSize: "0.75rem",
-                color: "#9ca3af",
-                display: "block",
-                marginBottom: 6,
-              }}
-            >
-              Your Name{" "}
-              <span style={{ color: "#4b5563" }}>(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={user}
-              onChange={(e) => setUser(e.target.value)}
-              placeholder="Anonymous"
-              maxLength={60}
-              style={{
-                width: "100%",
-                padding: "9px 12px",
-                boxSizing: "border-box",
-                background: "#0d0d0d",
-                border: "1px solid #2a2a2a",
-                borderRadius: 8,
-                color: "#fff",
-                fontSize: "0.85rem",
-                outline: "none",
-                transition: "border-color .15s",
-                fontFamily: "inherit",
-              }}
-              onFocus={(e) =>
-                (e.target.style.borderColor = "rgba(245,158,11,.5)")
-              }
-              onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
-            />
-          </div>
-
-          {/* 5-star rating */}
-          <div>
-            <label
-              style={{
-                fontSize: "0.75rem",
-                color: "#9ca3af",
-                display: "block",
-                marginBottom: 8,
-              }}
-            >
-              Rating <span style={{ color: "#4b5563" }}>(out of 5 stars)</span>
-            </label>
-            <StarRating value={starRating} onChange={setStarRating} />
-          </div>
-
-          {/* Review text */}
-          <div>
-            <label
-              style={{
-                fontSize: "0.75rem",
-                color: "#9ca3af",
-                display: "block",
-                marginBottom: 6,
-              }}
-            >
-              Your Review
-            </label>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={4}
-              placeholder="Share your thoughts about this movie…"
-              maxLength={250}
-              style={{
-                width: "100%",
-                padding: "9px 12px",
-                boxSizing: "border-box",
-                background: "#0d0d0d",
-                border: "1px solid #2a2a2a",
-                borderRadius: 8,
-                color: "#fff",
-                fontSize: "0.85rem",
-                outline: "none",
-                resize: "vertical",
-                transition: "border-color .15s",
-                fontFamily: "inherit",
-                lineHeight: 1.6,
-              }}
-              onFocus={(e) =>
-                (e.target.style.borderColor = "rgba(245,158,11,.5)")
-              }
-              onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
-            />
-            <div
-              style={{
-                textAlign: "right",
-                fontSize: "0.65rem",
-                color: "#4b5563",
-                marginTop: 3,
-              }}
-            >
-              {text.length}/250
-            </div>
-          </div>
-
-          {/* Error */}
-          {error && (
-            <div
-              style={{
-                background: "rgba(239,68,68,.1)",
-                border: "1px solid rgba(239,68,68,.25)",
-                borderRadius: 8,
-                padding: "10px 12px",
-                fontSize: "0.78rem",
-                color: "#f87171",
-              }}
-            >
-              ⚠️ {error}
-            </div>
-          )}
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
+          <h3
             style={{
-              padding: "12px 0",
-              background: loading ? "#78350f" : "#f59e0b",
-              border: "none",
-              borderRadius: 11,
               fontWeight: 800,
-              fontSize: "0.9rem",
-              cursor: loading ? "not-allowed" : "pointer",
-              color: "#000",
-              transition: "background .2s, transform .15s",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-            }}
-            onMouseEnter={(e) => {
-              if (!loading)
-                (e.target as HTMLElement).style.background = "#fbbf24";
-            }}
-            onMouseLeave={(e) => {
-              if (!loading)
-                (e.target as HTMLElement).style.background = "#f59e0b";
+              fontSize: "0.95rem",
+              color: "#fff",
+              marginBottom: 12,
+              marginTop: 0,
             }}
           >
-            {loading ? (
-              <>
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 14,
-                    height: 14,
-                    border: "2px solid rgba(0,0,0,.3)",
-                    borderTopColor: "#000",
-                    borderRadius: "50%",
-                    animation: "rv-spin .7s linear infinite",
-                  }}
-                />
-                Submitting…
-              </>
-            ) : (
-              "Submit Review"
-            )}
-          </button>
-        </form>
+            ✍️ Write a Review
+          </h3>
 
-        <style>{`
-          @keyframes rv-spin { to { transform: rotate(360deg); } }
-        `}</style>
-      </div>
+          <form
+            onSubmit={submit}
+            style={{ display: "flex", flexDirection: "column", gap: 10 }}
+          >
+            {/* 2-Column Name & Email */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
+              {/* Name */}
+              <div>
+                <label
+                  style={{
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                    color: "#9ca3af",
+                    display: "block",
+                    marginBottom: 4,
+                  }}
+                >
+                  Your Name <span style={{ color: "#ef4444" }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  value={user}
+                  onChange={(e) => setUser(e.target.value)}
+                  placeholder="Enter your name"
+                  maxLength={60}
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "7px 10px",
+                    boxSizing: "border-box",
+                    background: "#0d0d0d",
+                    border: "1px solid #2a2a2a",
+                    borderRadius: 8,
+                    color: "#fff",
+                    fontSize: "0.78rem",
+                    outline: "none",
+                    fontFamily: "inherit",
+                  }}
+                  onFocus={(e) =>
+                    (e.target.style.borderColor = "rgba(245,158,11,.5)")
+                  }
+                  onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label
+                  style={{
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                    color: "#9ca3af",
+                    display: "block",
+                    marginBottom: 4,
+                  }}
+                >
+                  Your Email <span style={{ color: "#ef4444" }}>*</span>
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  maxLength={80}
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "7px 10px",
+                    boxSizing: "border-box",
+                    background: "#0d0d0d",
+                    border: "1px solid #2a2a2a",
+                    borderRadius: 8,
+                    color: "#fff",
+                    fontSize: "0.78rem",
+                    outline: "none",
+                    fontFamily: "inherit",
+                  }}
+                  onFocus={(e) =>
+                    (e.target.style.borderColor = "rgba(245,158,11,.5)")
+                  }
+                  onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
+                />
+              </div>
+            </div>
+
+            {/* 5-star rating */}
+            <div>
+              <label
+                style={{
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                  color: "#9ca3af",
+                  display: "block",
+                  marginBottom: 4,
+                }}
+              >
+                Rating <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <StarRating value={starRating} onChange={setStarRating} size={22} />
+            </div>
+
+            {/* Review text */}
+            <div>
+              <label
+                style={{
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                  color: "#9ca3af",
+                  display: "block",
+                  marginBottom: 4,
+                }}
+              >
+                Your Review <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                rows={2.5}
+                placeholder="Share your thoughts about this movie…"
+                maxLength={1000}
+                required
+                style={{
+                  width: "100%",
+                  padding: "7px 10px",
+                  boxSizing: "border-box",
+                  background: "#0d0d0d",
+                  border: "1px solid #2a2a2a",
+                  borderRadius: 8,
+                  color: "#fff",
+                  fontSize: "0.78rem",
+                  outline: "none",
+                  resize: "vertical",
+                  fontFamily: "inherit",
+                  lineHeight: 1.5,
+                }}
+                onFocus={(e) =>
+                  (e.target.style.borderColor = "rgba(245,158,11,.5)")
+                }
+                onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
+              />
+              <div
+                style={{
+                  textAlign: "right",
+                  fontSize: "0.62rem",
+                  color: "#4b5563",
+                  marginTop: 2,
+                }}
+              >
+                {text.length}/1000
+              </div>
+            </div>
+
+            {/* Error */}
+            {error && (
+              <div
+                style={{
+                  background: "rgba(239,68,68,.1)",
+                  border: "1px solid rgba(239,68,68,.25)",
+                  borderRadius: 8,
+                  padding: "8px 10px",
+                  fontSize: "0.75rem",
+                  color: "#f87171",
+                }}
+              >
+                ⚠️ {error}
+              </div>
+            )}
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                padding: "9px 0",
+                background: loading ? "#78350f" : "#f59e0b",
+                border: "none",
+                borderRadius: 9,
+                fontWeight: 800,
+                fontSize: "0.82rem",
+                cursor: loading ? "not-allowed" : "pointer",
+                color: "#000",
+                transition: "background .2s, transform .15s",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+              }}
+              onMouseEnter={(e) => {
+                if (!loading)
+                  (e.target as HTMLElement).style.background = "#fbbf24";
+              }}
+              onMouseLeave={(e) => {
+                if (!loading)
+                  (e.target as HTMLElement).style.background = "#f59e0b";
+              }}
+            >
+              {loading ? (
+                <>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      width: 12,
+                      height: 12,
+                      border: "2px solid rgba(0,0,0,.3)",
+                      borderTopColor: "#000",
+                      borderRadius: "50%",
+                      animation: "rv-spin .7s linear infinite",
+                    }}
+                  />
+                  Submitting…
+                </>
+              ) : (
+                "Submit Review"
+              )}
+            </button>
+          </form>
+
+          <style>{`
+            @keyframes rv-spin { to { transform: rotate(360deg); } }
+          `}</style>
+        </div>
+      )}
     </>
   );
 }

@@ -4,20 +4,17 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Toaster } from "react-hot-toast";
 import { SITE_NAME, SITE_URL } from "@/lib/seo";
-import NextTopLoader from 'nextjs-toploader';
-import dynamic from "next/dynamic";
+import NextTopLoader from "nextjs-toploader";
+import Script from "next/script";
+import { GlobalMultiplexWrapper } from "@/components/ads/GlobalMultiplexWrapper";
 
-// ── Use dynamic imports (ssr:false) for components that call useSearchParams().
-// Static import + <Suspense> causes BAILOUT_TO_CLIENT_SIDE_RENDERING on every
-// page, which means Googlebot sees a placeholder div instead of the real Navbar.
-const GlobalLoader = dynamic(
-  () => import("@/components/layout/GlobalLoader").then((m) => ({ default: m.GlobalLoader })),
-  { ssr: false }
-);
-const ScrollToTop = dynamic(
-  () => import("@/components/layout/ScrollToTop").then((m) => ({ default: m.ScrollToTop })),
-  { ssr: false }
-);
+// ── Static imports — safe because GlobalLoader and ScrollToTop now internally
+// wrap their useSearchParams() calls in <Suspense> boundaries, which is the
+// correct Next.js App Router pattern. Previously these used dynamic(ssr:false)
+// which emitted BAILOUT_TO_CLIENT_SIDE_RENDERING in every page's server HTML,
+// making the <body> appear empty to Googlebot.
+import { GlobalLoader } from "@/components/layout/GlobalLoader";
+import { ScrollToTop } from "@/components/layout/ScrollToTop";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -42,9 +39,6 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.ico" },
 };
 
-import Script from "next/script";
-import { GlobalMultiplexWrapper } from "@/components/ads/GlobalMultiplexWrapper";
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
@@ -58,8 +52,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="grain min-h-screen flex flex-col bg-[#0a0a0a]">
-        {/* GlobalLoader and ScrollToTop are rendered client-only (ssr:false dynamic import)
-            so they never trigger a Suspense SSR bailout. */}
+        {/* GlobalLoader and ScrollToTop use static imports.
+            Their useSearchParams() calls are wrapped in internal <Suspense>
+            boundaries so they never cause a BAILOUT_TO_CLIENT_SIDE_RENDERING. */}
         <GlobalLoader />
         <ScrollToTop />
         <NextTopLoader color="#f97316" showSpinner={false} easing="ease" speed={200} />

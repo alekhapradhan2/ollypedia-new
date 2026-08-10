@@ -1,7 +1,8 @@
 "use client";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { useTransition } from "react";
+
 
 interface MoviesFilterProps {
   genres: string[];

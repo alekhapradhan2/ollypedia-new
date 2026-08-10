@@ -3,7 +3,7 @@
 // Client-side interactive wrapper: search, filters, infinite scroll
 // Cards navigate directly to /trailers/[slug] — no modal needed
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   Search, Filter, X, ChevronDown, Loader2, Film,
@@ -12,6 +12,7 @@ import { TrailerCard } from "./TrailerCard";
 import { InFeedAd } from "@/components/ads/InFeedAd";
 import React from "react";
 import type { TrailerMovieDoc } from "@/lib/trailerSeo";
+
 
 const GENRES = ["Action", "Romance", "Drama", "Comedy", "Thriller", "Horror", "Devotional", "Family", "Historical"];
 const TYPES  = [
@@ -33,6 +34,15 @@ interface Props {
 }
 
 export function TrailersClient({ initialMovies, totalCount }: Props) {
+  return (
+    <Suspense fallback={<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 mt-6">{Array.from({ length: 10 }).map((_, i) => <div key={i} className="aspect-[2/3] rounded-2xl animate-pulse bg-white/5" />)}</div>}>
+      <TrailersClientInner initialMovies={initialMovies} totalCount={totalCount} />
+    </Suspense>
+  );
+}
+
+// ── Inner implementation (uses useSearchParams) ───────────────────────────────
+function TrailersClientInner({ initialMovies, totalCount }: Props) {
   const router       = useRouter();
   const pathname     = usePathname();
   const searchParams = useSearchParams();

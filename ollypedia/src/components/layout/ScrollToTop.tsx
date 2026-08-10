@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
-export function ScrollToTop() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+// ── Inner component: contains useSearchParams() ──────────────────────────────
+// Wrapped in <Suspense> below to prevent BAILOUT_TO_CLIENT_SIDE_RENDERING.
+function ScrollToTopInner() {
+  const pathname     = usePathname();
+  const searchParams = useSearchParams(); // ← Suspense boundary required
 
   useEffect(() => {
-    // Force reset scroll position to top across window, html, and body
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
 
-    // Secondary tick for late component hydration / image layout shifts
     const timer = setTimeout(() => {
       window.scrollTo(0, 0);
       document.documentElement.scrollTop = 0;
@@ -24,4 +24,13 @@ export function ScrollToTop() {
   }, [pathname, searchParams]);
 
   return null;
+}
+
+// ── Exported component ────────────────────────────────────────────────────────
+export function ScrollToTop() {
+  return (
+    <Suspense fallback={null}>
+      <ScrollToTopInner />
+    </Suspense>
+  );
 }

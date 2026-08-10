@@ -38,25 +38,25 @@ export function ReleaseCountdown({ releaseDate, title }: Props) {
   const { days, hours, minutes } = timeLeft;
 
   return (
-    <div className="flex items-center gap-3 mt-3 px-4 py-3 rounded-xl border border-sky-500/30 bg-sky-500/8 w-fit">
-      <span className="text-lg">🎬</span>
-      <div>
-        <p className="text-[9px] text-sky-400/70 uppercase tracking-widest leading-none mb-1">
+    <div className="flex items-center justify-between sm:justify-start gap-3 mt-3 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-sky-500/25 bg-gradient-to-r from-sky-500/10 via-sky-500/5 to-transparent w-full sm:w-fit shadow-sm shadow-sky-950/30">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className="text-base sm:text-lg flex-shrink-0">🎬</span>
+        <p className="text-[10px] sm:text-[11px] text-sky-300/80 font-semibold uppercase tracking-wider truncate">
           {title ? `${title} releases in` : "Releasing in"}
         </p>
-        <div className="flex items-baseline gap-2">
-          {days > 0 && (
-            <span className="text-sky-300 font-black text-base leading-none">
-              {days}<span className="text-sky-400/60 text-[10px] font-normal ml-0.5">d</span>
-            </span>
-          )}
-          <span className="text-sky-300 font-black text-base leading-none">
-            {hours}<span className="text-sky-400/60 text-[10px] font-normal ml-0.5">h</span>
+      </div>
+      <div className="flex items-baseline gap-1.5 sm:gap-2 flex-shrink-0 bg-sky-950/50 border border-sky-500/20 rounded-lg px-2.5 py-1">
+        {days > 0 && (
+          <span className="text-sky-300 font-black text-sm sm:text-base leading-none">
+            {days}<span className="text-sky-400/60 text-[10px] font-normal ml-0.5">d</span>
           </span>
-          <span className="text-sky-300 font-black text-base leading-none">
-            {minutes}<span className="text-sky-400/60 text-[10px] font-normal ml-0.5">m</span>
-          </span>
-        </div>
+        )}
+        <span className="text-sky-300 font-black text-sm sm:text-base leading-none">
+          {hours}<span className="text-sky-400/60 text-[10px] font-normal ml-0.5">h</span>
+        </span>
+        <span className="text-sky-300 font-black text-sm sm:text-base leading-none">
+          {minutes}<span className="text-sky-400/60 text-[10px] font-normal ml-0.5">m</span>
+        </span>
       </div>
     </div>
   );

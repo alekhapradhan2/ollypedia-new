@@ -6,10 +6,11 @@ import toast from "react-hot-toast";
 interface VoteButtonsProps {
   movieId: string;
   initialYes: number;
-  initialNo: number;
+  initialNo?: number;
+  className?: string;
 }
 
-export function VoteButtons({ movieId, initialYes, initialNo }: VoteButtonsProps) {
+export function VoteButtons({ movieId, initialYes, initialNo = 0, className = "" }: VoteButtonsProps) {
   const [yes, setYes] = useState(initialYes);
   const [no,  setNo]  = useState(initialNo);
   const [voted, setVoted] = useState<"yes" | "no" | null>(null);
@@ -40,7 +41,7 @@ export function VoteButtons({ movieId, initialYes, initialNo }: VoteButtonsProps
   const yesPercent = total ? Math.round((yes / total) * 100) : 50;
 
   return (
-    <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-4">
+    <div className={`bg-[#181818] border border-[#2a2a2a] rounded-xl p-4 ${className}`}>
       <p className="text-sm text-gray-400 mb-3 text-center font-medium">Are you interested in this movie?</p>
       <div className="flex gap-3">
         <button

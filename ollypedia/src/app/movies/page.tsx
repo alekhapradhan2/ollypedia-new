@@ -516,7 +516,7 @@ export default async function MoviesPage({
             {GENRES.map((g) => (
               <Link
                 key={g}
-                href={`/movies?genre=${g}`}
+                href={`/movies/genre/${encodeURIComponent(g.toLowerCase())}`}
                 title={`${GENRE_META[g]?.desc} — Ollypedia`}
                 className={`group bg-gradient-to-br ${GENRE_META[g]?.color} border border-[#1f1f1f] hover:border-orange-500/40 rounded-xl p-4 transition-all hover:-translate-y-0.5 text-center`}
               >
