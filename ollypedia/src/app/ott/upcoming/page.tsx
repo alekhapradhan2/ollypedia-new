@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
-import { buildMeta, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { buildMeta, SITE_URL } from "@/lib/seo";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { Calendar } from "lucide-react";
 import { InFeedAd } from "@/components/ads/InFeedAd";
@@ -12,7 +12,7 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 export const revalidate = 600;
 
 export const metadata: Metadata = buildMeta({
-  title: `Upcoming Ollywood OTT Releases | ${SITE_NAME}`,
+  title: "Upcoming Ollywood OTT Releases | Latest Odia OTT Releases",
   description: "Check out the upcoming Odia movies releasing on OTT platforms. Find out when your favorite Ollywood movies will be available for streaming.",
   keywords: ["Upcoming OTT Release Odia", "Odia Movie Digital Premiere", "Upcoming Odia Movies OTT", "Ollywood OTT"],
   url: "/ott/upcoming",

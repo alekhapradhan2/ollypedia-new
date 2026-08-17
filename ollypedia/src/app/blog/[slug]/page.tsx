@@ -35,13 +35,13 @@ function toSlug(str?: string): string {
 }
 
 // ─── Static params ─────────────────────────────────────────────
-// Pre-render top 10 most recently published blogs at build time (hybrid strategy).
+// Pre-render top 100 most recently published blogs at build time (hybrid strategy).
 export async function generateStaticParams() {
   try {
     await connectDB();
     const blogs = await Blog.find({ published: true }, "slug")
       .sort({ createdAt: -1 })
-      .limit(10)
+      .limit(100)
       .lean();
     return blogs.map((b: any) => ({ slug: b.slug }));
   } catch (err) {

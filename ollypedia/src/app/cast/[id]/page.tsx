@@ -354,6 +354,16 @@ export default async function CastDetailPage({ params }: { params: { id: string 
 
   const movies   = (person.moviesList || []) as any[];
   const blogsList = (person.blogsList || []) as any[];
+
+  // ★ SEO FIX: Return 404 for completely empty profiles — no bio and no filmography.
+  // A page with only a name and photo and no unique text content will always receive
+  // "Crawled – currently not indexed" from Google. A clean 404 is better than a thin page.
+  const hasBio = !!(person.bio?.trim() || person.ai?.about?.trim());
+  if (!hasBio && movies.length === 0) {
+    notFound();
+  }
+
+
   const roles    = getDerivedRoles(person, movies);
   const rolesStr = roles.join(", ");
   const icon     = ROLE_ICON[roles[0]] || ROLE_ICON[person.type] || "🎭";

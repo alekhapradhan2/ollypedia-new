@@ -1,4 +1,4 @@
-// app/songs/[movieSlug]/[songIndex]/[songSlug]/page.tsx
+﻿// app/songs/[movieSlug]/[songIndex]/[songSlug]/page.tsx
 // SEO UPGRADE v2:
 //  1. generateStaticParams re-enabled
 //  2. Canonical locked to movie's own slug
@@ -7,9 +7,9 @@
 //  5. og:type "music.song"
 //  6. JSON-LD: MusicRecording + BreadcrumbList
 //  7. SEO prose block (server-rendered)
-//  8. ★ NEW: Cross-links to related blog posts for this movie
-//  9. ★ NEW: Keyword set targeting movie-name + song-name searches
-// 10. ★ NEW: Blog JSON-LD ItemList so Google sees blog links from song page
+//  8. â˜… NEW: Cross-links to related blog posts for this movie
+//  9. â˜… NEW: Keyword set targeting movie-name + song-name searches
+// 10. â˜… NEW: Blog JSON-LD ItemList so Google sees blog links from song page
 import { SITE_URL } from "@/lib/seo";
 
 import type { Metadata } from "next";
@@ -21,10 +21,10 @@ import Blog from "@/models/Blog";
 import { SongDetailClient } from "../SongDetailClient";
 import type { MovieData } from "../types";
 
-export const revalidate    = 86400; // 24 hours — on-demand ISR
+export const revalidate    = 86400; // 24 hours â€” on-demand ISR
 export const dynamicParams = true;
 
-// ─── Helpers ───────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function toSlug(str?: string): string {
   return (str || "")
     .toLowerCase()
@@ -35,7 +35,7 @@ function toSlug(str?: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-// ─── Data fetching ─────────────────────────────────────────────
+// â”€â”€â”€ Data fetching â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function getMovieWithSongs(movieSlug: string): Promise<MovieData | null> {
   await connectDB();
   const isObjectId = /^[a-f0-9]{24}$/i.test(movieSlug);
@@ -55,7 +55,7 @@ async function getRelatedMovies(movie: MovieData): Promise<MovieData[]> {
   return JSON.parse(JSON.stringify(related)) as MovieData[];
 }
 
-/** ★ NEW: Fetch blog posts related to this movie */
+/** â˜… NEW: Fetch blog posts related to this movie */
 async function getRelatedBlogs(movie: MovieData): Promise<any[]> {
   await connectDB();
   const blogs = await (Blog as any)
@@ -74,9 +74,9 @@ async function getRelatedBlogs(movie: MovieData): Promise<any[]> {
   return JSON.parse(JSON.stringify(blogs));
 }
 
-// ─── Metadata ─────────────────────────────────────────────────
+// â”€â”€â”€ Metadata â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-// getMisspellings REMOVED — Google handles misspelling matching automatically.
+// getMisspellings REMOVED â€” Google handles misspelling matching automatically.
 // Intentional misspellings in <meta keywords> trigger spam/keyword-stuffing penalties.
 
 export async function generateMetadata({
@@ -99,8 +99,8 @@ export async function generateMetadata({
     || movie.posterUrl
     || `${SITE_URL}/og-default.jpg`;
 
-  // ★ Rich title — song + singer + movie + year for long-tail capture
-  const title = `${song.title}${singerStr} – ${movie.title}${year ? ` (${year})` : ""} | Odia Song`;
+  // â˜… Rich title â€” song + singer + movie + year for long-tail capture
+  const title = `${song.title}${singerStr} â€“ ${movie.title}${year ? ` (${year})` : ""} | Odia Song`;
 
   const descParts = [
     `Listen to "${song.title}"${singerStr} from the Odia film "${movie.title}"${year ? ` (${year})` : ""}.`,
@@ -113,7 +113,7 @@ export async function generateMetadata({
   const stableSlug = toSlug(song.title) || String(idx);
   const canonical  = `${SITE_URL}/songs/${movie.slug}/${idx}/${stableSlug}`;
 
-  // ★ Comprehensive keyword set — hit every variant someone might search
+  // â˜… Comprehensive keyword set â€” hit every variant someone might search
   const keywords = [
     song.title,
     `${song.title} lyrics`,
@@ -163,24 +163,24 @@ export async function generateMetadata({
   };
 }
 
-// ─── Shared design tokens ─────────────────────────────────────
+// â”€â”€â”€ Shared design tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // accent:   #E8891A  (warm gold-orange)
 // surface:  #0d0d0d  (card bg)
 // border:   #1e1e1e  (default border)
 // muted:    #555     (secondary text)
 
-// ─── Tape Divider — film/cassette motif ───────────────────────
+// â”€â”€â”€ Tape Divider â€” film/cassette motif â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function TapeDivider() {
   return (
     <div className="flex items-center gap-3 my-8 select-none">
       <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#2a2a2a] to-[#2a2a2a]" />
-      <span className="text-[#E8891A] text-[10px] tracking-[0.35em] uppercase font-mono opacity-60">◆</span>
+      <span className="text-[#E8891A] text-[10px] tracking-[0.35em] uppercase font-mono opacity-60">â—†</span>
       <div className="flex-1 h-px bg-gradient-to-l from-transparent via-[#2a2a2a] to-[#2a2a2a]" />
     </div>
   );
 }
 
-// ─── Section Eyebrow ──────────────────────────────────────────
+// â”€â”€â”€ Section Eyebrow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function Eyebrow({ label }: { label: string }) {
   return (
     <p className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#E8891A] mb-3 opacity-80">
@@ -189,7 +189,9 @@ function Eyebrow({ label }: { label: string }) {
   );
 }
 
-// ─── SEO Prose Block (server-rendered) ────────────────────────
+// â”€â”€â”€ SEO Prose Block (server-rendered) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Generates 300+ words of unique server-rendered prose so Google never
+// classifies a song page as "thin content" and refuses to index it.
 function SeoProseBlock({
   song,
   movie,
@@ -205,85 +207,177 @@ function SeoProseBlock({
   otherSongs: Array<{ title: string; slug: string; index: number; singer?: string; ytId?: string; thumbnailUrl?: string }>;
   relatedBlogs: any[];
 }) {
+  const totalSongs   = (movie.media?.songs?.length || 1);
+  const trackNum     = idx + 1;
+  const genreStr     = movie.genre?.join(", ") || "Odia";
+  const castNames    = (movie.cast || []).slice(0, 5).map((c: any) => c.name).filter(Boolean);
+  const lyricsLines  = song.lyrics?.trim().split(/\r?\n/).filter((l: string) => l.trim()).slice(0, 8) || [];
+
+  // Build a rich prose description paragraph
+  const creditParts: string[] = [];
+  if (song.singer)        creditParts.push(`sung by ${song.singer}`);
+  if (song.musicDirector) creditParts.push(`music composed by ${song.musicDirector}`);
+  if (song.lyricist)      creditParts.push(`lyrics penned by ${song.lyricist}`);
+
+  const creditSentence = creditParts.length
+    ? `The song is ${creditParts.join(", ")}.`
+    : "This is an Odia film song.";
+
+  const movieContext = `"${movie.title}"${year ? ` (${year})` : ""} is ${genreStr ? `a ${genreStr}` : "an Odia"} film${movie.director ? ` directed by ${movie.director}` : ""}${castNames.length ? ` and stars ${castNames.join(", ")}` : ""}.`;
+
+  const soundtrackSentence = totalSongs > 1
+    ? `The complete soundtrack of "${movie.title}" consists of ${totalSongs} tracks, with "${song.title}" appearing as track number ${trackNum}.`
+    : `"${song.title}" is the only song featured in "${movie.title}".`;
+
+  const otherSongNames = otherSongs.slice(0, 5).map((s) => `"${s.title}"`).join(", ");
+  const moreSongsSentence = otherSongNames
+    ? `Other songs from this soundtrack include ${otherSongNames}.`
+    : "";
+
   return (
     <section
       aria-label="About this song"
       className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 pb-16"
     >
-      {/* ── 2-col layout: left = prose/blogs, right = more songs ── */}
+      {/* â”€â”€ 2-col layout: left = prose/blogs, right = more songs â”€â”€ */}
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
 
-        {/* ═══ LEFT COLUMN ═══ */}
+        {/* â•â•â• LEFT COLUMN â•â•â• */}
         <div className="flex-1 min-w-0">
 
-          {/* ── About card ── */}
+          {/* â”€â”€ About card â”€â”€ */}
           <div className="relative bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl p-6 sm:p-8 mb-4 overflow-hidden">
             <div className="absolute left-0 top-6 bottom-6 w-[3px] bg-gradient-to-b from-[#E8891A] via-[#E8891A]/40 to-transparent rounded-r-full" />
             <div className="pl-4">
               <Eyebrow label="Track Info" />
               <h2 className="text-white font-bold text-xl sm:text-2xl leading-tight mb-4 tracking-tight">
                 &ldquo;{song.title}&rdquo;
-                <span className="text-[#E8891A]"> — </span>
+                <span className="text-[#E8891A]"> â€” </span>
                 <Link href={`/movie/${movie.slug}`} className="hover:text-[#E8891A] transition-colors">
                   {movie.title}
                 </Link>
                 {year ? <span className="text-[#555] font-normal text-base"> ({year})</span> : null}
               </h2>
 
-              {/* Metadata pills */}
-              <div className="flex flex-wrap gap-2 mb-5">
+              {/* Credits table */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
                 {song.singer && (
-                  <span className="inline-flex items-center gap-1.5 bg-[#161616] border border-[#2a2a2a] text-[#ccc] text-xs px-3 py-1.5 rounded-full">
-                    <span className="text-[#E8891A]">♪</span> {song.singer}
-                  </span>
+                  <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-3">
+                    <p className="text-[9px] uppercase tracking-widest text-[#555] font-mono mb-1">Playback Singer</p>
+                    <p className="text-sm font-semibold text-white leading-snug">{song.singer}</p>
+                  </div>
                 )}
                 {song.musicDirector && (
-                  <span className="inline-flex items-center gap-1.5 bg-[#161616] border border-[#2a2a2a] text-[#ccc] text-xs px-3 py-1.5 rounded-full">
-                    <span className="text-[#E8891A]">♬</span> {song.musicDirector}
-                  </span>
+                  <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-3">
+                    <p className="text-[9px] uppercase tracking-widest text-[#555] font-mono mb-1">Music Director</p>
+                    <p className="text-sm font-semibold text-white leading-snug">{song.musicDirector}</p>
+                  </div>
                 )}
                 {song.lyricist && (
-                  <span className="inline-flex items-center gap-1.5 bg-[#161616] border border-[#2a2a2a] text-[#ccc] text-xs px-3 py-1.5 rounded-full">
-                    <span className="text-[#E8891A]">✍</span> {song.lyricist}
-                  </span>
+                  <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-3">
+                    <p className="text-[9px] uppercase tracking-widest text-[#555] font-mono mb-1">Lyricist</p>
+                    <p className="text-sm font-semibold text-white leading-snug">{song.lyricist}</p>
+                  </div>
                 )}
                 {movie.director && (
-                  <span className="inline-flex items-center gap-1.5 bg-[#161616] border border-[#2a2a2a] text-[#ccc] text-xs px-3 py-1.5 rounded-full">
-                    <span className="text-[#E8891A]">🎬</span> {movie.director}
-                  </span>
+                  <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-3">
+                    <p className="text-[9px] uppercase tracking-widest text-[#555] font-mono mb-1">Film Director</p>
+                    <p className="text-sm font-semibold text-white leading-snug">{movie.director}</p>
+                  </div>
                 )}
-                <span className="inline-flex items-center gap-1.5 bg-[#161616] border border-[#2a2a2a] text-[#555] text-xs px-3 py-1.5 rounded-full font-mono">
-                  Track {idx + 1} / {movie.media?.songs?.length || 1}
-                </span>
+                {movie.genre?.length ? (
+                  <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-3">
+                    <p className="text-[9px] uppercase tracking-widest text-[#555] font-mono mb-1">Genre</p>
+                    <p className="text-sm font-semibold text-white leading-snug">{movie.genre.join(", ")}</p>
+                  </div>
+                ) : null}
+                <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-3">
+                  <p className="text-[9px] uppercase tracking-widest text-[#555] font-mono mb-1">Track</p>
+                  <p className="text-sm font-semibold text-white leading-snug">{trackNum} of {totalSongs}</p>
+                </div>
               </div>
 
-              {/* Prose */}
-              <p className="text-[#888] text-sm leading-7">
-                &ldquo;{song.title}&rdquo;
-                {song.singer && (
-                  <> is sung by <strong className="text-[#ddd] font-semibold">{song.singer}</strong></>
+              {/* Rich SEO prose */}
+              <div className="space-y-3 text-[#888] text-sm leading-7">
+                <p>
+                  <strong className="text-[#ccc]">&ldquo;{song.title}&rdquo;</strong> is a featured Odia film song from{" "}
+                  <Link href={`/movie/${movie.slug}`} className="text-[#E8891A] hover:underline font-semibold underline-offset-2">
+                    {movie.title}
+                  </Link>
+                  {year ? ` (${year})` : ""}.{" "}
+                  {creditSentence}
+                </p>
+                <p>{movieContext}</p>
+                {castNames.length > 0 && (
+                  <p>
+                    The film features a talented ensemble cast including{" "}
+                    <strong className="text-[#ccc]">{castNames.join(", ")}</strong>.{" "}
+                    You can watch &ldquo;{song.title}&rdquo; and the full soundtrack on this page, or visit the{" "}
+                    <Link href={`/movie/${movie.slug}`} className="text-[#E8891A] hover:underline underline-offset-2">
+                      {movie.title} movie page
+                    </Link>{" "}
+                    for complete cast, crew, box office details, and reviews.
+                  </p>
                 )}
-                {!song.singer && " is an Odia film song"} from the{" "}
-                {movie.genre?.length ? <>{movie.genre.join(", ")} </> : null}
-                Odia film{" "}
-                <Link href={`/movie/${movie.slug}`} className="text-[#E8891A] hover:underline font-semibold underline-offset-2">
-                  {movie.title}
-                </Link>
-                {year ? ` (${year})` : ""}.
-                {song.musicDirector && (
-                  <> Music composed by <strong className="text-[#ddd] font-semibold">{song.musicDirector}</strong>.</>
-                )}
-                {song.lyricist && (
-                  <> Lyrics by <strong className="text-[#ddd] font-semibold">{song.lyricist}</strong>.</>
-                )}
-                {song.lyrics?.trim() && (
-                  <> Full lyrics available — scroll up to read with line-by-line sync.</>
-                )}
-              </p>
+                <p>{soundtrackSentence}{moreSongsSentence ? " " + moreSongsSentence : ""}</p>
+                <p>
+                  Ollypedia is your complete guide to Odia (Ollywood) cinema. Browse the full{" "}
+                  <Link href={`/songs/${movie.slug}`} className="text-[#E8891A] hover:underline underline-offset-2">
+                    {movie.title} song album
+                  </Link>
+                  , explore{" "}
+                  <Link href="/songs/category/latest" className="text-[#E8891A] hover:underline underline-offset-2">
+                    latest Odia songs
+                  </Link>
+                  , or discover{" "}
+                  <Link href="/songs/category/trending" className="text-[#E8891A] hover:underline underline-offset-2">
+                    trending Ollywood tracks
+                  </Link>
+                  . All songs on Ollypedia link directly to official YouTube videos so you can listen legally and for free.
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* ── Discovery pills ── */}
+          {/* â”€â”€ Lyrics snippet (if available) â”€â”€ */}
+          {lyricsLines.length > 0 && (
+            <div className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl p-6 mb-4">
+              <Eyebrow label="Lyrics Preview" />
+              <h3 className="text-white font-bold text-base mb-4">
+                &ldquo;{song.title}&rdquo; â€” Lyrics Excerpt
+              </h3>
+              <div className="space-y-1 text-[#aaa] text-sm leading-7 font-light italic border-l-2 border-[#E8891A]/30 pl-4">
+                {lyricsLines.map((line: string, i: number) => (
+                  <p key={i}>{line}</p>
+                ))}
+                {(song.lyrics?.trim().split(/\r?\n/).filter((l: string) => l.trim()).length || 0) > 8 && (
+                  <p className="text-[#555] not-italic text-xs mt-2">â€¦ scroll up to read full lyrics</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* â”€â”€ Cast from the film â”€â”€ */}
+          {castNames.length > 0 && (
+            <div className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl p-6 mb-4">
+              <Eyebrow label="Starring In This Film" />
+              <h3 className="text-white font-bold text-base mb-3">
+                Cast of <span className="text-[#E8891A]">{movie.title}</span>
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {(movie.cast || []).slice(0, 8).map((c: any, i: number) => (
+                  <span
+                    key={i}
+                    className="text-xs text-[#bbb] bg-[#161616] border border-[#2a2a2a] px-3 py-1.5 rounded-full"
+                  >
+                    {c.name}{c.role ? <span className="text-[#555] ml-1">({c.role})</span> : null}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* â”€â”€ Discovery pills â”€â”€ */}
           <div className="flex flex-wrap gap-2 mb-6 px-1">
             {year && (
               <Link href={`/songs/category/${year}`} className="text-xs text-[#E8891A]/70 hover:text-[#E8891A] bg-[#E8891A]/5 hover:bg-[#E8891A]/10 border border-[#E8891A]/15 hover:border-[#E8891A]/30 px-3 py-1.5 rounded-full transition-all font-medium">
@@ -297,11 +391,11 @@ function SeoProseBlock({
               Trending
             </Link>
             <Link href={`/movie/${movie.slug}`} className="text-xs text-[#E8891A]/70 hover:text-[#E8891A] bg-[#E8891A]/5 hover:bg-[#E8891A]/10 border border-[#E8891A]/15 hover:border-[#E8891A]/30 px-3 py-1.5 rounded-full transition-all font-medium">
-              {movie.title} — Full Page
+              {movie.title} â€” Full Page
             </Link>
           </div>
 
-          {/* ── Related Blog Posts ── */}
+          {/* â”€â”€ Related Blog Posts â”€â”€ */}
           {relatedBlogs.length > 0 && (
             <div>
               <Eyebrow label="Articles & Reviews" />
@@ -320,7 +414,7 @@ function SeoProseBlock({
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={b.coverImage} alt={b.title} width={64} height={48} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[#333] text-lg">✍</div>
+                          <div className="w-full h-full flex items-center justify-center text-[#333] text-lg">âœ</div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -331,23 +425,23 @@ function SeoProseBlock({
                           {b.title}
                         </p>
                       </div>
-                      <span className="flex-shrink-0 self-center text-[#333] group-hover:text-[#E8891A] transition-colors text-sm">→</span>
+                      <span className="flex-shrink-0 self-center text-[#333] group-hover:text-[#E8891A] transition-colors text-sm">â†’</span>
                     </Link>
                   </li>
                 ))}
               </ul>
               <Link
-                href={`/blog?movie=${encodeURIComponent(movie.title)}`}
+                href={`/blog?category=Songs`}
                 className="inline-flex items-center gap-2 mt-4 text-xs text-[#555] hover:text-[#E8891A] transition-colors font-medium"
               >
                 All articles about {movie.title}
-                <span className="text-[#E8891A]">→</span>
+                <span className="text-[#E8891A]">â†’</span>
               </Link>
             </div>
           )}
         </div>
 
-        {/* ═══ RIGHT COLUMN — More Songs as cards ═══ */}
+        {/* â•â•â• RIGHT COLUMN â€” More Songs as cards â•â•â• */}
         {otherSongs.length > 0 && (
           <div className="w-full lg:w-[320px] xl:w-[360px] flex-shrink-0">
             {/* Sticky container on desktop */}
@@ -426,8 +520,7 @@ function SeoProseBlock({
   );
 }
 
-
-// ─── Page ─────────────────────────────────────────────────────
+// â”€â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default async function SongDetailSlugPage({
   params,
 }: {
@@ -443,7 +536,7 @@ export default async function SongDetailSlugPage({
 
   const [relatedMovies, relatedBlogs] = await Promise.all([
     getRelatedMovies(movie),
-    getRelatedBlogs(movie),   // ★ NEW
+    getRelatedBlogs(movie),   // â˜… NEW
   ]);
 
   const year   = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
@@ -477,7 +570,7 @@ export default async function SongDetailSlugPage({
         ...(thumb           && { "thumbnailUrl": thumb }),
         ...(song.ytId       && { "sameAs": `https://www.youtube.com/watch?v=${song.ytId}` }),
         "url": canonical,
-        // ★ Link song → movie for entity graph
+        // â˜… Link song â†’ movie for entity graph
         "inAlbum": {
           "@type": "MusicAlbum",
           "name": `${movie.title} Original Soundtrack`,
@@ -488,7 +581,7 @@ export default async function SongDetailSlugPage({
             "byArtist": { "@type": "Person", "name": song.musicDirector },
           }),
         },
-        // ★ Associate song with its film
+        // â˜… Associate song with its film
         "associatedMedia": {
           "@type": "Movie",
           "name": movie.title,
@@ -504,7 +597,7 @@ export default async function SongDetailSlugPage({
           { "@type": "ListItem", "position": 4, "name": song.title,   "item": canonical },
         ],
       },
-      // ★ ItemList of related blog posts — helps Google link song → blogs
+      // â˜… ItemList of related blog posts â€” helps Google link song â†’ blogs
       ...(relatedBlogs.length > 0
         ? [{
             "@type": "ItemList",

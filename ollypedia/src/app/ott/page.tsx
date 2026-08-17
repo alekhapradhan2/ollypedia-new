@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
-import { buildMeta, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { buildMeta, SITE_URL } from "@/lib/seo";
 import { ChevronRight, Play, Calendar, MonitorPlay } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { MovieCard } from "@/components/movie/MovieCard";
@@ -13,7 +13,7 @@ import React from "react";
 export const revalidate = 600;
 
 export const metadata: Metadata = buildMeta({
-  title: `Watch Ollywood Movies on OTT | Latest Odia OTT Releases | ${SITE_NAME}`,
+  title: "Watch Ollywood Movies on OTT | Latest Odia OTT Releases",
   description: "Discover the latest Ollywood movies streaming on Netflix, Prime Video, ZEE5, JioHotstar, and Sony LIV. Find Odia movie OTT release dates, streaming platforms, and digital premieres.",
   keywords: [
     "Ollywood OTT", "Odia Movie OTT Release", "Watch Odia Movies Online", 

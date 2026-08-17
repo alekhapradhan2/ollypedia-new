@@ -134,7 +134,10 @@ export async function GET() {
   });
 
   // ── Movies by year pages ───────────────────────────────────────────────────
-  const YEAR_START = 2000;
+  // YEAR_START = 1980 matches _OLDEST_YEAR in app/movies/year/[year]/page.tsx.
+  // Pre-1980 year pages now return 404 (no data), so they must NOT appear in
+  // the sitemap. Submitting a URL that returns 404 wastes crawl budget.
+  const YEAR_START = 1980;
   const YEAR_END   = new Date().getFullYear();
   for (let yr = YEAR_END; yr >= YEAR_START; yr--) {
     const freq = yr >= YEAR_END - 1 ? "daily"   : yr >= YEAR_END - 4 ? "monthly" : "yearly";
@@ -302,7 +305,7 @@ ${entries.join("\n")}
   return new Response(xml, {
     headers: {
       "Content-Type":  "application/xml; charset=utf-8",
-      "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=600",
+      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60",
     },
   });
 }

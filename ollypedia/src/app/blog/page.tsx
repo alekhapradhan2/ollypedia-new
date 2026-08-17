@@ -9,12 +9,13 @@ import { Suspense } from "react";
 import { connectDB } from "@/lib/db";
 import Blog from "@/models/Blog";
 import { buildMeta } from "@/lib/seo";
+import { InFeedAd } from "@/components/ads/InFeedAd";
+import { DisplayAd } from "@/components/ads/DisplayAd";
 import { BlogCard } from "@/components/blog/BlogCard";
 import { BlogSearch } from "@/components/blog/BlogSearch";
 import { BlogInfiniteScroll } from "@/components/blog/BlogInfiniteScroll";
 import { BlogCategoryDropdown } from "@/components/blog/BlogCategoryDropdown";
 import { Search, BookOpen, TrendingUp, Star, Eye, Flame, ChevronRight } from "lucide-react";
-import { DisplayAd } from "@/components/ads/DisplayAd";
 
 export const revalidate = 600;
 
