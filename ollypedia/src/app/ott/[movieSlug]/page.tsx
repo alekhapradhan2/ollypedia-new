@@ -24,6 +24,9 @@ export async function generateMetadata({ params }: { params: { movieSlug: string
   if (!movie) notFound();
   
   const m = movie as any;
+  const hasOtt = !!(m.ott?.platform || m.streamingOn);
+  if (!hasOtt) notFound();
+
   const ott = {
     platform: m.ott?.platform || m.streamingOn || "Odia OTT",
     releaseDate: m.ott?.releaseDate || m.ottReleaseDate || "",
@@ -44,6 +47,8 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
   if (!movie) return notFound();
 
   const m = movie as any;
+  const hasOtt = !!(m.ott?.platform || m.streamingOn);
+  if (!hasOtt) return notFound();
   
   // Normalize OTT data — prioritize new ott object, fall back to legacy fields
   const ott = {

@@ -20,7 +20,7 @@ const heroImage = (m: HeroMovie) => {
   const primaryVid = getPrimaryVideo(m);
   return m.thumbnailUrl || ytThumb(primaryVid?.ytId) || m.posterUrl || null;
 };
-const fmtDate = (d: string) => formatReleaseDate(d, undefined, "short");
+const fmtDate = (d: string, precision?: string) => formatReleaseDate(d, precision, "short");
 
 function getPrimaryVideo(m: HeroMovie) {
   const vids = m.videos || [];
@@ -51,8 +51,11 @@ export interface HeroMovie {
   genre?: string[];
   language?: string;
   releaseDate?: string;
+  releaseDatePrecision?: string;
   isReRelease?: boolean;
   reReleaseDate?: string;
+  reReleaseDatePrecision?: string;
+  releaseTBA?: boolean;
   director?: string;
   verdict?: string;
   synopsis?: string;
@@ -203,10 +206,10 @@ export default function HeroCarousel({ movies }: { movies: HeroMovie[] }) {
                         className="hh-badge"
                         style={{ background: `#f9731622`, border: `1px solid #f97316`, color: `#f97316`, marginLeft: 0 }}
                       >
-                        🗓 Re-Release: {fmtDate(movie.reReleaseDate)}
+                        🗓 Re-Release: {fmtDate(movie.reReleaseDate, movie.reReleaseDatePrecision)}
                       </span>
                     ) : movie.releaseDate ? (
-                      <span>🗓 {fmtDate(movie.releaseDate)}</span>
+                      <span>🗓 {fmtDate(movie.releaseDate, movie.releaseDatePrecision)}</span>
                     ) : null}
                     {movie.director   && <span>🎬 {movie.director}</span>}
                     {movie.verdict && movie.verdict !== "Upcoming" && (

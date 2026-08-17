@@ -58,6 +58,62 @@ function fmtDate(iso: string, precision?: string) {
   return formatReleaseDate(iso, precision, "short");
 }
 
+// ── Date precision ranking ──────────────────────────────────────
+// Priority tier: 1 = Full exact date, 2 = Month/Year, 3 = Year only, 4 = TBA / No date
+function getDatePrecisionScore(m: any): number {
+  const isRe = m.isReRelease && m.reReleaseDate;
+  const tba = isRe ? m.reReleaseTBA : m.releaseTBA;
+  const raw = isRe ? m.reReleaseDate : m.releaseDate;
+  const prec = isRe ? m.reReleaseDatePrecision : m.releaseDatePrecision;
+
+  if (tba || !raw || typeof raw !== "string") return 4;
+  const s = raw.trim();
+  if (!s || s.toUpperCase() === "TBA") return 4;
+
+  // 1. Year only: precision is "year" OR string is 4-digit year (e.g. "2026")
+  if (prec === "year" || /^\d{4}$/.test(s)) return 3;
+
+  // 2. Month & Year: precision is "month" OR string is YYYY-MM (e.g. "2026-08")
+  if (prec === "month" || /^\d{4}-\d{2}$/.test(s)) return 2;
+
+  // 3. Full date: valid YYYY-MM-DD
+  const cleanIso = s.split("T")[0];
+  const parts = cleanIso.split("-");
+  if (parts.length === 3 && parts[1] && parts[2] && parts[2] !== "00") {
+    return 1; // Full exact date
+  }
+
+  if (prec === "full") return 1;
+  return 3;
+}
+
+function getMovieReleaseTime(m: any): number | null {
+  const isRe = m.isReRelease && m.reReleaseDate;
+  const raw = isRe ? m.reReleaseDate : m.releaseDate;
+  if (!raw || typeof raw !== "string") return null;
+  const s = raw.trim();
+  if (!s || s.toUpperCase() === "TBA") return null;
+
+  // If 4-digit year (e.g. "2026"), sort as end of that year (Dec 31)
+  if (/^\d{4}$/.test(s) || m.releaseDatePrecision === "year") {
+    const yr = parseInt(s.slice(0, 4), 10);
+    return !isNaN(yr) ? new Date(yr, 11, 31, 23, 59, 59).getTime() : null;
+  }
+
+  // If YYYY-MM (e.g. "2026-08"), sort as end of that month
+  if (/^\d{4}-\d{2}$/.test(s) || m.releaseDatePrecision === "month") {
+    const parts = s.split("-");
+    const yr = parseInt(parts[0], 10);
+    const mo = parseInt(parts[1], 10);
+    if (!isNaN(yr) && !isNaN(mo)) {
+      return new Date(yr, mo, 0, 23, 59, 59).getTime();
+    }
+  }
+
+  const dt = new Date(s);
+  return isNaN(dt.getTime()) ? null : dt.getTime();
+}
+
 // ── Box office helpers (same as /box-office/page.tsx) ────────────
 function parseNum(s: unknown): number {
   const str = String(s || "").trim();
@@ -71,7 +127,7 @@ function parseNum(s: unknown): number {
 function fmtINR(n: number): string {
   if (!n) return "—";
   if (n >= 1_00_00_000) return `₹${(n / 1_00_00_000).toFixed(2)} Cr`;
-  if (n >= 1_00_000)    return `₹${(n / 1_00_000).toFixed(2)} L`;
+  if (n >= 1_00_00_000) return `₹${(n / 1_00_00_000).toFixed(2)} L`;
   return `₹${n.toLocaleString("en-IN")}`;
 }
 
@@ -106,7 +162,7 @@ async function getHomeData() {
       },
       // _hasDated desc (dated first), then by date asc (soonest first), TBA last
       { $sort: { _hasDated: -1, _releaseDateObj: 1 } },
-      { $limit: 6 },
+      { $limit: 12 },
     ]),
     // Latest blogs for the main grid
     Blog.find({ published: true }, "-content -reviews")
@@ -135,9 +191,15 @@ async function getHomeData() {
     .sort((a: any, b: any) => {
       const aUp = !a.verdict || a.verdict === "Upcoming";
       const bUp = !b.verdict || b.verdict === "Upcoming";
-      const aDate = a.isReRelease && a.reReleaseDate ? new Date(a.reReleaseDate).getTime() : a.releaseDate ? new Date(a.releaseDate).getTime() : null;
-      const bDate = b.isReRelease && b.reReleaseDate ? new Date(b.reReleaseDate).getTime() : b.releaseDate ? new Date(b.releaseDate).getTime() : null;
+      const aDate = getMovieReleaseTime(a);
+      const bDate = getMovieReleaseTime(b);
       if (aUp && bUp) {
+        // Show movies with full release date first, then month+year, then year only, then TBA
+        const aScore = getDatePrecisionScore(a);
+        const bScore = getDatePrecisionScore(b);
+        if (aScore !== bScore) {
+          return aScore - bScore;
+        }
         if (!aDate && !bDate) return 0;
         if (!aDate) return 1;
         if (!bDate) return -1;
@@ -156,8 +218,11 @@ async function getHomeData() {
       genre:       m.genre       || undefined,
       language:    m.language    || undefined,
       releaseDate: m.releaseDate || undefined,
+      releaseDatePrecision: m.releaseDatePrecision || undefined,
       isReRelease: m.isReRelease || undefined,
       reReleaseDate: m.reReleaseDate || undefined,
+      reReleaseDatePrecision: m.reReleaseDatePrecision || undefined,
+      releaseTBA:  m.releaseTBA  || undefined,
       director:    m.director    || undefined,
       verdict:     m.verdict     || undefined,
       synopsis:    m.synopsis    || undefined,
@@ -196,10 +261,15 @@ async function getHomeData() {
     .sort((a: any, b: any) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
     .slice(0, 5);
 
-  // ── JS-side re-sort as guarantee: dated (soonest first) → TBA last ──
+  // ── JS-side re-sort as guarantee: full date -> month/year -> year only -> TBA last ──
   const sortedUpcoming = (upcomingMovies as any[]).sort((a, b) => {
-    const aDate = a.releaseDate ? new Date(a.releaseDate).getTime() : null;
-    const bDate = b.releaseDate ? new Date(b.releaseDate).getTime() : null;
+    const aScore = getDatePrecisionScore(a);
+    const bScore = getDatePrecisionScore(b);
+    if (aScore !== bScore) {
+      return aScore - bScore;
+    }
+    const aDate = getMovieReleaseTime(a);
+    const bDate = getMovieReleaseTime(b);
     if (aDate && bDate) return aDate - bDate;  // both dated: soonest first
     if (aDate && !bDate) return -1;            // a has date, b is TBA: a first
     if (!aDate && bDate) return 1;             // a is TBA, b has date: b first

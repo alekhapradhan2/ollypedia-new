@@ -326,76 +326,6 @@ function extractToc(html: string): TocItem[] {
   return items;
 }
 
-// ─── In-Article Ad Injector ──────────────────────────────────────────────────
-function injectInArticleAds(html: string): string {
-  if (!html) return html;
-
-  // Split by paragraph closing tags
-  const parts = html.split('</p>');
-  const totalParagraphs = parts.length - 1;
-  
-  if (totalParagraphs < 2) return html;
-
-  // Dynamically scale max ad slots based on article length
-  let maxAds = 1;
-  if (totalParagraphs >= 12) {
-    maxAds = 6;
-  } else if (totalParagraphs >= 8) {
-    maxAds = 4;
-  } else if (totalParagraphs >= 5) {
-    maxAds = 3;
-  } else if (totalParagraphs >= 3) {
-    maxAds = 2;
-  }
-
-  // Minimum paragraphs between consecutive ad placements
-  const minParagraphGap = Math.max(2, Math.floor(totalParagraphs / (maxAds + 1)));
-
-  let result = '';
-  let adsInjected = 0;
-  let lastAdParagraphIndex = 0;
-
-  for (let i = 0; i < parts.length - 1; i++) {
-    result += parts[i] + '</p>';
-    const paragraphNum = i + 1;
-
-    const gapFromLastAd = paragraphNum - lastAdParagraphIndex;
-    const isFirstAdPoint = adsInjected === 0 && paragraphNum >= 1;
-    const isSubsequentAdPoint = adsInjected > 0 && gapFromLastAd >= minParagraphGap;
-
-    if (adsInjected < maxAds && (isFirstAdPoint || isSubsequentAdPoint)) {
-      const currentPart = parts[i] || '';
-      const nextPart = (parts[i + 1] || '').trim();
-
-      // Strict check 1: Does current paragraph block contain a heading tag (h1-h6)?
-      const hasHeadingInCurrent = /<h[1-6][\s>]/i.test(currentPart);
-
-      // Strict check 2: Does the beginning of next part contain a heading tag (h1-h6)?
-      const hasHeadingInNext = /<h[1-6][\s>]/i.test(nextPart.slice(0, 300));
-
-      // Only inject if NEITHER current block nor upcoming block contains a heading
-      if (!hasHeadingInCurrent && !hasHeadingInNext) {
-        result += `
-<div class="in-article-ad-container" style="clear: both; width: 100%; display: block; margin: 36px 0; min-height: 280px; background: #0d0d0d; border: 1px solid #222; border-radius: 16px; padding: 12px; text-align: center; transition: all 0.3s ease;" aria-label="Advertisement" data-nosnippet="true">
-  <span style="display: block; text-align: center; font-size: 10px; color: #666; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; width: 100%;">Advertisement</span>
-  <ins class="adsbygoogle"
-       style="display:block; text-align:center; width:100%; clear:both;"
-       data-ad-layout="in-article"
-       data-ad-format="fluid"
-       data-ad-client="ca-pub-5823659147566885"
-       data-ad-slot="8191172163"></ins>
-</div>
-`;
-        adsInjected++;
-        lastAdParagraphIndex = paragraphNum;
-      }
-    }
-  }
-
-  result += parts[parts.length - 1];
-  return result;
-}
-
 // ─── ColorfulArticle ──────────────────────────────────────────────────────────
 function ColorfulArticle({ content, onTocReady }: { content: string; onTocReady?: (items: TocItem[]) => void }) {
   const isHtml = /<[a-z][\s\S]*>/i.test(content || "");
@@ -410,62 +340,18 @@ function ColorfulArticle({ content, onTocReady }: { content: string; onTocReady?
   
   // Sanitize user content first to prevent XSS
   const safeHtml = DOMPurify.sanitize(finalHtml);
-  
-  // Inject AdSense tags safely into the sanitized HTML
-  finalHtml = injectInArticleAds(safeHtml);
 
   useEffect(() => {
     if (onTocReady) {
-      onTocReady(extractToc(finalHtml));
+      onTocReady(extractToc(safeHtml));
     }
-    
-    const observers: MutationObserver[] = [];
-
-    // Initialize injected AdSense ads
-    try {
-      const ads = containerRef.current?.querySelectorAll('.adsbygoogle:not([data-adsbygoogle-pushed="true"])');
-      if (ads && ads.length > 0) {
-        ads.forEach((ad) => {
-          // Mark as pushed immediately to prevent race conditions during React Strict Mode
-          ad.setAttribute('data-adsbygoogle-pushed', 'true');
-          ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
-
-          // Smart listener for each injected ad to avoid layout gaps
-          const observer = new MutationObserver((mutations) => {
-            for (const m of mutations) {
-              if (m.type === 'attributes' && m.attributeName === 'data-ad-status') {
-                const status = ad.getAttribute('data-ad-status');
-                const container = ad.closest('.in-article-ad-container');
-                if (container) {
-                  if (status === 'filled') {
-                    (container as HTMLElement).classList.add('ad-filled');
-                  } else if (status === 'unfilled') {
-                    (container as HTMLElement).style.display = 'none';
-                  }
-                }
-                observer.disconnect();
-              }
-            }
-          });
-          observer.observe(ad, { attributes: true, attributeFilter: ['data-ad-status'] });
-          observers.push(observer);
-        });
-      }
-    } catch (e) {
-      console.error("AdSense initialization error", e);
-    }
-
-    return () => {
-      observers.forEach(obs => obs.disconnect());
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finalHtml]);
+  }, [safeHtml, onTocReady]);
 
   return (
     <div
       ref={containerRef}
       className="bp-article bp-article-html"
-      dangerouslySetInnerHTML={{ __html: finalHtml }}
+      dangerouslySetInnerHTML={{ __html: safeHtml }}
     />
   );
 }
@@ -988,6 +874,11 @@ export default function BlogDetailClient({
           </div>
         )}
 
+        {/* ══ GLOBAL BANNER AD ══ */}
+        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 mt-6 mb-2">
+          <DisplayAd slot="8191172163" format="horizontal" className="rounded-xl border border-[#222]" />
+        </div>
+
         {/* ── Layout ── */}
         <div className="bp-layout">
 
@@ -1010,11 +901,6 @@ export default function BlogDetailClient({
 
             {/* ★ Was this helpful? */}
             <HelpfulWidget />
-
-            {/* ── Article End Display Ad ── */}
-            <div className="my-8">
-              <DisplayAd slot="8191172163" format="auto" className="rounded-2xl border border-[#222] bg-[#0d0d0d] p-3" />
-            </div>
 
             {/* ── YouTube Video Embed ── */}
             {post.youtubeVideoId && (
@@ -1388,8 +1274,18 @@ export default function BlogDetailClient({
               </div>
             )}
 
+            {/* Sidebar Ad (Visible on all screen sizes, responsive) */}
+            <div style={{ marginTop: 16 }}>
+              <DisplayAd slot="8191172163" format="auto" />
+            </div>
+
           </aside>
         </div>
+      </div>
+
+      {/* ══ BANNER AD BEFORE RELATED ARTICLES ══ */}
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 mb-8 mt-2">
+        <DisplayAd slot="8191172163" format="horizontal" className="rounded-xl border border-[#222]" />
       </div>
 
       {/* ─── Related Blogs Grid ─── */}

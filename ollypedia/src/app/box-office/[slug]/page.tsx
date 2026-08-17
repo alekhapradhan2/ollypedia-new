@@ -134,6 +134,10 @@ export async function generateMetadata({
   const totalNet   = days.reduce((s: number, d: any) => s + parseNum(d.net),   0);
   const totalGross = days.reduce((s: number, d: any) => s + parseNum(d.gross), 0);
   const lastDay    = days[days.length - 1]?.day || 0;
+  const hasBoxOffice = days.length > 0 || (movie.reReleaseBoxOfficeDays && movie.reReleaseBoxOfficeDays.length > 0) || totalNet > 0;
+
+  if (!hasBoxOffice) return { robots: { index: false, follow: false } };
+
   // Delegate to boxOfficeSeo module — clean, focused keyword set (no SpamBrain risk)
   return buildBoxOfficeMeta({
     movieTitle: movie.title,
@@ -163,6 +167,9 @@ export default async function BoxOfficePage({
   const totalNet   = days.reduce((s: number, d: any) => s + parseNum(d.net),   0);
   const totalGross = days.reduce((s: number, d: any) => s + parseNum(d.gross), 0);
   const lastDay    = days[days.length - 1]?.day || 0;
+  const hasBoxOffice = days.length > 0 || (movie.reReleaseBoxOfficeDays && movie.reReleaseBoxOfficeDays.length > 0) || totalNet > 0;
+
+  if (!hasBoxOffice) notFound();
   const year       = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
   const songs      = movie.media?.songs || [];
 
@@ -380,51 +387,89 @@ export default async function BoxOfficePage({
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogItemListLd) }} />
       )}
 
-      {/* ★ SERVER-RENDERED TEXT — Google indexes this, users don't see it */}
-      <div style={{ position:"absolute", left:"-9999px", width:1, height:1, overflow:"hidden" }}
-           aria-hidden="true">
-        <h1>{movie.title} Box Office Collection — Total {fmtINR(totalNet)} Net</h1>
-        <p>{movie.title} has collected {fmtINR(totalNet)} net and {fmtINR(totalGross)} gross
-           in {lastDay} days at the Odia (Ollywood) box office.</p>
-        <table>
-          <caption>{movie.title} Day-wise Box Office Collection</caption>
-          <thead><tr><th>Day</th><th>Net Collection</th><th>Gross Collection</th></tr></thead>
-          <tbody>
-            {days.map((d: any) => (
-              <tr key={d.day}>
-                <td>Day {d.day}</td>
-                <td>{fmtINR(d.net)}</td>
-                <td>{fmtINR(d.gross)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* ★ SERVER-RENDERED SEO SECTION — visible to both users and Googlebot.
+           BoxOfficeClient is "use client" and Googlebot cannot render it.
+           This block is the primary crawlable/indexable content for the page.
+           IMPORTANT: Never hide this with position:-9999px (cloaking = penalty). */}
+      <section
+        aria-label={`${movie.title} box office collection summary`}
+        className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2"
+      >
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+          {movie.title} Box Office Collection
+          {lastDay > 0 ? ` — Day 1 to Day ${lastDay}` : ""}
+        </h1>
+        <p className="text-gray-400 text-sm sm:text-base leading-relaxed mb-5">
+          {movie.title} has collected{" "}
+          <strong className="text-white">{fmtINR(totalNet)} net</strong> and{" "}
+          <strong className="text-white">{fmtINR(totalGross)} gross</strong>{" "}
+          {lastDay > 0 ? `in ${lastDay} days` : ""} at the Odia (Ollywood) box office.
+          {movie.verdict ? ` The film has received a "${movie.verdict}" verdict.` : ""}
+          {movie.director ? ` Directed by ${movie.director}.` : ""}
+        </p>
+
+        {/* Day-wise table — visible summary (full interactive chart rendered by BoxOfficeClient below) */}
+        {days.length > 0 && (
+          <div className="overflow-x-auto rounded-xl border border-[#1f1f1f] mb-6">
+            <table className="w-full text-sm text-left">
+              <caption className="sr-only">{movie.title} Day-wise Box Office Collection</caption>
+              <thead className="bg-[#111] text-gray-500 text-xs uppercase tracking-widest">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Day</th>
+                  <th className="px-4 py-3 font-semibold">Net Collection</th>
+                  <th className="px-4 py-3 font-semibold">Gross Collection</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1a1a1a]">
+                {days.slice(0, 7).map((d: any) => (
+                  <tr key={d.day} className="bg-[#0d0d0d] hover:bg-[#111] transition-colors">
+                    <td className="px-4 py-2.5 text-gray-300 font-medium">Day {d.day}</td>
+                    <td className="px-4 py-2.5 text-white font-semibold">{fmtINR(d.net)}</td>
+                    <td className="px-4 py-2.5 text-gray-400">{fmtINR(d.gross)}</td>
+                  </tr>
+                ))}
+                {days.length > 7 && (
+                  <tr className="bg-[#0d0d0d]">
+                    <td colSpan={3} className="px-4 py-2.5 text-gray-600 text-xs italic">
+                      + {days.length - 7} more days — see full chart below
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+              {totalNet > 0 && (
+                <tfoot className="bg-[#111] border-t border-[#2a2a2a]">
+                  <tr>
+                    <td className="px-4 py-2.5 text-gray-500 text-xs font-bold uppercase tracking-wider">Total</td>
+                    <td className="px-4 py-2.5 text-orange-400 font-bold">{fmtINR(totalNet)}</td>
+                    <td className="px-4 py-2.5 text-gray-400 font-semibold">{fmtINR(totalGross)}</td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        )}
+
+        {/* Re-release data */}
         {movie.reReleaseBoxOfficeDays && movie.reReleaseBoxOfficeDays.length > 0 && (() => {
           const rrDays = movie.reReleaseBoxOfficeDays.sort((a: any, b: any) => a.day - b.day);
           const rrTotalNet = rrDays.reduce((s: number, d: any) => s + parseNum(d.net), 0);
           const rrTotalGross = rrDays.reduce((s: number, d: any) => s + parseNum(d.gross), 0);
           const rrLastDay = rrDays[rrDays.length - 1]?.day || 0;
           return (
-            <>
-              <h2>{movie.title} (Re-Release) Box Office Collection — Total {fmtINR(rrTotalNet)} Net</h2>
-              <p>{movie.title} Re-Release has collected {fmtINR(rrTotalNet)} net and {fmtINR(rrTotalGross)} gross in {rrLastDay} days.</p>
-              <table>
-                <caption>{movie.title} (Re-Release) Day-wise Box Office Collection</caption>
-                <thead><tr><th>Day</th><th>Net Collection</th><th>Gross Collection</th></tr></thead>
-                <tbody>
-                  {rrDays.map((d: any) => (
-                    <tr key={d.day}>
-                      <td>Day {d.day}</td>
-                      <td>{fmtINR(d.net)}</td>
-                      <td>{fmtINR(d.gross)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
+            <div className="mb-4">
+              <h2 className="text-lg font-bold text-white mb-2">
+                {movie.title} (Re-Release) Box Office Collection
+              </h2>
+              <p className="text-gray-400 text-sm mb-3">
+                {movie.title} Re-Release has collected{" "}
+                <strong className="text-white">{fmtINR(rrTotalNet)} net</strong> and{" "}
+                <strong className="text-white">{fmtINR(rrTotalGross)} gross</strong>{" "}
+                in {rrLastDay} days.
+              </p>
+            </div>
           );
         })()}
-      </div>
+      </section>
       <BoxOfficeClient
         movie={movie}
         initialDays={days}

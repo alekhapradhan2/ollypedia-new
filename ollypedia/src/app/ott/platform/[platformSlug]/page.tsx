@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
-import { buildMeta, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { buildMeta, SITE_URL } from "@/lib/seo";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { MonitorPlay, ExternalLink, Film, Play, Star, ChevronRight } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
@@ -73,7 +73,7 @@ export async function generateMetadata({ params }: { params: { platformSlug: str
   if (!platform) return buildMeta({ title: "Not Found", description: "Platform not found", url: "" });
 
   return buildMeta({
-    title: `Watch Odia Movies on ${platform.name} | Ollywood ${platform.name} Releases | ${SITE_NAME}`,
+    title: `Watch Odia Movies on ${platform.name} | Ollywood ${platform.name} Releases`,
     description: platform.description,
     keywords: [
       `${platform.name} Odia Movies`,

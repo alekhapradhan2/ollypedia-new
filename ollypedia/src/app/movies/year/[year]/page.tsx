@@ -18,7 +18,11 @@ import { formatReleaseDate, mongoDateExpr } from "@/lib/dateUtils";
 export const revalidate = 86400; // 24 hours — historical year archives rarely change
 
 // ─── Valid years ───────────────────────────────────────────────────────────────
-const _OLDEST_YEAR = 1936;
+// Starting from 1980 — pre-1980 years have extremely few/zero entries in the DB
+// and produce near-empty pages that Google refuses to index (Crawled – not indexed).
+// generateStaticParams only pre-builds these; years outside this range with actual
+// movie data are still served dynamically via dynamicParams = true.
+const _OLDEST_YEAR = 1980;
 const _NOW_YEAR = new Date().getFullYear();
 const VALID_YEARS: number[] = Array.from(
   { length: _NOW_YEAR - _OLDEST_YEAR + 1 },
@@ -46,7 +50,7 @@ export async function generateMetadata({
   if (page > 1) {
     return {
       robots: { index: false, follow: true },
-      title: `Odia Movies ${year} – Page ${page} | Ollypedia`,
+      title: `Odia Movies ${year} – Page ${page}`,
     };
   }
 
@@ -301,6 +305,14 @@ export default async function MoviesByYearPage({
 
   const movies = await getMoviesByYear(year);
   const total  = movies.length;
+
+  // ★ SEO FIX: If a year has no movies in the DB, return 404.
+  // This prevents Google from crawling thin/empty pages which trigger
+  // "Crawled – currently not indexed" in Search Console.
+  // Google prefers a clean 404 over an empty results page.
+  if (total === 0) {
+    notFound();
+  }
   const topCast = await getTopCastByYear(movies);
 
   const verdictCounts: Record<string, number> = {};
