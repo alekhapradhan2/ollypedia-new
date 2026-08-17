@@ -116,13 +116,13 @@ export async function generateMetadata({
 // FIXED — uses seoTitle from BoxOfficePanel, falls back gracefully
 const title = blog.seoTitle || blog.title;
 
-// FIXED — uses seoDesc from BoxOfficePanel, falls back gracefully  
-const description = (
-  blog.seoDesc ||
-  blog.excerpt ||
-  blog.content?.replace(/<[^>]+>/g, "").slice(0, 155) ||
-  `Read ${blog.title} on Ollypedia...`
-);
+// FIXED — strip any HTML tags (e.g. <h2>, <p>) from excerpt or content for clean meta description
+const rawDesc = blog.seoDesc || blog.excerpt || blog.content || "";
+const description = rawDesc
+  .replace(/<[^>]+>/g, " ")
+  .replace(/\s+/g, " ")
+  .trim()
+  .slice(0, 160) || `Read ${blog.title} on Ollypedia...`;
   const image     = blog.coverImage || `${SITE_URL}/default.jpg`;
   const canonical = `${SITE_URL}/blog/${blog.slug}`;
 
@@ -535,10 +535,16 @@ export default async function BlogPage({ params }: { params: { slug: string } })
   const movieCanon = movie ? `${SITE_URL}/movie/${movie.slug}` : undefined;
   const songs: any[] = movie?.media?.songs || [];
 
+  // ─── Clean text without HTML tags for schemas & FAQs ─────────
+  const cleanExcerpt = (blog.seoDesc || blog.excerpt || blog.content || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
   // ─── FAQ items for JSON-LD ───────────────────────────────────
   const faqItems = blog.movieTitle
     ? [
-        { q: `What is ${blog.movieTitle} Odia movie about?`,          a: blog.excerpt || `${blog.movieTitle} is an Odia (Ollywood) film covered on Ollypedia.` },
+        { q: `What is ${blog.movieTitle} Odia movie about?`,          a: cleanExcerpt.slice(0, 250) || `${blog.movieTitle} is an Odia (Ollywood) film covered on Ollypedia.` },
         { q: `Is ${blog.movieTitle} worth watching?`,                  a: `Read the full review and audience ratings for ${blog.movieTitle} on this Ollypedia article.` },
         { q: `Who is in the cast of ${blog.movieTitle}?`,             a: `Full cast and crew of ${blog.movieTitle} are listed on the movie page on Ollypedia.` },
         { q: `What is ${blog.movieTitle} box office collection?`,      a: `Day-wise box office collection of ${blog.movieTitle} is tracked on Ollypedia's box office page.` },
@@ -564,7 +570,7 @@ export default async function BlogPage({ params }: { params: { slug: string } })
           ? ["Article", "NewsArticle", "ReportageNewsArticle"]
           : ["Article", "NewsArticle"],
         "headline":        blog.title,
-        "description":     blog.excerpt || "",
+        "description":     cleanExcerpt.slice(0, 200) || "",
         "datePublished":   blog.createdAt ? new Date(blog.createdAt).toISOString() : undefined,
         "dateModified":    blog.updatedAt ? new Date(blog.updatedAt).toISOString() : undefined,
         // ★ Google requires ImageObject (not bare string) for NewsArticle Top Stories eligibility
