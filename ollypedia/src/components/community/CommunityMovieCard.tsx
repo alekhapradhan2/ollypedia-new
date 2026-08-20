@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { MessageSquare, Sparkles, Flame } from "lucide-react";
+import { formatReleaseDate } from "@/lib/dateUtils";
 
 export interface CommunityMovieData {
   _id: string;
@@ -12,6 +13,8 @@ export interface CommunityMovieData {
   posterUrl?: string;
   thumbnailUrl?: string;
   releaseDate?: string;
+  releaseDatePrecision?: string;
+  releaseTBA?: boolean;
   language?: string;
   genre?: string[];
   verdict?: string;
@@ -43,9 +46,9 @@ const CATEGORY_BADGES: Record<string, { label: string; emoji: string; bg: string
 };
 
 export function CommunityMovieCard({ movie }: CommunityMovieCardProps) {
-  const year = movie.releaseDate
-    ? new Date(movie.releaseDate).getFullYear()
-    : null;
+  const fullDate = movie.releaseTBA
+    ? "TBA"
+    : formatReleaseDate(movie.releaseDate, movie.releaseDatePrecision, "short");
   const genres = (movie.genre || []).slice(0, 2).join(", ");
   const poster =
     movie.posterUrl ||
@@ -115,8 +118,8 @@ export function CommunityMovieCard({ movie }: CommunityMovieCardProps) {
         </h3>
 
         <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-medium text-zinc-400 truncate mt-auto">
-          {year && <span>{year}</span>}
-          {year && <span>•</span>}
+          {fullDate && <span className="text-zinc-300 font-semibold">{fullDate}</span>}
+          {fullDate && <span>•</span>}
           <span>{movie.language || "Odia"}</span>
           {genres && <span>•</span>}
           {genres && <span className="truncate">{genres}</span>}

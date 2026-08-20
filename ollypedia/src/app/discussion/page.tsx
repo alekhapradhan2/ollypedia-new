@@ -12,6 +12,7 @@ import { CommunityGuideButton } from "@/components/community/CommunityGuideButto
 import { Sparkles, MessageSquare, TrendingUp, Calendar, Clock, Flame, Film, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { DisplayAd } from "@/components/ads/DisplayAd";
+import { getReleaseYear } from "@/lib/dateUtils";
 
 export const revalidate = 60; // ISR cache for 60 seconds
 
@@ -69,6 +70,8 @@ function mapToCommunityMovie(
     posterUrl: m.posterUrl,
     thumbnailUrl: m.thumbnailUrl,
     releaseDate: m.releaseDate,
+    releaseDatePrecision: m.releaseDatePrecision,
+    releaseTBA: m.releaseTBA,
     language: m.language,
     genre: m.genre,
     verdict: m.verdict,
@@ -88,46 +91,60 @@ export default async function DiscussionLandingPage() {
   await connectDB();
 
   const now = new Date();
+  const nowIso = now.toISOString();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
 
   // Fetch segregated collections
   const [
+    upcomingRaw,
     latestRaw,
     thisMonthRaw,
-    upcomingRaw,
     allInitialRaw,
   ] = await Promise.all([
-    // 1. Latest Released Movies (sorted by releaseDate or createdAt desc)
-    Movie.find({ verdict: { $ne: "Upcoming" } })
-      .select("title slug posterUrl thumbnailUrl releaseDate language genre verdict")
-      .sort({ releaseDate: -1, createdAt: -1 })
-      .limit(6)
+    // 1. Upcoming Movies (Comprehensive search for unreleased & future dated films)
+    Movie.find({
+      $or: [
+        { verdict: "Upcoming" },
+        { status: "Upcoming" },
+        { releaseDate: { $gt: nowIso } },
+        { releaseTBA: true },
+      ],
+    })
+      .select("title slug posterUrl thumbnailUrl releaseDate releaseDatePrecision releaseTBA language genre verdict")
+      .sort({ releaseDate: 1, createdAt: -1 })
+      .limit(18)
       .lean(),
 
-    // 2. Releasing This Month
+    // 2. Latest Released Movies (sorted by releaseDate desc)
+    Movie.find({
+      $and: [
+        { verdict: { $ne: "Upcoming" } },
+        { status: { $ne: "Upcoming" } },
+        { releaseDate: { $lte: nowIso } },
+      ],
+    })
+      .select("title slug posterUrl thumbnailUrl releaseDate releaseDatePrecision releaseTBA language genre verdict")
+      .sort({ releaseDate: -1, createdAt: -1 })
+      .limit(12)
+      .lean(),
+
+    // 3. Releasing This Month
     Movie.find({
       $or: [
         { releaseDate: { $gte: startOfMonth, $lte: endOfMonth } },
         { releaseDateText: { $regex: new Intl.DateTimeFormat("en", { month: "long" }).format(now), $options: "i" } },
       ],
     })
-      .select("title slug posterUrl thumbnailUrl releaseDate language genre verdict")
+      .select("title slug posterUrl thumbnailUrl releaseDate releaseDatePrecision releaseTBA language genre verdict")
       .sort({ releaseDate: 1 })
-      .limit(6)
+      .limit(12)
       .lean(),
 
-    // 3. Upcoming Movies
-    Movie.find({ verdict: "Upcoming" })
-      .select("title slug posterUrl thumbnailUrl releaseDate language genre verdict")
-      .sort({ releaseDate: 1, createdAt: -1 })
-      .limit(6)
-      .lean(),
-
-    // 4. Initial All Movies for Infinite Scroll
+    // 4. Initial All Movies for Infinite Scroll (Sorted by releaseDate desc)
     Movie.find()
-      .select("title slug posterUrl thumbnailUrl releaseDate language genre verdict")
-      .sort({ createdAt: -1 })
+      .select("title slug posterUrl thumbnailUrl releaseDate releaseDatePrecision releaseTBA language genre verdict")
+      .sort({ releaseDate: -1, createdAt: -1 })
       .limit(24)
       .lean(),
   ]);
@@ -135,9 +152,9 @@ export default async function DiscussionLandingPage() {
   // Collect all unique movie IDs for aggregation
   const allMovieIds = Array.from(
     new Set([
+      ...upcomingRaw.map((m: any) => m._id),
       ...latestRaw.map((m: any) => m._id),
       ...thisMonthRaw.map((m: any) => m._id),
-      ...upcomingRaw.map((m: any) => m._id),
       ...allInitialRaw.map((m: any) => m._id),
     ])
   );
@@ -209,19 +226,107 @@ export default async function DiscussionLandingPage() {
     commentStatsMap[c._id.toString()] = c.count;
   });
 
+  function getDateTier(m: any): number {
+    const s = String(m.releaseDate || "").trim();
+    const prec = m.releaseDatePrecision;
+
+    if (
+      m.releaseTBA ||
+      !s ||
+      s.toUpperCase() === "TBA"
+    ) {
+      return 4; // Tier 4: TBA (Last)
+    }
+
+    // Tier 1: True Full date with Year-Month-Day (e.g. "2026-09-18")
+    if (/^\d{4}-\d{2}-\d{2}/.test(s) && prec !== "year" && prec !== "month") {
+      return 1;
+    }
+
+    // Tier 2: Month & Year (e.g. "2026-09" or prec === "month")
+    if (/^\d{4}-\d{2}$/.test(s) || prec === "month") {
+      return 2;
+    }
+
+    // Tier 3: Year only (e.g. "2026" or prec === "year")
+    if (/^\d{4}$/.test(s) || prec === "year") {
+      return 3;
+    }
+
+    return 4;
+  }
+
+  function sortUpcoming(list: any[]) {
+    return [...list].sort((a, b) => {
+      const tierA = getDateTier(a);
+      const tierB = getDateTier(b);
+
+      if (tierA !== tierB) {
+        return tierA - tierB;
+      }
+
+      if (tierA === 4) {
+        return 0;
+      }
+
+      const timeA = new Date(a.releaseDate).getTime();
+      const timeB = new Date(b.releaseDate).getTime();
+      if (!isNaN(timeA) && !isNaN(timeB)) {
+        return timeA - timeB;
+      }
+      return String(a.releaseDate).localeCompare(String(b.releaseDate));
+    });
+  }
+
+  function sortAllDiscussionMovies(list: any[]) {
+    return [...list].sort((a, b) => {
+      const numYearA = parseInt(getReleaseYear(a.releaseDate) || "0", 10);
+      const numYearB = parseInt(getReleaseYear(b.releaseDate) || "0", 10);
+
+      // 1. Year descending (2026 -> 2025 -> 2024)
+      if (numYearA !== numYearB) {
+        return numYearB - numYearA;
+      }
+
+      // 2. In same year: Year-only movies show FIRST
+      const isYearOnlyA = Boolean(
+        a.releaseDatePrecision === "year" ||
+        (a.releaseDate && /^\d{4}$/.test(String(a.releaseDate).trim()))
+      );
+      const isYearOnlyB = Boolean(
+        b.releaseDatePrecision === "year" ||
+        (b.releaseDate && /^\d{4}$/.test(String(b.releaseDate).trim()))
+      );
+
+      if (isYearOnlyA && !isYearOnlyB) return -1;
+      if (!isYearOnlyA && isYearOnlyB) return 1;
+
+      // 3. Fallback: newest date / createdAt
+      const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : 0;
+      const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : 0;
+      if (!isNaN(dateA) && !isNaN(dateB) && dateA !== dateB) {
+        return dateB - dateA;
+      }
+
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
+  }
+
+  const upcomingMovies = sortUpcoming(upcomingRaw).map((m: any) =>
+    mapToCommunityMovie(m, voteStatsMap, threadStatsMap, commentStatsMap)
+  );
+
   const latestMovies = latestRaw.map((m: any) =>
     mapToCommunityMovie(m, voteStatsMap, threadStatsMap, commentStatsMap)
   );
 
-  const thisMonthMovies = (thisMonthRaw.length > 0 ? thisMonthRaw : latestRaw.slice(0, 6)).map((m: any) =>
+  const thisMonthMovies = thisMonthRaw.map((m: any) =>
     mapToCommunityMovie(m, voteStatsMap, threadStatsMap, commentStatsMap)
   );
 
-  const upcomingMovies = upcomingRaw.map((m: any) =>
-    mapToCommunityMovie(m, voteStatsMap, threadStatsMap, commentStatsMap)
-  );
-
-  const initialCommunityMovies = allInitialRaw.map((m: any) =>
+  const initialCommunityMovies = sortAllDiscussionMovies(allInitialRaw).map((m: any) =>
     mapToCommunityMovie(m, voteStatsMap, threadStatsMap, commentStatsMap)
   );
 
@@ -249,7 +354,7 @@ export default async function DiscussionLandingPage() {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-12">
-        {/* ── Clean Hero Banner (Without heavy metric boxes) ── */}
+        {/* ── Clean Hero Banner ── */}
         <div className="relative overflow-hidden bg-gradient-to-b from-orange-500/15 via-[#141414] to-[#0a0a0a] border border-white/10 rounded-3xl p-6 sm:p-10 shadow-2xl text-center">
           <div className="flex flex-wrap items-center justify-center gap-3 mb-4">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs sm:text-sm font-bold shadow-inner">
@@ -278,7 +383,34 @@ export default async function DiscussionLandingPage() {
           <DisplayAd slot="8191172163" format="horizontal" className="rounded-2xl border border-[#222]" />
         </div>
 
-        {/* ── SECTION 1: LATEST RELEASES ── */}
+        {/* ── SECTION 1: UPCOMING MOVIES (NOW AT THE TOP) ── */}
+        {upcomingMovies.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                    Upcoming Odia Movies
+                  </h2>
+                  <p className="text-xs text-zinc-400">
+                    Anticipated films with early fan buzz and meter voting
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+              {upcomingMovies.map((movie) => (
+                <CommunityMovieCard key={movie._id} movie={movie} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── SECTION 2: LATEST RELEASES ── */}
         {latestMovies.length > 0 && (
           <section>
             <div className="flex items-center justify-between gap-4 mb-4">
@@ -305,7 +437,7 @@ export default async function DiscussionLandingPage() {
           </section>
         )}
 
-        {/* ── SECTION 2: RELEASING THIS MONTH ── */}
+        {/* ── SECTION 3: RELEASING THIS MONTH (Only if there are movies releasing this month) ── */}
         {thisMonthMovies.length > 0 && (
           <section>
             <div className="flex items-center justify-between gap-4 mb-4">
@@ -337,34 +469,7 @@ export default async function DiscussionLandingPage() {
           <DisplayAd slot="8191172163" format="horizontal" className="rounded-2xl border border-[#222]" />
         </div>
 
-        {/* ── SECTION 3: UPCOMING MOVIES ── */}
-        {upcomingMovies.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between gap-4 mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                  <Clock className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-                    Upcoming Odia Movies
-                  </h2>
-                  <p className="text-xs text-zinc-400">
-                    Anticipated films with early fan buzz and meter voting
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-              {upcomingMovies.map((movie) => (
-                <CommunityMovieCard key={movie._id} movie={movie} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── SECTION 4: ALL MOVIES & LIVE EXPLORER (With Infinite Scroll) ── */}
+        {/* ── SECTION 4: ALL MOVIES & LIVE EXPLORER (With Infinite Scroll & In-Feed Card Ads) ── */}
         <section className="pt-4 border-t border-white/10">
           <div className="flex items-center gap-2.5 mb-6">
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
