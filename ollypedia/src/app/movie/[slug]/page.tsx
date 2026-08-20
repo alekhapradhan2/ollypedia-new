@@ -29,7 +29,7 @@ import {
   Calendar, Clock, User, DollarSign, Film, Star,
   Clapperboard, Music, FileText, ChevronRight,
   TrendingUp, Award, Globe, Users, BookOpen,
-  Play, Info, Tag,
+  Play, Info, Tag, MessageSquare,
 } from "lucide-react";
 import { DisplayAd } from "@/components/ads/DisplayAd";
 
@@ -913,6 +913,12 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 Overview
               </Link>
             </li>
+            <li>
+              <Link href={`/discussion/movie/${movie.slug || movie._id}`} className="block px-3 py-1.5 text-[11px] sm:text-sm font-semibold text-orange-400 hover:text-white hover:bg-orange-500/10 rounded-lg whitespace-nowrap transition-colors flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-orange-400" />
+                <span>Community &amp; Discussion</span>
+              </Link>
+            </li>
             {(movie.boxOffice?.opening || movie.boxOffice?.total || movie.boxOfficeDays?.length > 0) && (
               <li>
                 <Link href={`/box-office/${movie.slug || movie._id}`} className="block px-3 py-1.5 text-[11px] sm:text-sm font-semibold text-gray-400 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg whitespace-nowrap transition-colors">
@@ -1461,6 +1467,32 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 </div>
               </section>
             )}
+
+            {/* ── Community & Discussion Callout Banner ── */}
+            <section aria-label={`Join community discussion for ${movie.title}`} className="bg-gradient-to-r from-orange-950/30 via-[#111] to-[#111] border border-orange-500/25 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_4px_24px_rgba(249,115,22,0.06)]">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2.5 w-2.5 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
+                  </span>
+                  <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-orange-400" />
+                    Community &amp; Discussion Room
+                  </h2>
+                </div>
+                <p className="text-xs sm:text-sm text-gray-400 max-w-xl">
+                  Vote in the Ollypedia Meter (Skip, Timepass, Go for it, Perfection), participate in fan discussions, and debate about {movie.title}!
+                </p>
+              </div>
+              <Link
+                href={`/discussion/movie/${movie.slug || movie._id}`}
+                className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-[0_0_15px_rgba(249,115,22,0.3)] hover:shadow-[0_0_20px_rgba(249,115,22,0.5)] flex items-center gap-2 flex-shrink-0"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Join Discussion &rarr;
+              </Link>
+            </section>
 
             {/* ── User Reviews (released movies) / Are You Interested (Upcoming, TBA) ──
                 Upcoming and TBA movies haven't released yet, so there's nothing

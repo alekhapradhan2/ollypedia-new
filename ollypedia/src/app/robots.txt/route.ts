@@ -35,10 +35,12 @@ Allow: /movies/year/
 Allow: /movies/genre/
 Allow: /box-office?year=
 Allow: /blog?category=
+Allow: /discussion
 
-# Block thin/low-value pages from crawl budget
+# Block thin/low-value/private pages from crawl budget
 Disallow: /api/
 Disallow: /admin/
+Disallow: /discussion/profile
 Disallow: /search
 Disallow: /blog?
 

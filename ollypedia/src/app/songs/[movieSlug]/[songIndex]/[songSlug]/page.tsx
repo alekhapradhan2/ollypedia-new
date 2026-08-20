@@ -1,4 +1,4 @@
-﻿// app/songs/[movieSlug]/[songIndex]/[songSlug]/page.tsx
+// app/songs/[movieSlug]/[songIndex]/[songSlug]/page.tsx
 // SEO UPGRADE v2:
 //  1. generateStaticParams re-enabled
 //  2. Canonical locked to movie's own slug
@@ -110,8 +110,7 @@ export async function generateMetadata({
   ];
   const description = descParts.join("").replace(/\s+/g, " ").trim().slice(0, 160);
 
-  const stableSlug = toSlug(song.title) || String(idx);
-  const canonical  = `${SITE_URL}/songs/${movie.slug}/${idx}/${stableSlug}`;
+  const canonical  = `${SITE_URL}/movie/${movie.slug}`; // Consolidates canonical authority to primary movie page
 
   // â˜… Comprehensive keyword set â€” hit every variant someone might search
   const keywords = [
@@ -545,7 +544,8 @@ export default async function SongDetailSlugPage({
     || movie.posterUrl;
 
   const stableSlug = toSlug(song.title) || String(idx);
-  const canonical  = `${SITE_URL}/songs/${movie.slug}/${idx}/${stableSlug}`;
+  const canonicalMovieUrl = `${SITE_URL}/movie/${movie.slug}`;
+  const currentSongUrl    = `${SITE_URL}/songs/${movie.slug}/${idx}/${stableSlug}`;
 
   const otherSongs = (movie.media.songs || [])
     .map((s: any, i: number) => ({
@@ -568,24 +568,24 @@ export default async function SongDetailSlugPage({
           || `${song.title} is a song from the Odia film ${movie.title}${year ? ` (${year})` : ""}.`,
         ...(song.singer     && { "byArtist": { "@type": "MusicGroup", "name": song.singer } }),
         ...(thumb           && { "thumbnailUrl": thumb }),
-        ...(song.ytId       && { "sameAs": `https://www.youtube.com/watch?v=${song.ytId}` }),
-        "url": canonical,
-        // â˜… Link song â†’ movie for entity graph
+        "sameAs": song.ytId ? [`https://www.youtube.com/watch?v=${song.ytId}`, currentSongUrl] : [currentSongUrl],
+        "url": canonicalMovieUrl,
+        // ★ Link song → movie for entity graph
         "inAlbum": {
           "@type": "MusicAlbum",
           "name": `${movie.title} Original Soundtrack`,
           "albumReleaseType": "SoundtrackAlbum",
-          "url": `${SITE_URL}/songs/${movie.slug}`,
+          "url": canonicalMovieUrl,
           "numTracks": movie.media.songs.length,
           ...(song.musicDirector && {
             "byArtist": { "@type": "Person", "name": song.musicDirector },
           }),
         },
-        // â˜… Associate song with its film
+        // ★ Associate song with its film
         "associatedMedia": {
           "@type": "Movie",
           "name": movie.title,
-          "url": `${SITE_URL}/movie/${movie.slug}`,
+          "url": canonicalMovieUrl,
         },
       },
       {
@@ -593,8 +593,8 @@ export default async function SongDetailSlugPage({
         "itemListElement": [
           { "@type": "ListItem", "position": 1, "name": "Home",       "item": `${SITE_URL}/` },
           { "@type": "ListItem", "position": 2, "name": "Songs",      "item": `${SITE_URL}/songs` },
-          { "@type": "ListItem", "position": 3, "name": movie.title,  "item": `${SITE_URL}/movie/${movie.slug}` },
-          { "@type": "ListItem", "position": 4, "name": song.title,   "item": canonical },
+          { "@type": "ListItem", "position": 3, "name": movie.title,  "item": canonicalMovieUrl },
+          { "@type": "ListItem", "position": 4, "name": song.title,   "item": currentSongUrl },
         ],
       },
       // â˜… ItemList of related blog posts â€” helps Google link song â†’ blogs

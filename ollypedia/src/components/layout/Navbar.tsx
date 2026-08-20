@@ -6,9 +6,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import {
   Search, Menu, X, Film,
-  Clapperboard, Users, BookOpen, Music2, TrendingUp, ChevronRight, ArrowRight, Calendar,
+  Clapperboard, Users, BookOpen, Music2, TrendingUp, ChevronRight, ArrowRight, Calendar, User, MessageSquare
 } from "lucide-react";
 import clsx from "clsx";
+import { useCommunityAuth } from "@/context/CommunityAuthContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Nav links
@@ -30,6 +31,7 @@ const BOX_OFFICE_YEARS: number[] = Array.from(
 
 const NAV_LINKS = [
   { label: "Movies",     href: "/movies",     hasDropdown: "movies"     as const },
+  { label: "Community",  href: "/discussion", hasDropdown: false        as const },
   { label: "Trailers",   href: "/trailers",   hasDropdown: false        as const },
   { label: "Songs",      href: "/songs",      hasDropdown: false        as const },
   { label: "Cast",       href: "/cast",       hasDropdown: false        as const },
@@ -568,6 +570,7 @@ function SearchParamsResetter({ onReset }: { onReset: () => void }) {
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { user: communityUser, openAuthModal } = useCommunityAuth();
 
   const [loadingYear, setLoadingYear] = useState<number | null>(null);
 
@@ -912,6 +915,36 @@ export function Navbar() {
               )}
             </div>
 
+            {/* Community Auth / Profile Button */}
+            {communityUser ? (
+              <Link
+                href="/discussion/profile"
+                className="hidden sm:flex items-center gap-2 pl-2 pr-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold text-white transition-all group"
+                title="Community Profile & Activity"
+              >
+                <div className="w-6 h-6 rounded-full overflow-hidden bg-zinc-800 border border-orange-500/40">
+                  {communityUser.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={communityUser.avatar} alt={communityUser.displayName} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center font-bold text-[10px] text-orange-400">
+                      {communityUser.displayName?.charAt(0)}
+                    </div>
+                  )}
+                </div>
+                <span className="hidden xl:inline max-w-[90px] truncate">{communityUser.displayName}</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => openAuthModal("login")}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-orange-500/10 transition-all active:scale-95"
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </button>
+            )}
+
             {/* Hamburger */}
             <button
               className="md:hidden p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
@@ -1127,6 +1160,44 @@ export function Navbar() {
                 </Link>
               );
             })}
+
+            {/* Mobile Community Button */}
+            <div className="mt-3 pt-3 border-t border-white/10">
+              {communityUser ? (
+                <Link
+                  href="/discussion/profile"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm font-bold text-white"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full overflow-hidden bg-zinc-800 border border-orange-500/40">
+                      {communityUser.avatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={communityUser.avatar} alt={communityUser.displayName} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center font-bold text-xs text-orange-400">
+                          {communityUser.displayName?.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                    <span>{communityUser.displayName} (My Profile)</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-orange-400" />
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    openAuthModal("login");
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-black font-extrabold text-xs uppercase tracking-wider shadow-md"
+                >
+                  <User className="w-4 h-4" />
+                  <span>Sign In to Community</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

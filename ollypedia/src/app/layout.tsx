@@ -39,6 +39,9 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.ico" },
 };
 
+import { CommunityAuthProvider } from "@/context/CommunityAuthContext";
+import { AuthModal } from "@/components/community/AuthModal";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
@@ -52,26 +55,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="grain min-h-screen flex flex-col bg-[#0a0a0a]">
-        {/* GlobalLoader and ScrollToTop use static imports.
-            Their useSearchParams() calls are wrapped in internal <Suspense>
-            boundaries so they never cause a BAILOUT_TO_CLIENT_SIDE_RENDERING. */}
-        <GlobalLoader />
-        <ScrollToTop />
-        <NextTopLoader color="#f97316" showSpinner={false} easing="ease" speed={200} />
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <GlobalMultiplexWrapper />
-        <Footer />
-        <Toaster
-          position="bottom-right"
-          toastOptions={{
-            style: {
-              background: "#1a1a1a",
-              color: "#f5f5f5",
-              border: "1px solid #2a2a2a",
-            },
-          }}
-        />
+        <CommunityAuthProvider>
+          {/* GlobalLoader and ScrollToTop use static imports.
+              Their useSearchParams() calls are wrapped in internal <Suspense>
+              boundaries so they never cause a BAILOUT_TO_CLIENT_SIDE_RENDERING. */}
+          <GlobalLoader />
+          <ScrollToTop />
+          <NextTopLoader color="#f97316" showSpinner={false} easing="ease" speed={200} />
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          <GlobalMultiplexWrapper />
+          <Footer />
+          <AuthModal />
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              style: {
+                background: "#1a1a1a",
+                color: "#f5f5f5",
+                border: "1px solid #2a2a2a",
+              },
+            }}
+          />
+        </CommunityAuthProvider>
       </body>
     </html>
   );

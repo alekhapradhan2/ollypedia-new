@@ -156,7 +156,7 @@ export function buildIndividualTrailerMeta(m: TrailerMovieDoc) {
       `Odia movie ${year}`,
       ...(m.genre || []).map((g) => `${g} Odia movie`),
     ].filter(Boolean),
-    url: `/trailers/${m.slug || m._id}`,
+    url: `/movie/${m.slug || m._id}`, // Consolidates canonical authority to main movie page
     image: m.posterUrl || m.thumbnailUrl,
     type: "video.movie",
   });
@@ -224,8 +224,8 @@ export function trailerMovieJsonLd(m: TrailerMovieDoc) {
     "@type": "Movie",
     name: m.title,
     description: m.synopsis || `${m.title} is an Odia (Ollywood) film directed by ${m.director || "a notable director"}.`,
-    url: `${SITE_URL}/trailers/${m.slug || m._id}`,
-    sameAs: `${SITE_URL}/movie/${m.slug || m._id}`,
+    url: `${SITE_URL}/movie/${m.slug || m._id}`,
+    sameAs: `${SITE_URL}/trailers/${m.slug || m._id}`,
     image: m.posterUrl || m.thumbnailUrl,
     datePublished: m.releaseDate,
     inLanguage: m.language || "Odia",

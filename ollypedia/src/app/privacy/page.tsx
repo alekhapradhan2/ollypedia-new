@@ -23,54 +23,61 @@ export const metadata: Metadata = {
 const SECTIONS = [
   {
     heading: "1. Introduction",
-    body: `Ollypedia ("we", "us", or "our") operates ollypedia.in, an online encyclopedia for Odia cinema (Ollywood), covering movies, songs, cast and crew profiles, box office data, and industry news. This Privacy Policy explains how we collect, use, and safeguard information when you visit our website.`,
+    body: `Ollypedia ("we", "us", or "our") operates ollypedia.in, the premier Odia cinema (Ollywood) encyclopedia and fan community platform. We provide comprehensive movie information, cast profiles, box office tracking, song details, editorial news, and interactive community features including discussions and the Ollypedia Meter. This Privacy Policy outlines how we collect, store, process, and protect your personal information when you create an account, log in, and interact with our website.`,
   },
   {
     heading: "2. Information We Collect",
-    body: `We collect limited information to operate and improve Ollypedia:`,
+    body: `We collect information directly from you when you register and interact with Ollypedia, as well as automated technical data:`,
     list: [
-      "Usage data — pages visited, time spent, device and browser type, and approximate location, collected automatically via analytics tools.",
-      "Cookies and similar technologies — used to remember preferences and understand site traffic.",
-      "Voluntarily provided information — such as your name and email address if you contact us, leave a review, or comment on a movie or blog post.",
+      "Account Information: When you create a community account, we collect your email address, username, display name, and securely hashed password. You may also optionally provide a bio, avatar image, and social media handles in your public profile.",
+      "Community Activity & UGC: We store your Ollypedia Meter votes (Skip, Timepass, Go for it, Perfection), discussion threads, comments, replies, and movie reviews to display them across the community platform.",
+      "Authentication & Session Data: When logged in, we use secure, HTTP-only authentication cookies (JWT tokens) to keep you authenticated across sessions without exposing your credentials.",
+      "Technical & Usage Data: IP address, browser type, operating system, pages viewed, time spent, and referring URLs, collected to protect against spam, enforce rate limiting, and improve site performance.",
     ],
   },
   {
     heading: "3. How We Use Your Information",
-    body: `Information we collect is used to:`,
+    body: `We process your personal information for the following legitimate purposes:`,
     list: [
-      "Operate, maintain, and improve the Ollypedia website and its content.",
-      "Understand site traffic and user behaviour through analytics.",
-      "Respond to inquiries submitted through our contact page.",
-      "Display relevant advertising, where applicable, through third-party advertising networks.",
+      "To provide, maintain, and personalize your Ollypedia account and community experience.",
+      "To calculate and display aggregate audience ratings, discussion threads, and meter scores for Odia movies.",
+      "To secure our community platform, prevent spam, enforce rate limits, and sanitize user-submitted content against malicious code.",
+      "To display public user profiles showing your badges, contributions, and community reputation.",
+      "To serve non-intrusive and personalized advertisements via third-party advertising partners such as Google AdSense.",
+      "To communicate important service announcements, security alerts, and account-related updates.",
     ],
   },
   {
-    heading: "4. Cookies",
-    body: `Ollypedia uses cookies and similar tracking technologies to enhance your browsing experience. Cookies are small text files stored on your device. You can choose to disable cookies through your browser settings, though some site features may not function as intended without them.`,
+    heading: "4. Password Security & Data Protection",
+    body: `Your account security is our top priority. Passwords are never stored in plain text; they are encrypted using industry-standard cryptographic hashing (bcrypt with salt rounds). All authentication tokens are transmitted securely over HTTPS and stored in HTTP-only, SameSite-compliant cookies to prevent Cross-Site Scripting (XSS) and unauthorized access.`,
   },
   {
-    heading: "5. Third-Party Services",
-    body: `We may use third-party services such as Google Analytics to understand site usage, and may in the future use advertising networks such as Google AdSense to display ads. These third parties may collect information through cookies and similar technologies in accordance with their own privacy policies. We do not control these third-party practices and encourage you to review their respective privacy policies.`,
+    heading: "5. Cookies & Tracking Technologies",
+    body: `Ollypedia uses essential cookies (for authentication and session integrity) and third-party advertising cookies. Google AdSense and analytics partners may use cookies, web beacons, and similar technologies to serve advertisements based on your prior visits to our website or other websites. You can manage or disable advertising cookies through your browser settings or via Google's Ad Settings (adssettings.google.com).`,
   },
   {
-    heading: "6. Data Security",
-    body: `We take reasonable measures to protect the information we hold from unauthorized access, alteration, or disclosure. However, no method of transmission over the internet or electronic storage is completely secure, and we cannot guarantee absolute security.`,
+    heading: "6. User-Generated Content & Public Visibility",
+    body: `When you participate in community discussions, post comments, or cast votes on movies, this information becomes publicly visible to other visitors alongside your display name, username, and avatar. Please do not include sensitive personal details (such as phone numbers or financial information) in public discussion threads or comments.`,
   },
   {
-    heading: "7. Children's Privacy",
-    body: `Ollypedia is intended for a general audience and is not directed at children under 13. We do not knowingly collect personal information from children. If you believe a child has provided us with personal information, please contact us so we can remove it.`,
+    heading: "7. Data Sharing & Third Parties",
+    body: `We do not sell, rent, or trade your personal information to third parties. We only share data with trusted third-party service providers (such as hosting infrastructure and database providers) strictly necessary to operate the platform, or when required by law or legal process.`,
   },
   {
-    heading: "8. Your Choices",
-    body: `You may disable cookies in your browser, opt out of personalized advertising through your ad settings on relevant platforms, and contact us at any time to ask questions about the information we hold about you.`,
+    heading: "8. Data Retention & Your Rights",
+    body: `We retain your account data and community contributions for as long as your account remains active. You have the right to access, update, or correct your profile information at any time via your account settings. You may also request account deletion or removal of your personal data by contacting us directly.`,
   },
   {
-    heading: "9. Changes to This Policy",
-    body: `We may update this Privacy Policy from time to time to reflect changes in our practices or legal requirements. Updates will be posted on this page with a revised effective date.`,
+    heading: "9. Children's Privacy",
+    body: `Ollypedia is designed for a general audience and does not knowingly collect personal information from children under the age of 13. If you believe that a child has created an account without parental consent, please contact us immediately so we can remove the account and associated data.`,
   },
   {
-    heading: "10. Contact Us",
-    body: `If you have questions about this Privacy Policy, please reach out through our Contact page.`,
+    heading: "10. Updates to This Policy",
+    body: `We may periodically update this Privacy Policy to reflect platform enhancements, community feature additions, or legal requirements. Changes take effect upon posting with an updated revision date.`,
+  },
+  {
+    heading: "11. Contact Us",
+    body: `For privacy inquiries, account data requests, or support, please reach out through our Contact page or email us at support@ollypedia.in.`,
   },
 ];
 

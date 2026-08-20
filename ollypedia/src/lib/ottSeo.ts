@@ -40,20 +40,22 @@ export function buildOttMeta(movie: OTTMovie): Metadata {
       `Latest Odia OTT Release`,
       `Ollywood OTT`,
     ],
-    url: `/ott/${movie.slug || movie._id}`,
+    url: `/movie/${movie.slug || movie._id}`, // Consolidates canonical authority to main movie page
     image: movie.bannerUrl || movie.posterUrl,
   });
 }
 
 export function generateOttJsonLd(movie: OTTMovie) {
-  const url = `${SITE_URL}/ott/${movie.slug || movie._id}`;
+  const movieUrl = `${SITE_URL}/movie/${movie.slug || movie._id}`;
+  const ottPageUrl = `${SITE_URL}/ott/${movie.slug || movie._id}`;
   
   const movieSchema = {
     "@context": "https://schema.org",
     "@type": "Movie",
     name: movie.title,
     image: movie.posterUrl,
-    url: url,
+    url: movieUrl,
+    sameAs: ottPageUrl,
     description: movie.synopsis,
     datePublished: movie.releaseDate,
     director: movie.director ? { "@type": "Person", name: movie.director } : undefined,
@@ -74,7 +76,7 @@ export function generateOttJsonLd(movie: OTTMovie) {
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
       { "@type": "ListItem", position: 2, name: "OTT Releases", item: `${SITE_URL}/ott` },
-      { "@type": "ListItem", position: 3, name: movie.title, item: url }
+      { "@type": "ListItem", position: 3, name: `${movie.title} OTT Release`, item: ottPageUrl }
     ]
   };
 

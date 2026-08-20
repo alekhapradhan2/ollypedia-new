@@ -73,6 +73,7 @@ export async function GET() {
     ["/movies/upcoming",      "daily",   "0.9"],
     ["/movies/latest",        "daily",   "0.85"],
     ["/movies/blockbuster",   "weekly",  "0.8"],
+    ["/discussion",           "daily",   "0.9"],   // ← NEW Community Discussion & Meter
     ["/trailers",             "daily",   "0.9"],   // ← NEW
     ["/box-office",           "daily",   "0.9"],
     ["/ott",                  "daily",   "0.9"],   // ← NEW OTT
@@ -169,86 +170,22 @@ export async function GET() {
       const hasBoxOffice = m.boxOfficeDays?.length > 0;
       const hasTrailerVideo = !!(m.media?.videos && m.media.videos.length > 0 && m.media.videos.some((v: any) => v.ytId));
 
-      // Movie detail page — daily if actively tracked for box office
+      // Movie detail page — primary indexable entity (highest priority)
       entries.push(urlEntry(
         `${SITE_URL}/movie/${movieSlug}`,
         lastmod,
         hasBoxOffice ? "daily"  : "weekly",
-        hasBoxOffice ? "0.85"   : "0.8"
+        "0.95"
       ));
 
-      // Trailer page — added for all movies with any video content
-      if (hasTrailerVideo) {
-        entries.push(urlEntry(
-          `${SITE_URL}/trailers/${movieSlug}`,
-          lastmod,
-          "weekly",
-          "0.8"
-        ));
-      }
-
-      // Box office page per movie — highest priority after homepage
+      // Box office page per movie — only for movies with real tracked box office data
       if (hasBoxOffice) {
         entries.push(urlEntry(
           `${SITE_URL}/box-office/${movieSlug}`,
           lastmod,
           "daily",
-          "1.0" // Boosted to 1.0 to force Google to index for Sitelinks
+          "0.9"
         ));
-      }
-
-      // OTT movie page — support both new ott.platform and legacy streamingOn
-      if (m.ott?.platform || m.streamingOn) {
-        entries.push(urlEntry(
-          `${SITE_URL}/ott/${movieSlug}`,
-          lastmod,
-          "weekly",
-          "0.85"
-        ));
-      }
-
-      if (m.media?.songs?.length) {
-        // ─── Song URL quality guard ───────────────────────────────────────
-        // Problem: YouTube search result metadata gets stored as "songs", creating
-        // duplicate entries (same song with different YouTube video titles/suffixes
-        // like "kalinga-tv", "ktv", "by-singer-u0026-other"). These create thousands
-        // of thin, near-duplicate sitemap URLs that waste crawl budget and signal
-        // low content quality to Google.
-        //
-        // Fix 1 — Deduplicate by normalised title:
-        //   Strip common YouTube suffixes and normalise the title. If two songs
-        //   produce the same normalised title, only include the first occurrence.
-        // Fix 2 — Hard cap of 10 songs per movie:
-        //   A movie typically has 4–8 actual songs. Capping at 10 ensures any
-        //   remaining duplicates or extras don't bloat the sitemap.
-        const seenNormalised = new Set<string>();
-        let songCount = 0;
-        const MAX_SONGS_PER_MOVIE = 10;
-
-        for (let i = 0; i < m.media.songs.length; i++) {
-          if (songCount >= MAX_SONGS_PER_MOVIE) break;
-          const s = m.media.songs[i];
-          if (!s?.title?.trim()) continue;
-
-          // Normalise: lowercase, strip YouTube-channel suffixes, collapse spaces
-          const normalised = s.title
-            .toLowerCase()
-            .replace(/[-_\s]*(kalinga[\s-]*tv|ktv|full\s*video|official|audio|song|odia|u0026|&|\|)[-_\s]*/gi, " ")
-            .replace(/by\s+[\w\s.]+$/i, "")  // strip "by Singer Name" trailing suffix
-            .replace(/\s+/g, " ")
-            .trim();
-
-          if (!normalised || seenNormalised.has(normalised)) continue;
-          seenNormalised.add(normalised);
-
-          const songSlug = s.slug || toSlug(s.title);
-          if (!songSlug) continue;
-
-          entries.push(
-            urlEntry(`${SITE_URL}/songs/${movieSlug}/${i}/${songSlug}`, lastmod, "weekly", "0.7")
-          );
-          songCount++;
-        }
       }
     });
 
