@@ -413,6 +413,11 @@ export default async function DiscussionLandingPage() {
           </section>
         )}
 
+        {/* ── Banner Ad between Upcoming & Latest Releases ── */}
+        <div className="w-full overflow-hidden">
+          <DisplayAd slot="8191172163" format="horizontal" className="rounded-2xl border border-[#222]" />
+        </div>
+
         {/* ── SECTION 2: LATEST RELEASES ── */}
         {latestMovies.length > 0 && (
           <section>
@@ -440,37 +445,44 @@ export default async function DiscussionLandingPage() {
           </section>
         )}
 
-        {/* ── SECTION 3: RELEASING THIS MONTH (Only if there are movies releasing this month) ── */}
-        {thisMonthMovies.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between gap-4 mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
-                  <Calendar className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-                    Releasing This Month
-                  </h2>
-                  <p className="text-xs text-zinc-400">
-                    Odia films hitting theatres &amp; streaming this month
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-              {thisMonthMovies.map((movie) => (
-                <CommunityMovieCard key={movie._id} movie={movie} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── Mid Community Banner Ad ── */}
+        {/* ── Banner Ad between Latest Releases & Releasing This Month / All Discussion Rooms ── */}
         <div className="w-full overflow-hidden">
           <DisplayAd slot="8191172163" format="horizontal" className="rounded-2xl border border-[#222]" />
         </div>
+
+        {/* ── SECTION 3: RELEASING THIS MONTH (Only if there are movies releasing this month) ── */}
+        {thisMonthMovies.length > 0 && (
+          <>
+            <section>
+              <div className="flex items-center justify-between gap-4 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                      Releasing This Month
+                    </h2>
+                    <p className="text-xs text-zinc-400">
+                      Odia films hitting theatres &amp; streaming this month
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+                {thisMonthMovies.map((movie) => (
+                  <CommunityMovieCard key={movie._id} movie={movie} />
+                ))}
+              </div>
+            </section>
+
+            {/* ── Banner Ad below Releasing This Month ── */}
+            <div className="w-full overflow-hidden">
+              <DisplayAd slot="8191172163" format="horizontal" className="rounded-2xl border border-[#222]" />
+            </div>
+          </>
+        )}
 
         {/* ── SECTION 4: ALL MOVIES & LIVE EXPLORER (With Infinite Scroll & In-Feed Card Ads) ── */}
         <section className="pt-4 border-t border-white/10">
