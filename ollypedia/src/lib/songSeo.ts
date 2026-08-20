@@ -28,7 +28,7 @@ export function buildSongMeta(song: SongSeoDoc): Metadata {
   const artists = [song.singer, song.musicDirector, song.lyricist].filter(Boolean).join(", ");
   const desc = `Listen to ${song.title} full Odia song from ${song.movieTitle}. ${artists ? `Sung by ${artists}.` : ""} Watch official video, read lyrics, and view full audio credits on Ollypedia.`;
 
-  const url = `/songs/${song.movieSlug}/${song.songIndex || 0}${song.songSlug ? `/${song.songSlug}` : ""}`;
+  const url = `/movie/${song.movieSlug}`; // Consolidates ranking signals to the primary movie page
 
   return buildMeta({
     title,
@@ -69,7 +69,8 @@ export function generateSongJsonLd(song: SongSeoDoc) {
     "@context": "https://schema.org",
     "@type": "MusicRecording",
     name: song.title,
-    url: songUrl,
+    url: movieUrl,
+    sameAs: songUrl,
     inAlbum: {
       "@type": "MusicAlbum",
       name: `${song.movieTitle} (Original Motion Picture Soundtrack)`,

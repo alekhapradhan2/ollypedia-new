@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = `${movie.title} Songs & MP3 Audio | Odia Movie Songs`;
   const description = `Listen to all songs from the Odia movie ${movie.title}. Stream full MP3 audio tracks, watch video songs, and get lyrics.`;
-  const url = `${SITE_URL}/songs/${movie.slug || movie._id}`;
+  const url = `${SITE_URL}/movie/${movie.slug || movie._id}`; // Canonical reinforces main movie page
 
   return {
     title,

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -22,12 +22,24 @@ interface Review {
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
-// This always hits Ollypedia's own /api/movies/[id]/review route (same Next.js
-// app, talks to MongoDB directly via connectDB()). It must stay same-origin —
-// it was previously built from NEXT_PUBLIC_API_URL, which points at the
-// separate Express backend used for other endpoints. That backend has no
-// matching route, so requests went to the wrong domain entirely, which is
-// what surfaced in the browser as "Failed to fetch".
+// Sorts reviews newest first (by date descending, or newer insertion order)
+function sortReviewsNewestFirst(list: Review[] = []): Review[] {
+  return list
+    .map((item, originalIndex) => ({ item, originalIndex }))
+    .sort((a, b) => {
+      const timeA = a.item.date ? new Date(a.item.date).getTime() : 0;
+      const timeB = b.item.date ? new Date(b.item.date).getTime() : 0;
+      if (timeA && timeB && timeA !== timeB) {
+        return timeB - timeA; // newest date first
+      }
+      if (timeB && !timeA) return 1;
+      if (timeA && !timeB) return -1;
+      // Fallback: items later in the DB array are newer
+      return b.originalIndex - a.originalIndex;
+    })
+    .map((wrapper) => wrapper.item);
+}
+
 const API_BASE = "/api";
 
 // How many reviews are shown per page in the grid below
@@ -995,9 +1007,13 @@ export function ReviewForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [shareReview, setShareReview] = useState<Review | null>(null);
-  // local review list, starts with whatever the server sent
-  const [reviews, setReviews] = useState<Review[]>(initialReviews);
+  // local review list, sorted newest first
+  const [reviews, setReviews] = useState<Review[]>(() => sortReviewsNewestFirst(initialReviews));
   const [page, setPage] = useState(0); // 0-indexed, for the reviews list below
+
+  useEffect(() => {
+    setReviews(sortReviewsNewestFirst(initialReviews));
+  }, [initialReviews]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

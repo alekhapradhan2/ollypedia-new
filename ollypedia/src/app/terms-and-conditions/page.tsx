@@ -7,24 +7,26 @@ import { Film, ChevronRight, Shield, Eye, FileText, AlertCircle, Scale, Mail } f
 import { SITE_URL } from "@/lib/seo";
 
 // ── SEO Metadata ──────────────────────────────────────────────────────────────
+// ── SEO Metadata ──────────────────────────────────────────────────────────────
 export const metadata: Metadata = {
-  title: "Terms & Conditions — Odia Cinema Encyclopedia",
+  title: "Terms & Conditions — Odia Cinema Encyclopedia & Community",
   description:
-    "Read the Terms and Conditions for using Ollypedia, the most complete online encyclopedia for Odia movies and the Ollywood film industry. We do not collect any personal user data.",
+    "Read the Terms and Conditions for using Ollypedia, the comprehensive Odia cinema encyclopedia and fan community. Learn about user accounts, community discussions, voting rules, and acceptable use.",
   keywords: [
     "Ollypedia terms and conditions",
     "Ollypedia terms of use",
-    "Ollywood website terms",
+    "Ollywood community guidelines",
     "Odia cinema website policy",
-    "no data collection policy",
+    "user account terms",
+    "Ollypedia Meter rules",
   ],
   alternates: {
     canonical: `${SITE_URL}/terms-and-conditions`,
   },
   openGraph: {
-    title: "Terms & Conditions",
+    title: "Terms & Conditions — Ollypedia",
     description:
-      "Our Terms & Conditions are simple: use the site freely, we respect your privacy and collect no personal data.",
+      "Read our Terms and Conditions covering user accounts, community discussions, Ollypedia Meter voting, content use, and privacy protection.",
     url: `${SITE_URL}/terms-and-conditions`,
     siteName: "Ollypedia",
     type: "website",
@@ -38,68 +40,69 @@ const sections = [
     icon: FileText,
     title: "1. Acceptance of Terms",
     content: [
-      "By accessing and using Ollypedia (www.ollypedia.in), you agree to be bound by these Terms and Conditions. If you do not agree to any part of these terms, please discontinue using the website.",
-      "These terms apply to all visitors, users, and anyone else who accesses or uses Ollypedia. We may update these terms from time to time; continued use of the site after changes constitutes your acceptance of the new terms.",
+      "By accessing and using Ollypedia (www.ollypedia.in), creating an account, or participating in our community discussions and voting, you agree to be bound by these Terms and Conditions and our Privacy Policy. If you do not agree to any part of these terms, please discontinue using the website.",
+      "These terms apply to all visitors, registered members, and contributors. We may update these terms periodically to reflect new features or legal requirements; continued use of Ollypedia after changes constitutes your acceptance of the updated terms.",
     ],
   },
   {
-    id: "no-data-collection",
+    id: "user-accounts",
     icon: Shield,
-    title: "2. No Personal Data Collection",
+    title: "2. User Accounts & Security",
     highlight: true,
     content: [
-      "Ollypedia does not collect, store, process, or share any personal data from its users. We do not require you to create an account, log in, or provide any personal information to browse or use this website.",
-      "We do not use tracking cookies, analytics that identify individuals, advertising trackers, or any technology designed to collect personal information. You can enjoy the full content of Ollypedia completely anonymously.",
-      "Any technical data that may be processed by our hosting infrastructure (such as server logs) is used solely for security and operational purposes and is not used to identify or profile individual users.",
+      "Registration & Access: To participate in community discussions, start threads, reply to comments, or cast votes on the Ollypedia Meter, you must create a user account. You agree to provide accurate and truthful information during registration.",
+      "Password & Credential Security: You are responsible for safeguarding your login credentials. Ollypedia encrypts all passwords using cryptographic hashing (bcrypt) and protects sessions with secure HTTP-only cookies. You must notify us immediately if you suspect unauthorized access to your account.",
+      "Account Responsibility: You are responsible for all activities and user-generated content submitted under your account.",
+    ],
+  },
+  {
+    id: "community-conduct",
+    icon: Eye,
+    title: "3. Community Guidelines & User Content (UGC)",
+    content: [
+      "Respectful Interaction: Ollypedia is a community dedicated to celebrating Odia cinema. We prohibit abusive language, harassment, hate speech, defamation, religious/caste-based discrimination, and spam.",
+      "Ollypedia Meter & Voting Integrity: Users may cast votes (Skip, Timepass, Go for it, Perfection) on movies. Automated script voting, bot manipulation, or creating multiple accounts to artificially inflate or deflate ratings is strictly prohibited and subject to account banning.",
+      "Content Ownership & License: By posting comments, reviews, or discussion threads, you grant Ollypedia a non-exclusive, royalty-free, perpetual license to display and distribute your content across our platform.",
+      "Moderation & Removal: We reserve the right to moderate, sanitize, or remove any user-generated content and suspend or terminate accounts that violate our community standards without prior notice.",
     ],
   },
   {
     id: "content-use",
-    icon: Eye,
-    title: "3. Use of Content",
+    icon: FileText,
+    title: "4. Use of Website Content",
     content: [
-      "All content on Ollypedia — including movie information, cast profiles, song listings, articles, reviews, and editorial text — is provided for informational and entertainment purposes only.",
-      "You may read, share, and link to content on Ollypedia for personal, non-commercial purposes. You may not reproduce, republish, scrape, or redistribute our content in bulk or for commercial purposes without prior written permission.",
-      "Movie posters, promotional images, and other media displayed on this site remain the property of their respective studios, distributors, and copyright holders. They are used here for editorial and encyclopedic purposes under fair use principles.",
+      "All encyclopedic content on Ollypedia — including movie filmographies, cast/crew profiles, box office tracking, song listings, editorial articles, and reviews — is provided for informational and entertainment purposes.",
+      "You may read, share, and link to Ollypedia pages for personal, non-commercial use. Automated scraping, bulk crawling without caching, or unauthorized commercial reproduction of our database is strictly prohibited.",
+      "Movie posters, logos, and promotional media displayed on this site remain the property of their respective studios, distributors, and copyright holders, used here under fair use for encyclopedic reference.",
     ],
   },
   {
     id: "intellectual-property",
     icon: Scale,
-    title: "4. Intellectual Property",
+    title: "5. Intellectual Property",
     content: [
-      "The Ollypedia name, logo, design, and original written content are the intellectual property of Ollypedia and may not be used without permission.",
-      "Movie titles, actor names, song titles, and other factual information about Odia films are not subject to copyright and are provided as factual reference. Reviews and editorial opinions expressed on this site are original works authored by Ollypedia.",
-      "If you believe any content on Ollypedia infringes your copyright, please contact us at the email below and we will respond promptly.",
+      "The Ollypedia brand name, logo, site architecture, and original editorial articles are the intellectual property of Ollypedia.",
+      "Factual information about Odia films (such as titles, release dates, box office collections, and cast lists) is factual reference. Reviews and editorial articles are original works authored by Ollypedia.",
+      "If you believe any content on Ollypedia infringes your intellectual property or copyright, please contact us with details and we will take prompt corrective action.",
     ],
   },
   {
     id: "accuracy",
     icon: AlertCircle,
-    title: "5. Accuracy & Disclaimers",
+    title: "6. Accuracy & Disclaimers",
     content: [
-      "Ollypedia strives to provide accurate, up-to-date information about Odia cinema. However, we cannot guarantee the completeness or accuracy of all information, especially for historical films or rapidly changing box office data.",
-      "Box office figures, ratings, and verdicts are based on publicly available information and editorial judgment. They should not be taken as financial advice or definitive commercial assessments.",
-      "External links on this site point to third-party websites. Ollypedia is not responsible for the content, accuracy, or privacy practices of any linked websites.",
+      "Ollypedia strives for accurate, up-to-date cinema and box office data. However, historical records, trade estimates, and rapidly evolving industry data may occasionally contain inaccuracies.",
+      "Box office figures, ratings, and verdicts are based on trade estimates, distributor reports, and editorial assessments. They should not be considered as official financial advice.",
+      "Ollypedia contains links to third-party streaming platforms (AAO NXT, Tarang Plus, YouTube, etc.) and external resources. We are not responsible for third-party content, pricing, or streaming availability.",
     ],
   },
   {
-    id: "conduct",
-    icon: FileText,
-    title: "6. Acceptable Use",
-    content: [
-      "You agree to use Ollypedia only for lawful purposes. You must not use the site in any way that could damage, disable, or impair the website or interfere with other users.",
-      "Automated scraping, crawling, or bulk downloading of content without prior written permission is prohibited. Reasonable crawling by search engine bots for indexing purposes is permitted.",
-      "Any attempt to gain unauthorised access to our systems, inject malicious code, or interfere with the normal operation of the site is strictly prohibited and may be reported to relevant authorities.",
-    ],
-  },
-  {
-    id: "changes",
+    id: "termination",
     icon: AlertCircle,
-    title: "7. Changes to These Terms",
+    title: "7. Account Termination & Suspension",
     content: [
-      "We reserve the right to modify these Terms and Conditions at any time. Changes will be effective immediately upon posting to this page with an updated revision date.",
-      "We encourage you to review these terms periodically. Your continued use of Ollypedia after any changes are posted constitutes your acceptance of the new terms.",
+      "We reserve the right to suspend or permanently terminate user accounts that engage in harassment, spamming, vote manipulation, or attempts to exploit website vulnerabilities.",
+      "You may request to deactivate or delete your account at any time by contacting our support team.",
     ],
   },
   {
@@ -107,7 +110,7 @@ const sections = [
     icon: Mail,
     title: "8. Contact Us",
     content: [
-      "If you have any questions, concerns, or requests regarding these Terms and Conditions, please reach out to us. We are happy to clarify anything and will respond as quickly as possible.",
+      "If you have any questions, concerns, or requests regarding these Terms and Conditions or our Community Guidelines, please reach out to our team. We are happy to help.",
     ],
     cta: true,
   },
@@ -190,7 +193,7 @@ export default function TermsAndConditionsPage() {
             </div>
           </div>
 
-          {/* Summary banner — no data collection highlight */}
+          {/* Summary banner — community & safety highlight */}
           <div
             className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-xl px-4 py-3.5 sm:px-5 sm:py-4"
             style={{
@@ -198,7 +201,7 @@ export default function TermsAndConditionsPage() {
               border: "1px solid rgba(34,197,94,0.15)",
             }}
             role="note"
-            aria-label="Privacy highlight"
+            aria-label="Community & Security highlight"
           >
             <div className="flex items-center gap-2.5 flex-shrink-0">
               <div
@@ -208,13 +211,12 @@ export default function TermsAndConditionsPage() {
                 <Shield className="w-3.5 h-3.5 text-green-400" aria-hidden="true" />
               </div>
               <span className="text-green-400 text-xs font-bold uppercase tracking-widest">
-                Privacy First
+                Safe &amp; Transparent
               </span>
             </div>
             <p className="text-gray-400 text-[13px] leading-relaxed sm:ml-1">
-              <strong className="text-gray-300 font-medium">We do not collect any personal data.</strong>{" "}
-              No accounts, no tracking, no cookies that identify you. Browse Ollypedia freely and
-              anonymously.
+              <strong className="text-gray-300 font-medium">Your privacy and account security matter.</strong>{" "}
+              We encrypt user credentials, never sell personal data, and maintain fair, respectful community discussions for all Odia cinema lovers.
             </p>
           </div>
         </div>
