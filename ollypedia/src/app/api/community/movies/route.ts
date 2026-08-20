@@ -4,6 +4,7 @@ import Movie from "@/models/Movie";
 import MovieVote from "@/models/community/MovieVote";
 import DiscussionThread from "@/models/community/DiscussionThread";
 import DiscussionComment from "@/models/community/DiscussionComment";
+import { getReleaseYear } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -26,21 +27,25 @@ export async function GET(req: NextRequest) {
       movieQuery.genre = { $in: [genre] };
     }
 
+    let sort: any = { releaseDate: -1, createdAt: -1 };
+
     if (filterType === "upcoming") {
-      movieQuery.verdict = "Upcoming";
+      movieQuery.$or = [
+        { verdict: "Upcoming" },
+        { status: "Upcoming" },
+        { releaseDate: { $gt: new Date().toISOString() } },
+        { releaseTBA: true }
+      ];
+      sort = { releaseDate: 1, createdAt: -1 };
     } else if (filterType === "released") {
       movieQuery.verdict = { $ne: "Upcoming" };
-    }
-
-    let sort: any = { createdAt: -1 };
-    if (filterType === "upcoming") {
-      sort = { releaseDate: 1, createdAt: -1 };
+      sort = { releaseDate: -1, createdAt: -1 };
     }
 
     const [movies, total] = await Promise.all([
       Movie.find(movieQuery)
         .select(
-          "title slug posterUrl thumbnailUrl releaseDate language genre verdict director runtime"
+          "title slug posterUrl thumbnailUrl releaseDate releaseDatePrecision releaseTBA language genre verdict director runtime"
         )
         .sort(sort)
         .skip(skip)
@@ -155,6 +160,88 @@ export async function GET(req: NextRequest) {
           b.community.threadsCount + b.community.commentsCount -
           (a.community.threadsCount + a.community.commentsCount)
       );
+    } else if (filterType === "upcoming") {
+      const getDateTier = (m: any): number => {
+        const s = String(m.releaseDate || "").trim();
+        const prec = m.releaseDatePrecision;
+
+        if (
+          m.releaseTBA ||
+          !s ||
+          s.toUpperCase() === "TBA"
+        ) {
+          return 4; // Tier 4: TBA (Last)
+        }
+
+        // Tier 1: True Full date with Year-Month-Day (e.g. "2026-09-18")
+        if (/^\d{4}-\d{2}-\d{2}/.test(s) && prec !== "year" && prec !== "month") {
+          return 1;
+        }
+
+        // Tier 2: Month & Year (e.g. "2026-09" or prec === "month")
+        if (/^\d{4}-\d{2}$/.test(s) || prec === "month") {
+          return 2;
+        }
+
+        // Tier 3: Year only (e.g. "2026" or prec === "year")
+        if (/^\d{4}$/.test(s) || prec === "year") {
+          return 3;
+        }
+
+        return 4;
+      };
+
+      communityMovies.sort((a: any, b: any) => {
+        const tierA = getDateTier(a);
+        const tierB = getDateTier(b);
+
+        if (tierA !== tierB) {
+          return tierA - tierB;
+        }
+
+        if (tierA === 4) {
+          return 0;
+        }
+
+        const timeA = new Date(a.releaseDate).getTime();
+        const timeB = new Date(b.releaseDate).getTime();
+        if (!isNaN(timeA) && !isNaN(timeB)) {
+          return timeA - timeB;
+        }
+        return String(a.releaseDate).localeCompare(String(b.releaseDate));
+      });
+    } else {
+      // Default / 'all' / 'released' filter: Sort by year descending, and within year show year-only movies first
+      communityMovies.sort((a: any, b: any) => {
+        const numYearA = parseInt(getReleaseYear(a.releaseDate) || "0", 10);
+        const numYearB = parseInt(getReleaseYear(b.releaseDate) || "0", 10);
+
+        if (numYearA !== numYearB) {
+          return numYearB - numYearA;
+        }
+
+        const isYearOnlyA = Boolean(
+          a.releaseDatePrecision === "year" ||
+          (a.releaseDate && /^\d{4}$/.test(String(a.releaseDate).trim()))
+        );
+        const isYearOnlyB = Boolean(
+          b.releaseDatePrecision === "year" ||
+          (b.releaseDate && /^\d{4}$/.test(String(b.releaseDate).trim()))
+        );
+
+        if (isYearOnlyA && !isYearOnlyB) return -1;
+        if (!isYearOnlyA && isYearOnlyB) return 1;
+
+        const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : 0;
+        const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : 0;
+        if (!isNaN(dateA) && !isNaN(dateB) && dateA !== dateB) {
+          return dateB - dateA;
+        }
+
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
     }
 
     return NextResponse.json({
