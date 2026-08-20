@@ -72,6 +72,9 @@ function mapToCommunityMovie(
     releaseDate: m.releaseDate,
     releaseDatePrecision: m.releaseDatePrecision,
     releaseTBA: m.releaseTBA,
+    interestedYes: m.interestedYes || 0,
+    interestedNo: m.interestedNo || 0,
+    status: m.status,
     language: m.language,
     genre: m.genre,
     verdict: m.verdict,
@@ -111,7 +114,7 @@ export default async function DiscussionLandingPage() {
         { releaseTBA: true },
       ],
     })
-      .select("title slug posterUrl thumbnailUrl releaseDate releaseDatePrecision releaseTBA language genre verdict")
+      .select("title slug posterUrl thumbnailUrl releaseDate releaseDatePrecision releaseTBA interestedYes interestedNo status language genre verdict")
       .sort({ releaseDate: 1, createdAt: -1 })
       .limit(18)
       .lean(),
@@ -124,7 +127,7 @@ export default async function DiscussionLandingPage() {
         { releaseDate: { $lte: nowIso } },
       ],
     })
-      .select("title slug posterUrl thumbnailUrl releaseDate releaseDatePrecision releaseTBA language genre verdict")
+      .select("title slug posterUrl thumbnailUrl releaseDate releaseDatePrecision releaseTBA interestedYes interestedNo status language genre verdict")
       .sort({ releaseDate: -1, createdAt: -1 })
       .limit(12)
       .lean(),
@@ -136,14 +139,14 @@ export default async function DiscussionLandingPage() {
         { releaseDateText: { $regex: new Intl.DateTimeFormat("en", { month: "long" }).format(now), $options: "i" } },
       ],
     })
-      .select("title slug posterUrl thumbnailUrl releaseDate releaseDatePrecision releaseTBA language genre verdict")
+      .select("title slug posterUrl thumbnailUrl releaseDate releaseDatePrecision releaseTBA interestedYes interestedNo status language genre verdict")
       .sort({ releaseDate: 1 })
       .limit(12)
       .lean(),
 
     // 4. Initial All Movies for Infinite Scroll (Sorted by releaseDate desc)
     Movie.find()
-      .select("title slug posterUrl thumbnailUrl releaseDate releaseDatePrecision releaseTBA language genre verdict")
+      .select("title slug posterUrl thumbnailUrl releaseDate releaseDatePrecision releaseTBA interestedYes interestedNo status language genre verdict")
       .sort({ releaseDate: -1, createdAt: -1 })
       .limit(24)
       .lean(),

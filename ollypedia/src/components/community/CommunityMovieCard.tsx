@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { MessageSquare, Sparkles, Flame } from "lucide-react";
+import { MessageSquare, Sparkles, Flame, Users } from "lucide-react";
 import { formatReleaseDate } from "@/lib/dateUtils";
 
 export interface CommunityMovieData {
@@ -15,6 +15,9 @@ export interface CommunityMovieData {
   releaseDate?: string;
   releaseDatePrecision?: string;
   releaseTBA?: boolean;
+  interestedYes?: number;
+  interestedNo?: number;
+  status?: string;
   language?: string;
   genre?: string[];
   verdict?: string;
@@ -55,6 +58,17 @@ export function CommunityMovieCard({ movie }: CommunityMovieCardProps) {
     movie.thumbnailUrl ||
     "/placeholder-movie.jpg";
 
+  const dateStr = movie.releaseDate ? String(movie.releaseDate).trim() : "";
+  const parsedTime = dateStr ? new Date(dateStr).getTime() : NaN;
+  const isFutureDate = !isNaN(parsedTime) && parsedTime > Date.now();
+
+  const isUnreleased =
+    movie.verdict === "Upcoming" ||
+    movie.status === "Upcoming" ||
+    Boolean(movie.releaseTBA) ||
+    dateStr.toUpperCase() === "TBA" ||
+    isFutureDate;
+
   const hasVotes = movie.community.totalVotes > 0;
   const topCat = CATEGORY_BADGES[movie.community.topCategory] || CATEGORY_BADGES.go_for_it;
   const totalDiscussions = (movie.community.threadsCount || 0) + (movie.community.commentsCount || 0);
@@ -76,22 +90,27 @@ export function CommunityMovieCard({ movie }: CommunityMovieCardProps) {
 
         {/* Top Floating Badges */}
         <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1 pointer-events-none z-10">
-          {hasVotes ? (
+          {isUnreleased ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold border border-orange-500/30 bg-black/80 backdrop-blur-md text-orange-400 whitespace-nowrap shadow-md flex-shrink-0">
+              <Users className="w-3 h-3 text-orange-400 flex-shrink-0" />
+              <span>{(movie.interestedYes || 0) > 0 ? `${(movie.interestedYes || 0).toLocaleString("en-IN")} Interested` : "Interested"}</span>
+            </span>
+          ) : hasVotes ? (
             <span
-              className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black border backdrop-blur-md shadow-md flex items-center gap-1 ${topCat.bg} ${topCat.text}`}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black border backdrop-blur-md shadow-md whitespace-nowrap flex-shrink-0 ${topCat.bg} ${topCat.text}`}
             >
               <span>{topCat.emoji}</span>
               <span>{movie.community.topPercentage}%</span>
             </span>
           ) : (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border border-white/10 bg-black/60 backdrop-blur-md text-zinc-300 flex items-center gap-1">
-              <Sparkles className="w-2.5 h-2.5 text-orange-400" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border border-white/10 bg-black/80 backdrop-blur-md text-zinc-300 whitespace-nowrap shadow-md flex-shrink-0">
+              <Sparkles className="w-2.5 h-2.5 text-orange-400 flex-shrink-0" />
               <span>Meter</span>
             </span>
           )}
 
           {movie.verdict && (
-            <span className="px-2 py-0.5 rounded-full text-[9px] uppercase font-black tracking-wider bg-black/70 backdrop-blur-md text-orange-400 border border-orange-500/30">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] uppercase font-black tracking-wider bg-black/80 backdrop-blur-md text-orange-400 border border-orange-500/30 whitespace-nowrap flex-shrink-0">
               {movie.verdict}
             </span>
           )}

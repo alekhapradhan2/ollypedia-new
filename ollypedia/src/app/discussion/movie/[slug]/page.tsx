@@ -67,7 +67,7 @@ export default async function MovieDiscussionPage({
     $or: [{ slug }, { _id: slug.match(/^[0-9a-fA-F]{24}$/) ? slug : null }],
   })
     .select(
-      "title slug posterUrl thumbnailUrl bannerUrl releaseDate language genre synopsis verdict runtime media ott boxOffice"
+      "title slug posterUrl thumbnailUrl bannerUrl releaseDate releaseDatePrecision releaseTBA interestedYes interestedNo status language genre synopsis verdict runtime media ott boxOffice"
     )
     .lean() as any;
 
@@ -180,6 +180,10 @@ export default async function MovieDiscussionPage({
           thumbnailUrl: movie.thumbnailUrl,
           bannerUrl: movie.bannerUrl,
           releaseDate: movie.releaseDate,
+          releaseTBA: movie.releaseTBA,
+          interestedYes: movie.interestedYes,
+          interestedNo: movie.interestedNo,
+          status: movie.status,
           language: movie.language,
           genre: movie.genre,
           synopsis: movie.synopsis,

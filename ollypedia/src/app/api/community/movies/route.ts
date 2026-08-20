@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     const [movies, total] = await Promise.all([
       Movie.find(movieQuery)
         .select(
-          "title slug posterUrl thumbnailUrl releaseDate releaseDatePrecision releaseTBA language genre verdict director runtime"
+          "title slug posterUrl thumbnailUrl releaseDate releaseDatePrecision releaseTBA interestedYes interestedNo status language genre verdict director runtime"
         )
         .sort(sort)
         .skip(skip)
