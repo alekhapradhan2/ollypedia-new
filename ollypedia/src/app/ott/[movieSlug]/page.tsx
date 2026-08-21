@@ -264,7 +264,15 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
             <section>
               <h2 className="text-2xl font-bold text-white mb-6">Primary Cast</h2>
               <div className="flex flex-wrap gap-6">
-                {m.cast.slice(0, 5).map((c: any) => (
+                {m.cast
+                  .filter((c: any) => {
+                    const r = (c.role || "").toLowerCase();
+                    const t = (c.type || "").toLowerCase();
+                    const crewKw = ["director", "producer", "writer", "editor", "cinematographer", "music"];
+                    return !crewKw.some(kw => r.includes(kw) || t.includes(kw));
+                  })
+                  .slice(0, 5)
+                  .map((c: any) => (
                   <div key={c.name} className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full overflow-hidden bg-[#222] relative">
                       {c.photo ? (

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Search, Sparkles, MessageSquare, Vote, ArrowUpDown, Loader2 } from "lucide-react";
 import { CommunityMovieCard, CommunityMovieData } from "@/components/community/CommunityMovieCard";
-import { InFeedMovieCardAd } from "@/components/ads/InFeedMovieCardAd";
+import { InFeedAd } from "@/components/ads/InFeedAd";
 
 export interface DiscussionLandingClientProps {
   initialMovies: CommunityMovieData[];
@@ -175,8 +175,10 @@ export function DiscussionLandingClient({
             {movies.map((movie, idx) => (
               <React.Fragment key={movie._id}>
                 <CommunityMovieCard movie={movie} />
-                {idx > 0 && idx % 6 === 0 && (
-                  <InFeedMovieCardAd key={`infeed-ad-${idx}`} />
+                {(idx + 1) % 7 === 0 && (
+                  <div className="w-full h-full bg-[#111] border border-[#1f1f1f] rounded-2xl overflow-hidden flex items-center justify-center">
+                    <InFeedAd className="min-h-[250px] w-full h-full" />
+                  </div>
                 )}
               </React.Fragment>
             ))}

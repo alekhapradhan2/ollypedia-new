@@ -51,7 +51,8 @@ export default async function MovieSongsPage({ params }: Props) {
 
   const songs = movie.media.songs;
   const albumUrl = `${SITE_URL}/songs/${movie.slug || movie._id}`;
-  
+  const movieUrl = `${SITE_URL}/movie/${movie.slug || movie._id}`;
+
   // Extract all singers to list them in the schema and UI
   const allSingers = Array.from(new Set(songs.map((s: any) => s.singer).filter(Boolean)));
 
@@ -65,7 +66,8 @@ export default async function MovieSongsPage({ params }: Props) {
     "@context": "https://schema.org",
     "@type": "MusicAlbum",
     "name": `${movie.title} Original Motion Picture Soundtrack`,
-    "url": albumUrl,
+    "url": movieUrl,
+    "sameAs": albumUrl,
     "image": movie.posterUrl,
     "albumReleaseType": "Soundtrack",
     "byArtist": allSingers.map(s => ({ "@type": "Person", "name": s })),
@@ -89,7 +91,7 @@ export default async function MovieSongsPage({ params }: Props) {
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
-      
+
       {/* ══ HEADER / ALBUM COVER ══ */}
       <section className="relative overflow-hidden bg-[#111] border-b border-[#1f1f1f]">
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -122,16 +124,16 @@ export default async function MovieSongsPage({ params }: Props) {
                 {movie.title} Songs
               </h1>
               <p className="text-gray-400 text-xs sm:text-base max-w-xl line-clamp-3 sm:line-clamp-none">
-                Listen to the complete Odia music album of <Link href={`/movie/${movie.slug || movie._id}`} className="text-white hover:text-orange-400 underline decoration-[#333] underline-offset-4">{movie.title}</Link>. Featuring {songs.length} tracks{allSingers.length > 0 ? ` by ${allSingers.slice(0,3).join(", ")}${allSingers.length > 3 ? " and more" : ""}` : ""}.
+                Listen to the complete Odia music album of <Link href={`/movie/${movie.slug || movie._id}`} className="text-white hover:text-orange-400 underline decoration-[#333] underline-offset-4">{movie.title}</Link>. Featuring {songs.length} tracks{allSingers.length > 0 ? ` by ${allSingers.slice(0, 3).join(", ")}${allSingers.length > 3 ? " and more" : ""}` : ""}.
               </p>
-              
+
               <div className="mt-3 sm:mt-8 flex flex-wrap gap-2 sm:gap-3 justify-start">
                 <Link href={`/songs/${movie.slug || movie._id}/0/${songs[0]?.slug || 'play'}`}
                   className="bg-orange-500 hover:bg-orange-400 text-black px-4 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold text-[11px] sm:text-sm transition-all flex items-center gap-1.5 sm:gap-2 shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:shadow-[0_0_30px_rgba(249,115,22,0.5)]">
                   <Play className="w-3 h-3 sm:w-4 sm:h-4 fill-black" />
                   Play All
                 </Link>
-                
+
                 {hasVideos && (
                   <Link href={`/trailers/${movie.slug || movie._id}`}
                     className="bg-[#1f1f1f] hover:bg-[#2a2a2a] text-white border border-[#333] px-3 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold text-[11px] sm:text-sm transition-all flex items-center gap-1.5 sm:gap-2">
@@ -155,7 +157,7 @@ export default async function MovieSongsPage({ params }: Props) {
 
       {/* ══ CONTENT GRID ══ */}
       <div className="max-w-5xl mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-12">
-        
+
         {/* LEFT COLUMN: Tracklist & SEO Prose */}
         <div className="lg:col-span-2 space-y-12">
           {/* Tracklist */}
@@ -207,11 +209,11 @@ export default async function MovieSongsPage({ params }: Props) {
             <h2 className="text-lg font-bold text-white mb-4">About the {movie.title} Soundtrack</h2>
             <div className="space-y-4 text-sm text-gray-400 leading-relaxed">
               <p>
-                The music album of <strong className="text-white">{movie.title}</strong> features {songs.length} original Odia songs. 
+                The music album of <strong className="text-white">{movie.title}</strong> features {songs.length} original Odia songs.
                 {allSingers.length > 0 && ` The soundtrack includes vocal performances by top Odia playback singers like ${allSingers.slice(0, 4).join(", ")}.`}
               </p>
               <p>
-                Fans of Ollywood music can listen to the full <strong className="text-white">{movie.title} mp3 songs</strong> online, watch the high-quality music videos, and read the Odia lyrics for every track directly on Ollypedia. 
+                Fans of Ollywood music can listen to the full <strong className="text-white">{movie.title} mp3 songs</strong> online, watch the high-quality music videos, and read the Odia lyrics for every track directly on Ollypedia.
                 {movie.director && ` The movie was directed by ${movie.director}.`}
               </p>
             </div>
@@ -222,7 +224,7 @@ export default async function MovieSongsPage({ params }: Props) {
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-5 sticky top-24">
             <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 border-b border-[#222] pb-3">Album Credits</h3>
-            
+
             <div className="space-y-5">
               {/* Music Directors */}
               {(() => {
@@ -287,7 +289,7 @@ export default async function MovieSongsPage({ params }: Props) {
                 </div>
               )}
             </div>
-            
+
             <div className="mt-8 pt-5 border-t border-[#222]">
               <Link href={`/movie/${movie.slug || movie._id}`} className="block w-full text-center py-2.5 rounded-lg bg-orange-500/10 text-orange-400 text-xs font-bold hover:bg-orange-500 hover:text-black transition-colors">
                 View Full Movie Details

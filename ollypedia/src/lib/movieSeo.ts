@@ -102,7 +102,15 @@ export function generateMovieJsonLd(movie: MovieSeoDoc) {
       }
     : undefined;
 
-  const actorList = (movie.cast || []).slice(0, 10).map((c) => ({
+  const CREW_ROLES_LOWER = ["director", "producer", "writer", "screenplay", "story", "dialogue", "music", "cinematographer", "editor", "choreographer", "art director", "costume", "sound", "stunt", "vfx", "singer", "lyricist"];
+  const actorList = (movie.cast || [])
+    .filter((c: any) => {
+      const r = (c.role || "").toLowerCase();
+      const t = (c.type || "").toLowerCase();
+      return !CREW_ROLES_LOWER.some(cr => r.includes(cr) || t.includes(cr));
+    })
+    .slice(0, 10)
+    .map((c) => ({
     "@type": "Person",
     name: c.name,
     jobTitle: c.role || c.type || "Actor",
