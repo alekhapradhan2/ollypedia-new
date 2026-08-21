@@ -343,10 +343,15 @@ function buildFaqJsonLd(movie: any, year: string | number, avgRating: number | n
       answer: movie.synopsis?.slice(0, 300) ||
         `${movie.title} is an Odia ${movie.genre?.join(", ") || "drama"} film${year ? ` released in ${year}` : ""}${directorName ? `, directed by ${directorName}` : ""}.`,
     },
-    ...(movie.cast?.length ? [{
-      question: `Who is in the cast of ${movie.title}?`,
-      answer: `${movie.title} features ${movie.cast.slice(0, 5).map((c: any) => c.name).join(", ")}.`,
-    }] : []),
+    ...(() => {
+      const { cast: castOnly } = splitCastCrew(movie.cast || []);
+      const actorNames = Array.from(new Set(castOnly.map((c: any) => c.name).filter(Boolean)));
+      if (!actorNames.length) return [];
+      return [{
+        question: `Who is in the cast of ${movie.title}?`,
+        answer: `${movie.title} features ${actorNames.slice(0, 5).join(", ")}.`,
+      }];
+    })(),
     ...(movie.verdict ? [{
       question: `What is the box office verdict of ${movie.title}?`,
       answer: `${movie.title} was declared a ${movie.verdict} at the Ollywood box office.`,
@@ -1585,15 +1590,20 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                       {songs[0]?.singer ? `, including tracks by ${[...new Set(songs.slice(0,3).map((s:any)=>s.singer).filter(Boolean))].join(", ")}` : ""}.
                     </p>
                   )}
-                  {movie.cast?.length > 0 && (
-                    <p>
-                      The film stars{" "}
-                      <strong className="text-white">
-                        {movie.cast.slice(0, 4).map((c: any) => c.name).join(", ")}
-                      </strong>
-                      {movie.cast.length > 4 ? ` and ${movie.cast.length - 4} others` : ""}.
-                    </p>
-                  )}
+                  {(() => {
+                    const { cast: castOnly } = splitCastCrew(movie.cast || []);
+                    const actorNames = Array.from(new Set(castOnly.map((c: any) => c.name).filter(Boolean)));
+                    if (!actorNames.length) return null;
+                    return (
+                      <p>
+                        The film stars{" "}
+                        <strong className="text-white">
+                          {actorNames.slice(0, 4).join(", ")}
+                        </strong>
+                        {actorNames.length > 4 ? ` and ${actorNames.length - 4} others` : ""}.
+                      </p>
+                    );
+                  })()}
                   {/* OTT paragraph — rich prose for search rankings */}
                   {movie.streamingOn && (
                     <p>
@@ -1679,10 +1689,15 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                       a: movie.synopsis?.slice(0, 250) ||
                         `${movie.title} is an Odia ${(movie.genre || []).join(", ") || "drama"} film${year ? ` released in ${year}` : ""}${movie.director ? `, directed by ${movie.director}` : ""}.`,
                     },
-                    ...(movie.cast?.length ? [{
-                      q: `Who are the main cast of ${movie.title}?`,
-                      a: `${movie.title} features ${movie.cast.slice(0, 5).map((c: any) => c.name).join(", ")} in the lead and supporting roles.`,
-                    }] : []),
+                    ...(() => {
+                      const { cast: castOnly } = splitCastCrew(movie.cast || []);
+                      const actorNames = Array.from(new Set(castOnly.map((c: any) => c.name).filter(Boolean)));
+                      if (!actorNames.length) return [];
+                      return [{
+                        q: `Who are the main cast of ${movie.title}?`,
+                        a: `${movie.title} features ${actorNames.slice(0, 5).join(", ")} in the lead and supporting roles.`,
+                      }];
+                    })(),
                     ...(movie.verdict ? [{
                       q: `What is the box office verdict of ${movie.title}?`,
                       a: `${movie.title} was declared a ${movie.verdict} at the Ollywood box office${movie.boxOffice?.total ? `, collecting a total of ${movie.boxOffice.total}` : ""}.`,
