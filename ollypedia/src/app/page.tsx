@@ -11,12 +11,10 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { buildMeta, SITE_NAME } from "@/lib/seo";
 import {
   Film, Star, Music, TrendingUp, Award, BookOpen,
-  ChevronRight, Clapperboard, Users, Mic2, Trophy,
+  ChevronRight, Clapperboard, Users, Mic2, Trophy, Flame, Clock, Info,
 } from "lucide-react";
+import { CommunityMovieCard, type CommunityMovieData } from "@/components/community/CommunityMovieCard";
 import HeroCarousel, { type HeroMovie } from "@/components/layout/HeroCarousel";
-import RandomMoviePicker from "@/components/home/RandomMoviePicker";
-import DidYouKnow, { type TriviaCard } from "@/components/home/DidYouKnow";
-import { TRIVIA_EMOJIS } from "@/lib/trivia-constants";
 import { InFeedAd } from "@/components/ads/InFeedAd";
 import { DisplayAd } from "@/components/ads/DisplayAd";
 import { formatReleaseDate, mongoDateExpr } from "@/lib/dateUtils";
@@ -26,12 +24,17 @@ export const revalidate = 600;
 export const metadata: Metadata = buildMeta({
   title: `${SITE_NAME} – The Odia Film Encyclopedia`,
   description:
-    "Ollypedia is Odisha's most comprehensive Odia film database. Discover latest Ollywood movies, songs, actor biographies, box office collection, reviews and Odia film blogs.",
+    "Ollypedia is Odisha's most comprehensive Odia film database. Discover latest Ollywood movies, songs, actor biographies, box office collection, reviews, Odia film blogs, and join the Odia cinema community to vote, discuss and rate movies.",
+  image: "https://www.ollypedia.in/logo.png",
+  imageAlt: "Ollypedia – The Odia Film Encyclopedia | Ollywood Movies, Cast, Songs & Box Office",
   keywords: [
     "Odia movies 2026", "Ollywood", "Odia cinema", "Odia films", "Babushaan",
     "Elina Samantray", "Odia actor", "Odia songs", "Odia movie reviews",
     "Ollywood box office", "Odia film blog", "official Odia cinema database",
     "legal Odia movie streaming info",
+    "Odia movie community", "Ollywood community", "Odia cinema discussion",
+    "Ollypedia Meter", "rate Odia movies", "Odia film reviews community",
+    "upcoming Odia movies", "latest Odia releases",
   ],
   url: "/",
 });
@@ -288,89 +291,46 @@ async function getHomeData() {
       return new Date(aRd).getTime() - new Date(bRd).getTime();
     });
 
-  // ── Random movie pool — year-aware, poster required ───────────
-  const currentYear = _now.getFullYear();
-  const randomMoviePool = (allMovies as any[])
-    .filter((m) => m.releaseDate && new Date(m.releaseDate) <= _now && (m.posterUrl || m.thumbnailUrl))
-    .map((m) => {
-      const y = m.releaseDate ? new Date(m.releaseDate).getFullYear() : 0;
-      return {
-        _id:         String(m._id),
-        slug:        m.slug || "",
-        title:       m.title,
-        posterUrl:   m.posterUrl || m.thumbnailUrl || "",
-        releaseDate: m.releaseDate || "",
-        verdict:     m.verdict || "",
-        language:    m.language || "",
-        genre:       (m.genre || []).slice(0, 2),
-        year:        y,
-      };
-    });
+  // ── Community movie cards (no extra DB query, sliced from existing data) ─
+  function toCommunityMovie(m: any): CommunityMovieData {
+    return {
+      _id:   String(m._id),
+      title: m.title,
+      slug:  m.slug || String(m._id),
+      posterUrl:    m.posterUrl    || undefined,
+      thumbnailUrl: m.thumbnailUrl || undefined,
+      releaseDate:  m.releaseDate  || undefined,
+      releaseDatePrecision: m.releaseDatePrecision || undefined,
+      releaseTBA:   m.releaseTBA   || false,
+      interestedYes: m.interestedYes || 0,
+      interestedNo:  m.interestedNo  || 0,
+      status:  m.status  || undefined,
+      language: m.language || undefined,
+      genre:   m.genre   || [],
+      verdict: m.verdict || undefined,
+      community: {
+        totalVotes:    0,
+        breakdown:     { skip: 0, timepass: 0, go_for_it: 0, perfection: 0 },
+        topCategory:   "go_for_it",
+        topPercentage: 0,
+        threadsCount:  0,
+        commentsCount: 0,
+        lastActivity:  null,
+      },
+    };
+  }
 
-  // ── Did You Know — trivia extracted from synopses ─────────────
-  // Static Ollywood facts always shown (guaranteed content)
-  const staticTrivia: TriviaCard[] = [
-    {
-      fact:   "Odia cinema, known as Ollywood, traces its roots to 1936 when the first Odia film 'Sita Bibaha' was released — making it one of India's oldest regional film industries.",
-      source: "About Ollywood",
-      href:   "/movies",
-      emoji:  TRIVIA_EMOJIS[0],
-    },
-    {
-      fact:   "The Odia film industry is headquartered in Bhubaneswar, Odisha's capital, and produces 40–60 films every year for audiences across Odisha and the diaspora.",
-      source: "Ollywood Industry",
-      href:   "/movies",
-      emoji:  TRIVIA_EMOJIS[1],
-    },
-    {
-      fact:   "Babushaan Mohanty holds the record for multiple consecutive Blockbuster hits in Ollywood and is widely regarded as one of the biggest stars in contemporary Odia cinema.",
-      source: "Cast Profiles",
-      href:   "/cast",
-      emoji:  TRIVIA_EMOJIS[2],
-    },
-    {
-      fact:   "Odia films with devotional themes set at the Jagannath Temple in Puri have historically performed exceptionally well at the box office, drawing massive audiences across Odisha.",
-      source: "Ollywood Box Office",
-      href:   "/box-office",
-      emoji:  TRIVIA_EMOJIS[3],
-    },
-    {
-      fact:   "The Ollywood music industry is as big as the films — many Odia movie songs become independent hits on YouTube, often crossing millions of views before the film even releases.",
-      source: "Odia Songs",
-      href:   "/songs",
-      emoji:  TRIVIA_EMOJIS[4],
-    },
-  ];
+  const communityLatest = (allMovies as any[])
+    .filter((m) => m.status !== "Upcoming" && m.releaseDate && new Date(m.releaseDate) <= _now)
+    .sort((a: any, b: any) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
+    .slice(0, 6)
+    .map(toCommunityMovie);
 
-  // Dynamic trivia extracted from movie synopses
-  const synopsisTrivia: TriviaCard[] = (allMovies as any[])
-    .filter((m) => {
-      if (!m.synopsis || m.synopsis.length < 80) return false;
-      if (!m.releaseDate || new Date(m.releaseDate) > _now) return false;
-      return true;
-    })
-    .sort(() => Math.random() - 0.5) // shuffle
-    .slice(0, 8)
-    .map((m: any, i: number) => {
-      // Extract a clean first sentence (up to 180 chars) from synopsis
-      const raw = String(m.synopsis || "").replace(/\(.*?\)/g, "").trim(); // strip parens like (Odia: ...)
-      const sentMatch = raw.match(/^[^.!?]{40,180}[.!?]/);
-      const fact = sentMatch
-        ? sentMatch[0].trim()
-        : raw.slice(0, 160).trim() + (raw.length > 160 ? "…" : "");
-      return {
-        fact,
-        source: m.title,
-        href:   `/movie/${m.slug || m._id}`,
-        emoji:  TRIVIA_EMOJIS[(i + 5) % TRIVIA_EMOJIS.length],
-      };
-    })
-    .filter((t: TriviaCard) => t.fact.length > 40);
+  const communityUpcoming = (sortedUpcoming as any[])
+    .slice(0, 6)
+    .map(toCommunityMovie);
 
-  // Merge: static first, then dynamic, cap at 12
-  const triviaCards: TriviaCard[] = [...staticTrivia, ...synopsisTrivia].slice(0, 12);
-
-  return { heroMovies, latestMovies, upcomingMovies: sortedUpcoming, latestBlogs, topMovies, boxOfficeMovies, thisMonthAll, randomMoviePool, triviaCards, currentYear };
+  return { heroMovies, latestMovies, upcomingMovies: sortedUpcoming, latestBlogs, topMovies, boxOfficeMovies, thisMonthAll, communityLatest, communityUpcoming };
 }
 
 // ── Category pills for blog ───────────────────────────────────────
@@ -386,7 +346,7 @@ const BLOG_CATEGORIES = [
 ];
 
 export default async function HomePage() {
-  const { heroMovies, latestMovies, upcomingMovies, latestBlogs, topMovies, boxOfficeMovies, thisMonthAll, randomMoviePool, triviaCards, currentYear } =
+  const { heroMovies, latestMovies, upcomingMovies, latestBlogs, topMovies, boxOfficeMovies, thisMonthAll, communityLatest, communityUpcoming } =
     await getHomeData();
 
   return (
@@ -433,6 +393,33 @@ export default async function HomePage() {
                 "https://www.youtube.com/@ollypedia",
               ],
             },
+            {
+              "@context": "https://schema.org",
+              // WebPage is the correct type for a community hub/landing page.
+              // DiscussionForumPosting is for a single thread — not a forum index.
+              "@type": "WebPage",
+              name: "Ollypedia Odia Cinema Community — Vote, Discuss & Rate Odia Movies",
+              url: "https://www.ollypedia.in/discussion",
+              description:
+                "Join the Ollypedia Community — the official hub for Odia cinema fans. Use the Ollypedia Meter to vote Skip, Timepass, Go for it, or Perfection on Odia movies. Participate in live discussion rooms, share audience reviews, and connect with thousands of Ollywood enthusiasts.",
+              breadcrumb: {
+                "@type": "BreadcrumbList",
+                itemListElement: [
+                  { "@type": "ListItem", position: 1, name: "Home", item: "https://www.ollypedia.in" },
+                  { "@type": "ListItem", position: 2, name: "Community", item: "https://www.ollypedia.in/discussion" },
+                ],
+              },
+              publisher: {
+                "@type": "Organization",
+                name: "Ollypedia",
+                url: "https://www.ollypedia.in",
+              },
+              about: {
+                "@type": "Thing",
+                name: "Odia Cinema",
+                sameAs: "https://en.wikipedia.org/wiki/Odia_cinema",
+              },
+            },
           ]),
         }}
       />
@@ -460,6 +447,168 @@ export default async function HomePage() {
         </section>
       )}
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <DisplayAd slot="8191172163" format="horizontal" />
+      </div>
+
+      {/* ══ COMMUNITY SECTION — after hero ══ */}
+      <section
+        aria-label="Ollypedia Odia Cinema Community — Vote, Discuss &amp; Rate Odia Movies"
+        className="relative overflow-hidden border-b border-[#1f1f1f] bg-[#0d0d0d]"
+      >
+        {/* SEO: Microdata + visually-hidden rich-text for search engines.
+             itemScope on a div (not section) for better microdata parser compat. */}
+        <div
+          className="sr-only"
+          itemScope
+          itemType="https://schema.org/WebPage"
+        >
+          <span itemProp="name">Ollypedia Odia Cinema Community — Movie Discussion &amp; Ratings</span>
+          <p itemProp="description">
+            The Ollypedia Community is the official hub for Odia cinema and Ollywood fans.
+            Vote on Odia movies with the Ollypedia Meter — choose Skip, Timepass, Go for it, or Perfection.
+            Join live discussion rooms for upcoming Odia movies and latest Odia releases.
+            Share audience reviews, rate Odia films, and connect with thousands of Ollywood enthusiasts across Odisha and the diaspora.
+            Discover upcoming Odia movies 2026, discuss recently released Odia films, and be part of the largest Odia cinema community online.
+          </p>
+          <a itemProp="url" href="https://www.ollypedia.in/discussion">Ollypedia Community</a>
+        </div>
+        {/* Decorative glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute left-0 top-0 bottom-0 w-64 bg-gradient-to-r from-orange-500/4 to-transparent" />
+          <div className="absolute right-0 top-0 bottom-0 w-64 bg-gradient-to-l from-purple-500/4 to-transparent" />
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+
+          {/* — Header row — */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="relative flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500/25 to-orange-500/5 border border-orange-500/30 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-orange-400" />
+                </div>
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-[#0d0d0d] animate-pulse" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-0.5">Community</p>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-display text-lg sm:text-xl font-black text-white leading-tight">
+                    The Ollypedia <span className="text-orange-400">Movie Community</span>
+                  </h2>
+                  {/* Info icon with CSS-only tooltip */}
+                  <div className="relative group/info flex-shrink-0">
+                    <button
+                      type="button"
+                      aria-label="About Ollypedia Community"
+                      className="w-5 h-5 rounded-full bg-white/5 border border-white/10 hover:border-orange-500/40 hover:bg-orange-500/10 flex items-center justify-center transition-all cursor-help"
+                    >
+                      <Info className="w-3 h-3 text-gray-500 group-hover/info:text-orange-400 transition-colors" />
+                    </button>
+                    {/* Tooltip */}
+                    <div className="absolute left-0 top-full mt-2 z-50 w-72 sm:w-80 pointer-events-none opacity-0 group-hover/info:opacity-100 transition-opacity duration-200">
+                      <div className="bg-[#1a1a1a] border border-orange-500/20 rounded-2xl p-4 shadow-2xl shadow-black/60">
+                        {/* Arrow */}
+                        <div className="absolute -top-1.5 left-3 w-3 h-3 bg-[#1a1a1a] border-l border-t border-orange-500/20 rotate-45" />
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-6 h-6 rounded-lg bg-orange-500/15 border border-orange-500/30 flex items-center justify-center flex-shrink-0">
+                            <Users className="w-3.5 h-3.5 text-orange-400" />
+                          </div>
+                          <p className="text-xs font-black text-white">Ollypedia Community</p>
+                        </div>
+                        <p className="text-[11px] text-zinc-400 leading-relaxed mb-3">
+                          The Ollypedia Community is the official hub for Odia cinema fans. Vote on movies using the <strong className="text-white">Ollypedia Meter</strong>, join live discussion rooms, share audience reviews, and connect with thousands of Ollywood enthusiasts.
+                        </p>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {[
+                            { emoji: "🩷", label: "Skip" },
+                            { emoji: "🟡", label: "Timepass" },
+                            { emoji: "🟢", label: "Go for it" },
+                            { emoji: "🟣", label: "Perfection" },
+                          ].map(({ emoji, label }) => (
+                            <div key={label} className="flex items-center gap-1.5 bg-white/4 rounded-lg px-2 py-1">
+                              <span className="text-xs">{emoji}</span>
+                              <span className="text-[10px] text-zinc-400 font-medium">{label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <Link
+              href="/discussion"
+              className="group inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-black font-black px-4 py-2 rounded-xl transition-all text-xs shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 flex-shrink-0"
+            >
+              Explore Community
+              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+
+          {/* — Two-column movie grids — */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+
+            {/* LEFT — Upcoming Movies */}
+            {communityUpcoming.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                    <Clock className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">Upcoming Movies</p>
+                    <p className="text-[10px] text-zinc-500">Anticipated films with early fan buzz</p>
+                  </div>
+                  <Link href="/discussion" className="ml-auto text-[10px] text-orange-400 hover:text-orange-300 font-semibold flex items-center gap-0.5 transition-colors">
+                    See all <ChevronRight className="w-3 h-3" />
+                  </Link>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-3 gap-2.5 sm:gap-3">
+                  {communityUpcoming.map((movie) => (
+                    <CommunityMovieCard key={movie._id} movie={movie} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* RIGHT — Latest Releases */}
+            {communityLatest.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="p-1.5 rounded-lg bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                    <Flame className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">Latest Releases</p>
+                    <p className="text-[10px] text-zinc-500">Recently released films in discussion rooms</p>
+                  </div>
+                  <Link href="/discussion" className="ml-auto text-[10px] text-orange-400 hover:text-orange-300 font-semibold flex items-center gap-0.5 transition-colors">
+                    See all <ChevronRight className="w-3 h-3" />
+                  </Link>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-3 gap-2.5 sm:gap-3">
+                  {communityLatest.map((movie) => (
+                    <CommunityMovieCard key={movie._id} movie={movie} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+
+          {/* — Footer tagline — */}
+          <p className="text-center text-[11px] text-gray-600 mt-6">
+            Vote • Discuss • Rate — <Link href="/discussion" className="text-orange-400 hover:text-orange-300 transition-colors">Join the Ollypedia community</Link>
+          </p>
+        </div>
+      </section>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <DisplayAd slot="8191172163" format="horizontal" />
+      </div>
+
       {/* ══ STATS BAR ══ */}
       <section className="bg-[#111] border-y border-[#1f1f1f]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -481,11 +630,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* ══ GLOBAL BANNER AD ══ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        <DisplayAd slot="8191172163" format="horizontal" className="rounded-xl border border-[#222]" />
-      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 sm:space-y-20">
 
@@ -517,6 +661,10 @@ export default async function HomePage() {
             </div>
           </section>
         )}
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <DisplayAd slot="8191172163" format="horizontal" />
+        </div>
 
         {/* ══ BOX OFFICE COLLECTION ══ */}
         {boxOfficeMovies.length > 0 && (
@@ -712,6 +860,10 @@ export default async function HomePage() {
             </div>
           </section>
         )}
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <DisplayAd slot="8191172163" format="horizontal" />
+        </div>
 
         {/* ══ CURRENTLY RUNNING ══ */}
         {(() => {
@@ -926,6 +1078,10 @@ export default async function HomePage() {
           );
         })()}
 
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <DisplayAd slot="8191172163" format="horizontal" />
+        </div>
+
         {/* ══ BLOG CATEGORIES ══ */}
         <section aria-label="Browse blog by category">
           <SectionHeader
@@ -946,6 +1102,10 @@ export default async function HomePage() {
             ))}
           </div>
         </section>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <DisplayAd slot="8191172163" format="horizontal" />
+        </div>
 
         {/* ══ THIS MONTH IN OLLYWOOD ══ */}
         {thisMonthAll.length > 0 && (() => {
@@ -1049,19 +1209,9 @@ export default async function HomePage() {
           );
         })()}
 
-        {/* ══ DISCOVER + DID YOU KNOW — 2 col grid ══ */}
-        {(randomMoviePool.length > 0 || triviaCards.length > 0) && (
-          <section aria-label="Discover Odia movies and Ollywood trivia">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
-              {randomMoviePool.length > 0 && (
-                <RandomMoviePicker movies={randomMoviePool} currentYear={currentYear} />
-              )}
-              {triviaCards.length > 0 && (
-                <DidYouKnow cards={triviaCards} />
-              )}
-            </div>
-          </section>
-        )}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <DisplayAd slot="8191172163" format="horizontal" />
+        </div>
 
         {/* ══ UPCOMING MOVIES ══ */}
         {upcomingMovies.length > 0 && (
@@ -1078,6 +1228,10 @@ export default async function HomePage() {
             </div>
           </section>
         )}
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <DisplayAd slot="8191172163" format="horizontal" />
+        </div>
 
         {/* ══ BLOG — LATEST ARTICLES GRID ══ */}
         {latestBlogs.length > 0 && (
@@ -1100,6 +1254,10 @@ export default async function HomePage() {
             </div>
           </section>
         )}
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <DisplayAd slot="8191172163" format="horizontal" />
+        </div>
 
         {/* ══ BLOCKBUSTER / TOP MOVIES (SEO + AdSense filler) ══ */}
         {topMovies.length > 0 && (
@@ -1139,6 +1297,10 @@ export default async function HomePage() {
             </div>
           </section>
         )}
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <DisplayAd slot="8191172163" format="horizontal" />
+        </div>
 
         {/* ══ SEO RICH CONTENT — About Ollywood ══ */}
         <section
