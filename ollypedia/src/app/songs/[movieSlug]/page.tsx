@@ -50,7 +50,6 @@ export default async function MovieSongsPage({ params }: Props) {
   }
 
   const songs = movie.media.songs;
-  const albumUrl = `${SITE_URL}/songs/${movie.slug || movie._id}`;
   const movieUrl = `${SITE_URL}/movie/${movie.slug || movie._id}`;
 
   // Extract all singers to list them in the schema and UI
@@ -67,7 +66,6 @@ export default async function MovieSongsPage({ params }: Props) {
     "@type": "MusicAlbum",
     "name": `${movie.title} Original Motion Picture Soundtrack`,
     "url": movieUrl,
-    "sameAs": albumUrl,
     "image": movie.posterUrl,
     "albumReleaseType": "Soundtrack",
     "byArtist": allSingers.map(s => ({ "@type": "Person", "name": s })),
@@ -79,7 +77,7 @@ export default async function MovieSongsPage({ params }: Props) {
     "track": songs.map((s: any, i: number) => ({
       "@type": "MusicRecording",
       "name": s.title,
-      "url": `${albumUrl}/${i}/${s.slug || String(s.title).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      "url": `${movieUrl}/${i}/${s.slug || String(s.title).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
       "byArtist": s.singer ? [{ "@type": "Person", "name": s.singer }] : undefined,
       "duration": s.duration || undefined
     }))

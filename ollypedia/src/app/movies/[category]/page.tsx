@@ -163,13 +163,22 @@ export async function generateMetadata({
   if (!cfg) return {};
   
   const page = parseInt(searchParams?.page || "1", 10);
-  const pageLabel = page > 1 ? ` | Page ${page}` : "";
+
+  if (page > 1) {
+    return {
+      robots: { index: false, follow: true },
+      title: `${cfg.metaTitle} | Page ${page}`,
+      alternates: {
+        canonical: `${SITE_URL}/movies/${params.category}`,
+      },
+    };
+  }
 
   return buildMeta({
-    title:       `${cfg.metaTitle}${pageLabel}`,
-    description: `${cfg.metaDesc}${page > 1 ? ` (Page ${page})` : ""}`,
+    title:       cfg.metaTitle,
+    description: cfg.metaDesc,
     keywords:    cfg.keywords,
-    url:         page > 1 ? `/movies/${params.category}?page=${page}` : `/movies/${params.category}`,
+    url:         `/movies/${params.category}`,
   });
 }
 

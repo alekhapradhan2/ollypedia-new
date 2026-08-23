@@ -190,13 +190,31 @@ export async function GET() {
     });
 
     // ── Cast ───────────────────────────────────────────────────────────────
-    const casts = await Cast.find({}, "_id slug name updatedAt createdAt").lean() as any[];
+    // ★ SEO FIX: Only submit cast profiles with substantive content
+    // (non-empty bio OR profile photo OR at least 2 linked movies).
+    // Eliminates thousands of thin cast stubs from the sitemap, freeing up
+    // crawl budget for primary movies, reviews, and high-value entities.
+    const casts = await Cast.find(
+      {
+        $or: [
+          { bio: { $exists: true, $nin: ["", null] } },
+          { photo: { $exists: true, $nin: ["", null] } },
+          { "movies.1": { $exists: true } }, // at least 2 movies
+        ],
+      },
+      "_id slug name bio photo movies updatedAt createdAt"
+    ).lean() as any[];
 
     casts.forEach((c) => {
       if (!c.name?.trim()) return;
+      const hasBio = typeof c.bio === "string" && c.bio.trim().length > 0;
+      const hasPhoto = typeof c.photo === "string" && c.photo.trim().length > 0;
+      const hasMultipleMovies = Array.isArray(c.movies) && c.movies.length >= 2;
+      if (!hasBio && !hasPhoto && !hasMultipleMovies) return;
+
       const lastmod = safeDate(c.updatedAt ?? c.createdAt);
       // Route is /cast/[id] — always use MongoDB _id, never slug
-      entries.push(urlEntry(`${SITE_URL}/cast/${String(c._id)}`, lastmod, "weekly", "0.9")); // Boosted for Sitelinks
+      entries.push(urlEntry(`${SITE_URL}/cast/${String(c._id)}`, lastmod, "weekly", "0.85"));
     });
 
     // ── Blogs ──────────────────────────────────────────────────────────────
