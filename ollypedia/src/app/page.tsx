@@ -14,6 +14,7 @@ import {
   ChevronRight, Clapperboard, Users, Mic2, Trophy, Flame, Clock, Info,
 } from "lucide-react";
 import { CommunityMovieCard, type CommunityMovieData } from "@/components/community/CommunityMovieCard";
+import { CommunityInfoModal } from "@/components/community/CommunityInfoModal";
 import HeroCarousel, { type HeroMovie } from "@/components/layout/HeroCarousel";
 import { InFeedAd } from "@/components/ads/InFeedAd";
 import { DisplayAd } from "@/components/ads/DisplayAd";
@@ -496,45 +497,7 @@ export default async function HomePage() {
                   <h2 className="font-display text-lg sm:text-xl font-black text-white leading-tight">
                     The Ollypedia <span className="text-orange-400">Movie Community</span>
                   </h2>
-                  {/* Info icon with CSS-only tooltip */}
-                  <div className="relative group/info flex-shrink-0">
-                    <button
-                      type="button"
-                      aria-label="About Ollypedia Community"
-                      className="w-5 h-5 rounded-full bg-white/5 border border-white/10 hover:border-orange-500/40 hover:bg-orange-500/10 flex items-center justify-center transition-all cursor-help"
-                    >
-                      <Info className="w-3 h-3 text-gray-500 group-hover/info:text-orange-400 transition-colors" />
-                    </button>
-                    {/* Tooltip */}
-                    <div className="absolute left-0 top-full mt-2 z-50 w-72 sm:w-80 pointer-events-none opacity-0 group-hover/info:opacity-100 transition-opacity duration-200">
-                      <div className="bg-[#1a1a1a] border border-orange-500/20 rounded-2xl p-4 shadow-2xl shadow-black/60">
-                        {/* Arrow */}
-                        <div className="absolute -top-1.5 left-3 w-3 h-3 bg-[#1a1a1a] border-l border-t border-orange-500/20 rotate-45" />
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-6 h-6 rounded-lg bg-orange-500/15 border border-orange-500/30 flex items-center justify-center flex-shrink-0">
-                            <Users className="w-3.5 h-3.5 text-orange-400" />
-                          </div>
-                          <p className="text-xs font-black text-white">Ollypedia Community</p>
-                        </div>
-                        <p className="text-[11px] text-zinc-400 leading-relaxed mb-3">
-                          The Ollypedia Community is the official hub for Odia cinema fans. Vote on movies using the <strong className="text-white">Ollypedia Meter</strong>, join live discussion rooms, share audience reviews, and connect with thousands of Ollywood enthusiasts.
-                        </p>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          {[
-                            { emoji: "🩷", label: "Skip" },
-                            { emoji: "🟡", label: "Timepass" },
-                            { emoji: "🟢", label: "Go for it" },
-                            { emoji: "🟣", label: "Perfection" },
-                          ].map(({ emoji, label }) => (
-                            <div key={label} className="flex items-center gap-1.5 bg-white/4 rounded-lg px-2 py-1">
-                              <span className="text-xs">{emoji}</span>
-                              <span className="text-[10px] text-zinc-400 font-medium">{label}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <CommunityInfoModal />
                 </div>
               </div>
             </div>
