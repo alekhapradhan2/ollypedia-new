@@ -23,6 +23,9 @@ import Cast          from "@/models/Cast";
 import Blog          from "@/models/Blog";
 import { SITE_URL }  from "@/lib/seo";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function xmlEsc(s: string) {

@@ -7,6 +7,9 @@ import { SITE_URL } from "@/lib/seo";
 import { connectDB } from "@/lib/db";
 import Blog from "@/models/Blog";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const FEED_URL = `${SITE_URL}/blog/feed.xml`;
 
 function escapeXml(str: string): string {
