@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  cacheMaxMemorySize: 0, // Disable in-memory cache entirely, forcing disk cache to prevent RAM exhaustion on Hostinger (512MB)
+  ...(process.env.LOW_MEMORY === "1" ? { cacheMaxMemorySize: 0 } : {}),
   experimental: {
     instrumentationHook: true, // remove if you're on Next.js 15+
   },
