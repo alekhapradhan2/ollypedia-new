@@ -211,10 +211,19 @@ export default async function BoxOfficePage({
       ...(movie.wikipediaUrl && { "sameAs": [movie.wikipediaUrl] }),
       ...(movie.director && { "director": { "@type": "Person", "name": movie.director } }),
       ...(movie.cast?.length > 0 && {
-        "actor": movie.cast.slice(0, 5).map((c: any) => ({
-          "@type": "Person",
-          "name":  c.name,
-        })),
+        "actor": (() => {
+          const CREW_LOWER = ["director", "producer", "writer", "screenplay", "story", "dialogue", "music", "cinematographer", "editor", "choreographer", "art director", "costume", "sound", "stunt", "vfx", "singer", "lyricist", "dop", "d.o.p"];
+          const actors = (movie.cast || []).filter((c: any) => {
+            const r = (c.role || "").toLowerCase();
+            const t = (c.type || "").toLowerCase();
+            return !CREW_LOWER.some((cr) => r.includes(cr) || t.includes(cr));
+          });
+          const uniqueActors = Array.from(new Set(actors.map((a: any) => a.name).filter(Boolean)));
+          return uniqueActors.slice(0, 5).map((name) => ({
+            "@type": "Person",
+            "name":  name,
+          }));
+        })(),
       }),
       ...(songs.length > 0 && {
         "musicBy": songs[0]?.musicDirector

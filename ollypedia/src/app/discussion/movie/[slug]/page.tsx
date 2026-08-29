@@ -67,7 +67,7 @@ export default async function MovieDiscussionPage({
     $or: [{ slug }, { _id: slug.match(/^[0-9a-fA-F]{24}$/) ? slug : null }],
   })
     .select(
-      "title slug posterUrl thumbnailUrl bannerUrl releaseDate releaseDatePrecision releaseTBA interestedYes interestedNo status language genre synopsis verdict runtime media ott boxOffice"
+      "title slug posterUrl thumbnailUrl bannerUrl releaseDate releaseDatePrecision releaseTBA interestedYes interestedNo status language genre synopsis verdict runtime media ott boxOffice boxOfficeDays reReleaseBoxOfficeDays"
     )
     .lean() as any;
 
@@ -192,7 +192,7 @@ export default async function MovieDiscussionPage({
           hasSongs: Boolean(movie.media?.songs?.length),
           hasTrailers: Boolean(movie.media?.videos?.length),
           hasOtt: Boolean(movie.ott?.platform),
-          hasBoxOffice: Boolean(movie.boxOffice?.total || movie.boxOffice?.opening),
+          hasBoxOffice: Boolean(movie.boxOfficeDays?.length || movie.reReleaseBoxOfficeDays?.length),
         }}
         initialMeter={initialMeter}
         initialThreads={JSON.parse(JSON.stringify(threads))}
