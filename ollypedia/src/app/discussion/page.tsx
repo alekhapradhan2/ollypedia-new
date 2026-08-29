@@ -9,6 +9,7 @@ import DiscussionComment from "@/models/community/DiscussionComment";
 import { CommunityMovieCard, CommunityMovieData } from "@/components/community/CommunityMovieCard";
 import { DiscussionLandingClient } from "@/components/community/DiscussionLandingClient";
 import { CommunityGuideButton } from "@/components/community/CommunityGuideButton";
+import { DiscussionTourModal } from "@/components/community/DiscussionTourModal";
 import { Sparkles, MessageSquare, TrendingUp, Calendar, Clock, Flame, Film, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { DisplayAd } from "@/components/ads/DisplayAd";
@@ -502,6 +503,9 @@ export default async function DiscussionLandingPage() {
 
           <DiscussionLandingClient initialMovies={initialCommunityMovies} />
         </section>
+
+        {/* Community Tour Modal (Only opens when user clicks 'How it works') */}
+        <DiscussionTourModal />
       </div>
     </>
   );

@@ -938,28 +938,42 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet: initialT
                     </div>
                   </div>
 
-                  {cast.length > 0 && (
-                    <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-5">
-                      <h3 className="text-sm font-bold text-orange-300 mb-2">Cast & Director</h3>
-                      <p className="text-sm text-gray-400 leading-relaxed">
-                        {trackTitle} features{" "}
-                        {cast.slice(0, 4).map((c, i) => (
-                          <span key={i}>
-                            <strong className="text-gray-300">{c.name}</strong>
-                            {c.role ? ` as ${c.role}` : ""}
-                            {i < Math.min(cast.length, 4) - 1 ? ", " : ""}
-                          </span>
-                        ))}{movie.director ? ` directed by ${movie.director}` : ""}.
-                        {movie.synopsis ? ` ${movie.synopsis.slice(0, 180)}${movie.synopsis.length > 180 ? "…" : ""}` : ""}
-                      </p>
-                      <div className="mt-3">
-                        <Link href={`/movie/${movie.slug}`}
-                          className="text-xs text-orange-400 hover:text-orange-300 font-semibold transition-colors">
-                          View full movie details →
-                        </Link>
+                  {(() => {
+                    const CREW_LOWER = ["director", "producer", "writer", "screenplay", "story", "dialogue", "music", "cinematographer", "editor", "choreographer", "art director", "costume", "sound", "stunt", "vfx", "singer", "lyricist", "dop", "d.o.p"];
+                    const actors = (cast || []).filter((c: any) => {
+                      const r = (c.role || "").toLowerCase();
+                      const t = (c.type || "").toLowerCase();
+                      return !CREW_LOWER.some((cr) => r.includes(cr) || t.includes(cr));
+                    });
+                    const uniqueActors = Array.from(new Set(actors.map((a: any) => a.name).filter(Boolean)));
+                    
+                    if (uniqueActors.length === 0 && !movie.director) return null;
+
+                    return (
+                      <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-5">
+                        <h3 className="text-sm font-bold text-orange-300 mb-2">Cast &amp; Crew</h3>
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                          {uniqueActors.length > 0 ? (
+                            <>
+                              {trackTitle} stars <strong className="text-gray-300">{uniqueActors.slice(0, 4).join(", ")}</strong>
+                              {movie.director ? ` and is directed by ${movie.director}` : ""}.
+                            </>
+                          ) : (
+                            <>
+                              {trackTitle} is directed by <strong className="text-gray-300">{movie.director}</strong>.
+                            </>
+                          )}
+                          {movie.synopsis ? ` ${movie.synopsis.slice(0, 180)}${movie.synopsis.length > 180 ? "…" : ""}` : ""}
+                        </p>
+                        <div className="mt-3">
+                          <Link href={`/movie/${movie.slug}`}
+                            className="text-xs text-orange-400 hover:text-orange-300 font-semibold transition-colors">
+                            View full movie details →
+                          </Link>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </section>
 
                 {/* ── Week-wise Collection Grid ── */}

@@ -34,6 +34,28 @@ function toSlug(str?: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
+function stripHtml(str?: string): string {
+  if (!str) return "";
+  return str
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cleanTruncate(text?: string, maxLen = 160): string {
+  if (!text) return "";
+  const cleaned = stripHtml(text);
+  if (cleaned.length <= maxLen) return cleaned;
+  const sub = cleaned.slice(0, maxLen);
+  const lastSpace = sub.lastIndexOf(" ");
+  return (lastSpace > maxLen * 0.7 ? sub.slice(0, lastSpace) : sub).trim() + "...";
+}
+
 // ─── Static params ─────────────────────────────────────────────
 // Pre-render top 100 most recently published blogs at build time (hybrid strategy).
 export async function generateStaticParams() {
@@ -101,9 +123,6 @@ async function getRelatedBlogs(currentSlug: string, category?: string) {
   return JSON.parse(JSON.stringify([...sameCat, ...others]));
 }
 
-// getMisspellings REMOVED — Google handles misspelling matching automatically.
-// Intentional misspellings in <meta keywords> trigger spam/keyword-stuffing penalties.
-
 // ─── Metadata ─────────────────────────────────────────────────
 export async function generateMetadata({
   params,
@@ -113,16 +132,9 @@ export async function generateMetadata({
   const blog = await getBlog(params.slug);
   if (!blog) return { robots: { index: false, follow: false } };
 
-// FIXED — uses seoTitle from BoxOfficePanel, falls back gracefully
-const title = blog.seoTitle || blog.title;
-
-// FIXED — strip any HTML tags (e.g. <h2>, <p>) from excerpt or content for clean meta description
-const rawDesc = blog.seoDesc || blog.excerpt || blog.content || "";
-const description = rawDesc
-  .replace(/<[^>]+>/g, " ")
-  .replace(/\s+/g, " ")
-  .trim()
-  .slice(0, 160) || `Read ${blog.title} on Ollypedia...`;
+  const title = blog.seoTitle || blog.title;
+  const rawDesc = blog.seoDesc || blog.excerpt || blog.content || "";
+  const description = cleanTruncate(rawDesc, 160) || `Read ${blog.title} on Ollypedia...`;
   const image     = blog.coverImage || `${SITE_URL}/default.jpg`;
   const canonical = `${SITE_URL}/blog/${blog.slug}`;
 
@@ -213,8 +225,7 @@ function SeoInterlinks({ blog, movie }: { blog: any; movie: any | null }) {
       <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-5 mb-5">
         <h2 className="text-white font-bold text-sm mb-2">About This Article</h2>
         <div className="text-gray-400 text-sm leading-relaxed">
-          {blog.excerpt ||
-            blog.content?.replace(/<[^>]+>/g, "").slice(0, 200) ||
+          {cleanTruncate(blog.excerpt || blog.content, 220) ||
             `${blog.title} — Read the full story on Ollypedia, your home for Odia cinema news, reviews, and entertainment.`}
           {movie && (
             <>
@@ -544,7 +555,7 @@ export default async function BlogPage({ params }: { params: { slug: string } })
   // ─── FAQ items for JSON-LD ───────────────────────────────────
   const faqItems = blog.movieTitle
     ? [
-        { q: `What is ${blog.movieTitle} Odia movie about?`,          a: cleanExcerpt.slice(0, 250) || `${blog.movieTitle} is an Odia (Ollywood) film covered on Ollypedia.` },
+        { q: `What is ${blog.movieTitle} Odia movie about?`,          a: cleanTruncate(blog.seoDesc || blog.excerpt || blog.content, 250) || `${blog.movieTitle} is an Odia (Ollywood) film covered on Ollypedia.` },
         { q: `Is ${blog.movieTitle} worth watching?`,                  a: `Read the full review and audience ratings for ${blog.movieTitle} on this Ollypedia article.` },
         { q: `Who is in the cast of ${blog.movieTitle}?`,             a: `Full cast and crew of ${blog.movieTitle} are listed on the movie page on Ollypedia.` },
         { q: `What is ${blog.movieTitle} box office collection?`,      a: `Day-wise box office collection of ${blog.movieTitle} is tracked on Ollypedia's box office page.` },
@@ -570,7 +581,7 @@ export default async function BlogPage({ params }: { params: { slug: string } })
           ? ["Article", "NewsArticle", "ReportageNewsArticle"]
           : ["Article", "NewsArticle"],
         "headline":        blog.title,
-        "description":     cleanExcerpt.slice(0, 200) || "",
+        "description":     cleanTruncate(blog.seoDesc || blog.excerpt || blog.content, 200) || "",
         "datePublished":   blog.createdAt ? new Date(blog.createdAt).toISOString() : undefined,
         "dateModified":    blog.updatedAt ? new Date(blog.updatedAt).toISOString() : undefined,
         // ★ Google requires ImageObject (not bare string) for NewsArticle Top Stories eligibility
@@ -627,10 +638,19 @@ export default async function BlogPage({ params }: { params: { slug: string } })
             ...(movieYear && { "dateCreated": String(movieYear) }),
             ...(movie.director && { "director": { "@type": "Person", "name": movie.director } }),
             ...(movie.cast?.length > 0 && {
-              "actor": movie.cast.slice(0, 5).map((c: any) => ({
-                "@type": "Person",
-                "name": typeof c === "string" ? c : c?.name || "",
-              })).filter((a: any) => a.name),
+              "actor": (() => {
+                const CREW_LOWER = ["director", "producer", "writer", "screenplay", "story", "dialogue", "music", "cinematographer", "editor", "choreographer", "art director", "costume", "sound", "stunt", "vfx", "singer", "lyricist", "dop", "d.o.p"];
+                const actors = (movie.cast || []).filter((c: any) => {
+                  const r = (c?.role || "").toLowerCase();
+                  const t = (c?.type || "").toLowerCase();
+                  return !CREW_LOWER.some((cr) => r.includes(cr) || t.includes(cr));
+                });
+                const uniqueActors = Array.from(new Set(actors.map((a: any) => typeof a === "string" ? a : a?.name).filter(Boolean)));
+                return uniqueActors.slice(0, 5).map((name: any) => ({
+                  "@type": "Person",
+                  "name": name,
+                }));
+              })(),
             }),
           },
         }),

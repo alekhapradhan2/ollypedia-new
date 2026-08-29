@@ -23,6 +23,9 @@ import Cast          from "@/models/Cast";
 import Blog          from "@/models/Blog";
 import { SITE_URL }  from "@/lib/seo";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function xmlEsc(s: string) {
@@ -161,13 +164,13 @@ export async function GET() {
     // ── Movies + Songs ─────────────────────────────────────────────────────
     const movies = await Movie.find(
       {},
-      "slug _id releaseDate updatedAt createdAt media.songs media.videos boxOfficeDays ott streamingOn"
+      "slug _id releaseDate updatedAt createdAt media.songs media.videos boxOfficeDays reReleaseBoxOfficeDays ott streamingOn"
     ).lean() as any[];
 
     movies.forEach((m) => {
       const movieSlug   = m.slug || String(m._id);
       const lastmod     = safeDate(m.updatedAt ?? m.createdAt ?? m.releaseDate);
-      const hasBoxOffice = m.boxOfficeDays?.length > 0;
+      const hasBoxOffice = (m.boxOfficeDays?.length > 0) || (m.reReleaseBoxOfficeDays?.length > 0);
       const hasTrailerVideo = !!(m.media?.videos && m.media.videos.length > 0 && m.media.videos.some((v: any) => v.ytId));
 
       // Movie detail page — primary indexable entity (highest priority)

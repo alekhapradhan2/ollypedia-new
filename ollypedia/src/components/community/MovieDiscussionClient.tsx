@@ -135,6 +135,17 @@ export function MovieDiscussionClient({
     ? new Date(movie.releaseDate).getFullYear()
     : null;
 
+  const dateStr = movie.releaseDate ? String(movie.releaseDate).trim() : "";
+  const parsedTime = dateStr ? new Date(dateStr).getTime() : NaN;
+  const isFutureDate = !isNaN(parsedTime) && parsedTime > Date.now();
+
+  const isUnreleased =
+    movie.verdict === "Upcoming" ||
+    movie.status === "Upcoming" ||
+    Boolean(movie.releaseTBA) ||
+    dateStr.toUpperCase() === "TBA" ||
+    isFutureDate;
+
   // Refresh Meter stats dynamically
   const fetchMeterStats = useCallback(async () => {
     try {
@@ -471,66 +482,52 @@ export function MovieDiscussionClient({
       </div>
 
       {/* ── Ollypedia Meter OR Are You Interested (For unreleased films) ── */}
-      {(() => {
-        const dateStr = movie.releaseDate ? String(movie.releaseDate).trim() : "";
-        const parsedTime = dateStr ? new Date(dateStr).getTime() : NaN;
-        const isFutureDate = !isNaN(parsedTime) && parsedTime > Date.now();
-
-        const isUnreleased =
-          movie.verdict === "Upcoming" ||
-          movie.status === "Upcoming" ||
-          Boolean(movie.releaseTBA) ||
-          dateStr.toUpperCase() === "TBA" ||
-          isFutureDate;
-
-        if (isUnreleased) {
-          return (
-            <div className="bg-gradient-to-b from-[#181818] to-[#121212] border border-orange-500/20 rounded-3xl p-6 sm:p-8 mb-10 shadow-xl space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-400">
-                    <Users className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                      <span>Are You Interested in {movie.title}?</span>
-                    </h2>
-                    <p className="text-xs sm:text-sm text-zinc-400 mt-0.5">
-                      Audience meter ratings unlock once the film releases in theatres. Let us know if you&apos;re excited to watch it!
-                    </p>
-                  </div>
+      {isUnreleased ? (
+        <div id="tour-interested" className="bg-gradient-to-b from-[#181818] to-[#121212] border border-orange-500/20 rounded-3xl p-5 sm:p-8 mb-10 shadow-xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-400 flex-shrink-0">
+                <Users className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-base sm:text-xl font-bold text-white tracking-tight">
+                    Are You Interested in {movie.title}?
+                  </h2>
+                  <CommunityGuideButton variant="pill" className="text-[11px] py-1 px-2.5" />
                 </div>
+                <p className="text-xs sm:text-sm text-zinc-400 mt-0.5">
+                  Audience meter ratings unlock once the film releases in theatres. Let us know if you&apos;re excited to watch it!
+                </p>
               </div>
-
-              <div className="max-w-xl mx-auto pt-2">
-                <VoteButtons
-                  movieId={movie._id}
-                  initialYes={movie.interestedYes || 0}
-                  initialNo={movie.interestedNo || 0}
-                  className="bg-[#141414] border-white/10"
-                />
-              </div>
-            </div>
-          );
-        }
-
-        return (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
-            <div className="lg:col-span-6 flex flex-col justify-between">
-              <OllypediaMeter stats={meter} movieTitle={movie.title} />
-            </div>
-
-            <div className="lg:col-span-6">
-              <VoteSelector
-                movieSlug={movieSlug}
-                movieTitle={movie.title}
-                currentVote={meter.userVote || null}
-                onVoteSuccess={handleVoteSuccess}
-              />
             </div>
           </div>
-        );
-      })()}
+
+          <div className="max-w-xl mx-auto pt-2">
+            <VoteButtons
+              movieId={movie._id}
+              initialYes={movie.interestedYes || 0}
+              initialNo={movie.interestedNo || 0}
+              className="bg-[#141414] border-white/10"
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
+          <div className="lg:col-span-6 flex flex-col justify-between">
+            <OllypediaMeter stats={meter} movieTitle={movie.title} />
+          </div>
+
+          <div className="lg:col-span-6">
+            <VoteSelector
+              movieSlug={movieSlug}
+              movieTitle={movie.title}
+              currentVote={meter.userVote || null}
+              onVoteSuccess={handleVoteSuccess}
+            />
+          </div>
+        </div>
+      )}
 
       {/* ── Unified Community Hub (Direct Comments + Threads) ── */}
       <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-xl">
@@ -906,8 +903,8 @@ export function MovieDiscussionClient({
         targetType={reportModalData.type}
       />
 
-      {/* Contextual On-Page Spotlight Tour */}
-      <MoviePageSpotlightTour />
+      {/* Contextual On-Page Spotlight Tour (Dynamic for Upcoming vs Released) */}
+      <MoviePageSpotlightTour isUpcoming={isUnreleased} />
     </div>
   );
 }

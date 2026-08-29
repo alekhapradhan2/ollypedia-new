@@ -10,10 +10,12 @@ import {
   MessageSquare,
   AlertTriangle,
   CheckCircle2,
+  Users,
+  ThumbsUp,
 } from "lucide-react";
 import { useCommunityAuth } from "@/context/CommunityAuthContext";
 
-interface StepConfig {
+export interface StepConfig {
   targetId: string;
   title: string;
   description: string;
@@ -22,47 +24,81 @@ interface StepConfig {
   placement: "bottom" | "top" | "center";
 }
 
-const SPOTLIGHT_STEPS: StepConfig[] = [
+const SPOTLIGHT_RELEASED_STEPS: StepConfig[] = [
   {
     targetId: "tour-meter",
-    badge: "1. Audience Meter",
+    badge: "1. Live Audience Meter",
     icon: Sparkles,
-    title: "Live Ollypedia Meter",
+    title: "Real-Time Movie Sentiment",
     description:
-      "This gauge displays the real-time community sentiment percentage calculated directly from verified Odia moviegoer votes.",
+      "This live meter calculates the community approval percentage from verified Odia moviegoer ratings.",
     placement: "bottom",
   },
   {
     targetId: "tour-vote",
-    badge: "2. Vote & Rate",
+    badge: "2. Cast Your Verdict",
     icon: Flame,
-    title: "Cast Your Movie Verdict",
+    title: "Rate with 4 Sentiments",
     description:
-      "Select Skip 🩷, Timepass 🟡, Go for it 🟢, or Perfection 🟣. Your vote instantly updates the meter score and you can change it anytime.",
+      "Select Skip 🩷, Timepass 🟡, Go for it 🟢, or Perfection 🟣. Your vote instantly influences the meter percentage.",
     placement: "bottom",
   },
   {
     targetId: "tour-comments-box",
     badge: "3. Direct Movie Chat",
     icon: MessageSquare,
-    title: "Leave Quick Reviews & Comments",
+    title: "Leave Reviews & Opinions",
     description:
-      "Drop a quick reaction or opinion directly on this movie without needing to create a thread first. Supports nested YouTube-style replies!",
+      "Drop a quick reaction or review directly on this movie without creating a thread. Supports YouTube-style nested replies!",
     placement: "top",
   },
   {
     targetId: "tour-spoiler",
-    badge: "4. 1-Click Spoiler Blur",
+    badge: "4. Spoiler Shield",
     icon: AlertTriangle,
     title: "Protect Movie Endings",
     description:
-      "Enable this toggle to automatically blur your comment text so other viewers can choose when to safely reveal spoilers.",
+      "Enable this toggle to blur your comment text so fellow moviegoers can safely browse without unwanted plot spoilers.",
     placement: "top",
   },
 ];
 
-export function MoviePageSpotlightTour() {
-  const { isTourOpen, openTour, closeTour } = useCommunityAuth();
+const SPOTLIGHT_UPCOMING_STEPS: StepConfig[] = [
+  {
+    targetId: "tour-interested",
+    badge: "1. Pre-Release Buzz",
+    icon: Users,
+    title: "Express Your Interest",
+    description:
+      "For upcoming movies, the Ollypedia Meter unlocks on release day. Cast your 'Interested 👍' vote now to build pre-release hype!",
+    placement: "bottom",
+  },
+  {
+    targetId: "tour-comments-box",
+    badge: "2. Pre-Release Discussion",
+    icon: MessageSquare,
+    title: "Trailers, Songs & Theories",
+    description:
+      "Share your thoughts on posters, teasers, cast announcements, and box office expectations before the film hits theatres.",
+    placement: "top",
+  },
+  {
+    targetId: "tour-spoiler",
+    badge: "3. Leak & Rumor Shield",
+    icon: AlertTriangle,
+    title: "Protect Story Surprises",
+    description:
+      "Toggle 'Mark as Spoiler' whenever discussing leaked plot details, cameo rumors, or storyline twists.",
+    placement: "top",
+  },
+];
+
+interface MoviePageSpotlightTourProps {
+  isUpcoming?: boolean;
+}
+
+export function MoviePageSpotlightTour({ isUpcoming = false }: MoviePageSpotlightTourProps) {
+  const { isTourOpen, closeTour } = useCommunityAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [windowSize, setWindowSize] = useState<{ width: number; height: number }>({
@@ -70,29 +106,21 @@ export function MoviePageSpotlightTour() {
     height: typeof window !== "undefined" ? window.innerHeight : 800,
   });
 
-  const step = SPOTLIGHT_STEPS[currentStep];
+  const steps = isUpcoming ? SPOTLIGHT_UPCOMING_STEPS : SPOTLIGHT_RELEASED_STEPS;
+  const step = steps[currentStep] || steps[0];
   const isFirst = currentStep === 0;
-  const isLast = currentStep === SPOTLIGHT_STEPS.length - 1;
+  const isLast = currentStep === steps.length - 1;
 
-  // Auto-launch spotlight guide for first-time visitors
+  // Reset to first step whenever the tour is opened by the user
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const hasSeenMovieTour = localStorage.getItem("ollypedia_movie_tour_seen");
-      if (!hasSeenMovieTour) {
-        const timer = setTimeout(() => {
-          openTour();
-        }, 800);
-        return () => clearTimeout(timer);
-      }
+    if (isTourOpen) {
+      setCurrentStep(0);
     }
-  }, [openTour]);
+  }, [isTourOpen]);
 
   const handleClose = useCallback(() => {
     closeTour();
     setCurrentStep(0);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("ollypedia_movie_tour_seen", "true");
-    }
   }, [closeTour]);
 
   // Measure and scroll target into view
@@ -106,10 +134,11 @@ export function MoviePageSpotlightTour() {
     const el = document.getElementById(step.targetId);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         const rect = el.getBoundingClientRect();
         setTargetRect(rect);
       }, 350);
+      return () => clearTimeout(timer);
     } else {
       setTargetRect(null);
     }
@@ -117,18 +146,19 @@ export function MoviePageSpotlightTour() {
 
   useEffect(() => {
     if (isTourOpen) {
-      updateTargetPosition();
+      const cleanup = updateTargetPosition();
       const handleResize = () => updateTargetPosition();
       window.addEventListener("resize", handleResize);
       window.addEventListener("scroll", handleResize);
       return () => {
+        if (cleanup) cleanup();
         window.removeEventListener("resize", handleResize);
         window.removeEventListener("scroll", handleResize);
       };
     }
   }, [isTourOpen, currentStep, updateTargetPosition]);
 
-  if (!isTourOpen) return null;
+  if (!isTourOpen || !step) return null;
 
   const Icon = step.icon;
 
@@ -146,13 +176,13 @@ export function MoviePageSpotlightTour() {
     }
   };
 
-  const isMobile = windowSize.width < 640;
+  const isMobile = windowSize.width < 768;
 
   // Calculate safe desktop tooltip coordinates
   let desktopStyle: React.CSSProperties = {};
   if (!isMobile && targetRect) {
     const cardWidth = 380;
-    const cardHeight = 220;
+    const cardHeight = 240;
 
     let left = Math.max(16, Math.min(windowSize.width - cardWidth - 16, targetRect.left));
     let top = 0;
@@ -185,13 +215,13 @@ export function MoviePageSpotlightTour() {
 
   return (
     <div className="fixed inset-0 z-[200] pointer-events-auto">
-      {/* Background click to dismiss when no target is active */}
-      {!targetRect && (
-        <div
-          className="absolute inset-0 bg-black/75 transition-opacity duration-300"
-          onClick={handleClose}
-        />
-      )}
+      {/* Background overlay with click to dismiss when no element is focused */}
+      <div
+        className={`absolute inset-0 bg-black/75 transition-opacity duration-300 ${
+          targetRect ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}
+        onClick={handleClose}
+      />
 
       {/* Target Element Spotlight Cutout (Crystal-Clear Target, Dimmed Background) */}
       {targetRect && (
@@ -217,7 +247,7 @@ export function MoviePageSpotlightTour() {
         style={!isMobile && targetRect ? desktopStyle : undefined}
         className={`fixed z-[202] bg-[#161616] border border-orange-500/40 rounded-3xl p-4 sm:p-6 shadow-2xl shadow-orange-500/20 transition-all duration-300 animate-in fade-in zoom-in-95 ${
           isMobile
-            ? "bottom-4 inset-x-3.5 max-w-lg mx-auto"
+            ? "bottom-4 inset-x-3 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
             : !targetRect
             ? "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px]"
             : "w-[380px]"
@@ -226,14 +256,14 @@ export function MoviePageSpotlightTour() {
         {/* Header with Step indicator and Close button */}
         <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
           <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-orange-500/15 border border-orange-500/30 text-orange-400">
-            <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            <span>{step.badge}</span>
+            <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
+            <span className="truncate">{step.badge}</span>
           </span>
 
           <button
             type="button"
             onClick={handleClose}
-            className="p-1.5 rounded-full text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-full text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition-colors flex-shrink-0"
             aria-label="Close tour"
           >
             <X className="w-4 h-4" />
@@ -251,7 +281,7 @@ export function MoviePageSpotlightTour() {
         {/* Step dots & Action buttons */}
         <div className="flex items-center justify-between gap-2 pt-2.5 sm:pt-3 border-t border-white/10">
           <div className="flex items-center gap-1 sm:gap-1.5">
-            {SPOTLIGHT_STEPS.map((s, idx) => (
+            {steps.map((s, idx) => (
               <div
                 key={s.targetId}
                 className={`h-1.5 rounded-full transition-all duration-200 ${

@@ -206,6 +206,16 @@ function getProducerFromCast(castList: any[]): string | undefined {
   return found?.name;
 }
 
+// Clean truncation helper that respects word boundaries to avoid broken mid-word endings in Schema/HTML
+function cleanTruncate(text?: string, maxLen = 300): string {
+  if (!text) return "";
+  const trimmed = text.trim();
+  if (trimmed.length <= maxLen) return trimmed;
+  const sub = trimmed.slice(0, maxLen);
+  const lastSpace = sub.lastIndexOf(" ");
+  return (lastSpace > maxLen * 0.7 ? sub.slice(0, lastSpace) : sub).trim() + "...";
+}
+
 
 
 // ─── Data helpers ─────────────────────────────────────────────────────────
@@ -340,7 +350,7 @@ function buildFaqJsonLd(movie: any, year: string | number, avgRating: number | n
   const items = [
     {
       question: `What is ${movie.title} movie about?`,
-      answer: movie.synopsis?.slice(0, 300) ||
+      answer: cleanTruncate(movie.synopsis, 300) ||
         `${movie.title} is an Odia ${movie.genre?.join(", ") || "drama"} film${year ? ` released in ${year}` : ""}${directorName ? `, directed by ${directorName}` : ""}.`,
     },
     ...(() => {
@@ -352,11 +362,17 @@ function buildFaqJsonLd(movie: any, year: string | number, avgRating: number | n
         answer: `${movie.title} features ${actorNames.slice(0, 5).join(", ")}.`,
       }];
     })(),
-    ...(movie.verdict ? [{
+    // FIX: "was declared a Upcoming" is grammatically wrong for verdict="Upcoming".
+    // For released movies use the verdict label directly; for upcoming movies skip the box-office FAQ
+    // entirely since there is no data yet and the garbled grammar hurts content quality signals.
+    ...(movie.verdict && movie.verdict !== "Upcoming" ? [{
       question: `What is the box office verdict of ${movie.title}?`,
-      answer: `${movie.title} was declared a ${movie.verdict} at the Ollywood box office.`,
+      answer: `${movie.title} was declared ${movie.verdict} at the Ollywood box office.`,
     }] : []),
-    ...(avgRating !== null ? [{
+    // FIX: Only show the "worth watching" FAQ for released movies that have at least 3 real
+    // user reviews. Showing "10/10 from 1 reviews" for an unreleased film is a quality signal
+    // Google will penalise as auto-generated misleading content.
+    ...(avgRating !== null && movie.verdict !== "Upcoming" && (movie.reviews?.length ?? 0) >= 3 ? [{
       question: `Is ${movie.title} worth watching?`,
       answer: `Based on user reviews on Ollypedia, ${movie.title} has an average rating of ${(avgRating as number).toFixed(1)}/10 from ${movie.reviews?.length} reviews.`,
     }] : []),
@@ -368,39 +384,48 @@ function buildFaqJsonLd(movie: any, year: string | number, avgRating: number | n
       question: `Who is the director of ${movie.title}?`,
       answer: `${movie.title} was directed by ${directorName}${producerName ? ` and produced by ${producerName}` : ""}${year ? ` (${year})` : ""}.`,
     }] : []),
-    // OTT FAQ — critical for search visibility
-    {
+    ...(directorName && year ? [{
+      question: `What is the release date of ${movie.title}?`,
+      answer: movie.releaseDate
+        ? `${movie.title} ${movie.verdict === "Upcoming" ? "is scheduled to release" : "was released"} on ${new Date(movie.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.`
+        : `The release date of ${movie.title} has not been officially confirmed yet.`,
+    }] : []),
+    // OTT FAQ — only emit when a platform is confirmed OR the movie has already released
+    // (post-release movies legitimately answer "not on OTT yet").
+    // FIX: Suppress speculative "may release on Aao NXT…" boilerplate for upcoming movies:
+    // it is identical across hundreds of pages and Google treats it as thin template content.
+    ...(movie.streamingOn ? [{
       question: `Is ${movie.title} available on OTT?`,
-      answer: movie.streamingOn
-        ? (() => {
-            const od = movie.ottReleaseDate || "";
-            const tba = od === "TBA";
-            const live = !tba && (!od || new Date(od) <= new Date());
-            const coming = !tba && !!od && new Date(od) > new Date();
-            const fmtD = od && od !== "TBA" ? new Date(od).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"}) : "";
-            if (live) return `Yes, ${movie.title} is currently streaming on ${movie.streamingOn}${movie.streamingUrl ? ` at ${movie.streamingUrl}` : ""}. You can watch it online now.`;
-            if (coming) return `${movie.title} will be available on ${movie.streamingOn} from ${fmtD}. It has not yet released on OTT.`;
-            if (tba) return `${movie.title} is confirmed for OTT release on ${movie.streamingOn}. The exact date has not been announced yet.`;
-            return `${movie.title} is available to stream on ${movie.streamingOn}.`;
-          })()
-        : `The OTT release date and platform for ${movie.title} have not been officially announced. It may release on Aao NXT, Tarang Plus, or Kanccha Lannka. Follow Ollypedia for updates.`,
+      answer: (() => {
+        const od = movie.ottReleaseDate || "";
+        const tba = od === "TBA";
+        const live = !tba && (!od || new Date(od) <= new Date());
+        const coming = !tba && !!od && new Date(od) > new Date();
+        const fmtD = od && od !== "TBA" ? new Date(od).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "";
+        if (live) return `Yes, ${movie.title} is currently streaming on ${movie.streamingOn}${movie.streamingUrl ? ` at ${movie.streamingUrl}` : ""}. You can watch it online now.`;
+        if (coming) return `${movie.title} will be available on ${movie.streamingOn} from ${fmtD}. It has not yet released on OTT.`;
+        if (tba) return `${movie.title} is confirmed for OTT release on ${movie.streamingOn}. The exact date has not been announced yet.`;
+        return `${movie.title} is available to stream on ${movie.streamingOn}.`;
+      })(),
     },
     {
       question: `When is the OTT release date of ${movie.title}?`,
-      answer: movie.streamingOn
-        ? (() => {
-            const od = movie.ottReleaseDate || "";
-            const tba = od === "TBA";
-            const live = !tba && (!od || new Date(od) <= new Date());
-            const coming = !tba && !!od && new Date(od) > new Date();
-            const fmtD = od && od !== "TBA" ? new Date(od).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"}) : "";
-            if (live) return `${movie.title} has already released on OTT${od && od !== "TBA" ? ` on ${fmtD}` : ""}. It is now streaming on ${movie.streamingOn}.`;
-            if (coming) return `The OTT release date of ${movie.title} is ${fmtD}. It will stream on ${movie.streamingOn}.`;
-            if (tba) return `The OTT release date of ${movie.title} on ${movie.streamingOn} is to be announced (TBA).`;
-            return `${movie.title} is streaming on ${movie.streamingOn}.`;
-          })()
-        : `The OTT release date of ${movie.title} has not been announced yet.`,
-    },
+      answer: (() => {
+        const od = movie.ottReleaseDate || "";
+        const tba = od === "TBA";
+        const live = !tba && (!od || new Date(od) <= new Date());
+        const coming = !tba && !!od && new Date(od) > new Date();
+        const fmtD = od && od !== "TBA" ? new Date(od).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "";
+        if (live) return `${movie.title} has already released on OTT${od && od !== "TBA" ? ` on ${fmtD}` : ""}. It is now streaming on ${movie.streamingOn}.`;
+        if (coming) return `The OTT release date of ${movie.title} is ${fmtD}. It will stream on ${movie.streamingOn}.`;
+        if (tba) return `The OTT release date of ${movie.title} on ${movie.streamingOn} is to be announced (TBA).`;
+        return `${movie.title} is streaming on ${movie.streamingOn}.`;
+      })(),
+    }] : movie.verdict !== "Upcoming" ? [{
+      // Post-release movies without a confirmed OTT platform: answer the question factually.
+      question: `Is ${movie.title} available on OTT?`,
+      answer: `The official OTT platform for ${movie.title} has not been announced yet. Odia movies typically stream on Aao NXT, Tarang Plus, or Kanccha Lannka. Follow Ollypedia for the latest ${movie.title} OTT release date updates.`,
+    }] : []),
   ];
   return {
     "@context": "https://schema.org",
@@ -571,7 +596,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
     name: movie.title,
     url: canonical,
     ...(movie.posterUrl || movie.thumbnailUrl ? { image: movie.posterUrl || movie.thumbnailUrl } : {}),
-    ...(effectiveSynopsis ? { description: effectiveSynopsis.slice(0, 300) } : {}),
+    ...(effectiveSynopsis ? { description: cleanTruncate(effectiveSynopsis, 300) } : {}),
     ...(movie.releaseDate ? { datePublished: movie.releaseDate } : {}),
     inLanguage: movie.language || "Odia",
     countryOfOrigin: { "@type": "Country", name: "India" },
@@ -580,12 +605,16 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
     ...(actorObjects.length ? { actor: actorObjects } : {}),
     ...(directorPersonObj.length ? { director: directorPersonObj } : {}),
     ...(producerName ? { producer: { "@type": "Person", name: producerName } } : {}),
-    ...(avgRating !== null ? {
+    // FIX: Suppress aggregateRating for unreleased movies and pages with <3 reviews.
+    // "Upcoming" verdict = not yet in cinemas; "interested" votes are not reviews.
+    // Emitting 10.0/10 from 1 vote on an unreleased film violates Google structured-data
+    // guidelines and is a confirmed quality signal that blocks indexing.
+    ...(!isUnreleased && avgRating !== null && (movie.reviews?.length ?? 0) >= 3 ? {
       aggregateRating: {
         "@type": "AggregateRating",
         ratingValue: (avgRating as number).toFixed(1),
         bestRating: "10", worstRating: "1",
-        reviewCount: String(movie.reviews?.length || 1),
+        reviewCount: String(movie.reviews?.length),
       },
     } : {}),
 ...(movie._allProductionNames?.length ? {
@@ -611,8 +640,10 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
       },
     } : {}),
     subjectOf: [
-      { "@type": "WebPage", name: `${movie.title} Box Office Collection`, url: `${SITE_URL}/box-office/${movie.slug || movie._id}` },
-      { "@type": "WebPage", name: `${movie.title} Songs & Audio`, url: `${SITE_URL}/songs/${movie.slug || movie._id}` },
+      ...((Array.isArray(movie.boxOfficeDays) && movie.boxOfficeDays.length > 0) || (Array.isArray(movie.reReleaseBoxOfficeDays) && movie.reReleaseBoxOfficeDays.length > 0)
+        ? [{ "@type": "WebPage", name: `${movie.title} Box Office Collection`, url: `${SITE_URL}/box-office/${movie.slug || movie._id}` }]
+        : []),
+      ...((movie.media?.songs?.length > 0) ? [{ "@type": "WebPage", name: `${movie.title} Songs & Audio`, url: `${SITE_URL}/songs/${movie.slug || movie._id}` }] : []),
       { "@type": "WebPage", name: `${movie.title} Reviews & News`, url: `${SITE_URL}/blog?q=${encodeURIComponent(movie.title)}` }
     ]
   };
@@ -924,7 +955,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                 <span>Community &amp; Discussion</span>
               </Link>
             </li>
-            {(movie.boxOffice?.opening || movie.boxOffice?.total || movie.boxOfficeDays?.length > 0) && (
+            {((Array.isArray(movie.boxOfficeDays) && movie.boxOfficeDays.length > 0) || (Array.isArray(movie.reReleaseBoxOfficeDays) && movie.reReleaseBoxOfficeDays.length > 0)) && (
               <li>
                 <Link href={`/box-office/${movie.slug || movie._id}`} className="block px-3 py-1.5 text-[11px] sm:text-sm font-semibold text-gray-400 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg whitespace-nowrap transition-colors">
                   Box Office
@@ -1502,27 +1533,200 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
             {/* ── User Reviews (released movies) / Are You Interested (Upcoming, TBA) ──
                 Upcoming and TBA movies haven't released yet, so there's nothing
                 to review — showing an empty review form there read as broken.
-                The interest vote now lives here instead, replacing the section
-                entirely rather than sitting alongside it. */}
-            {isUnreleased ? (
-              <section aria-label={`Are you interested in ${movie.title}?`} className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-5 sm:p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-1 h-6 bg-orange-500 rounded flex-shrink-0" />
-                  <h2 className="text-lg sm:text-xl font-extrabold text-white flex items-center gap-2">
-                    <Users className="w-[18px] h-[18px] text-orange-500" />
-                    Are You Interested?
+                              border text-sm font-black transition-all group ${brand.btn}`}>
+                            <OttLogoImg platform={movie.streamingOn} size="sm" />
+                            Watch on {movie.streamingOn}
+                            <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                          </a>
+                        ) : (isTBA || isComing) ? (
+                          <div className="text-center py-2 text-xs text-gray-600">
+                            {isTBA
+                              ? "📢 OTT release date not yet announced. Follow Ollypedia for updates."
+                              : `⏳ Streaming begins in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}. Check back on Ollypedia.`}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </section>
+            )}
+
+            <div className="py-2">
+              <DisplayAd slot="8191172163" format="auto" />
+            </div>
+
+            {/* ── Crew ── */}
+            {(() => {
+              const { crew, cast: castOnly } = splitCastCrew(movie.cast || []);
+              return (
+                <>
+                  {crew.length > 0 && (
+                    <section aria-label={`${movie.title} crew`}>
+                      <SectionHeading icon={Clapperboard} title="Crew" count={crew.length} />
+                      <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl overflow-hidden">
+                        <table className="w-full text-sm">
+                          <tbody>
+                            {crew.map((member: any, i: number) => (
+                              <tr key={i} className={`group border-b border-[#1a1a1a] last:border-0
+                                hover:bg-orange-500/3 transition-colors`}>
+                                {/* Role */}
+                                <td className="px-4 py-2.5 w-[38%] align-middle">
+                                  <span className="text-[10px] font-bold text-orange-400/70 uppercase tracking-widest">
+                                    {member.role || member.type || "Crew"}
+                                  </span>
+                                </td>
+                                {/* Photo + Name */}
+                                <td className="px-4 py-2.5 align-middle">
+                                  <LoadingCard href={member.castId ? `/cast/${member.castId}` : "#"}
+                                    className="flex items-start gap-2.5 group/link"
+                                    aria-disabled={!member.castId}>
+                                    <div className="relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0 border border-[#333]">
+                                      <Image
+                                        src={member.photo || "/placeholder-person.svg"}
+                                        alt={member.name}
+                                        fill className="object-cover"
+                                      />
+                                    </div>
+                                    <span className="text-sm font-semibold text-white group-hover/link:text-orange-400 transition-colors break-words min-w-0">
+                                      {member.name}
+                                    </span>
+                                  </LoadingCard>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  )}
+
+                  {/* ── Cast ── */}
+                  {castOnly.length > 0 && (
+                    <section aria-label={`${movie.title} cast`}>
+                      <SectionHeading icon={Users} title="Cast" count={castOnly.length} />
+                      <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-[#242424] bg-[#0d0d0d]">
+                              <th className="px-4 py-2.5 text-left text-[10px] font-bold text-orange-400/60 uppercase tracking-widest w-[35%]">Actor</th>
+                              <th className="px-4 py-2.5 text-left text-[10px] font-bold text-gray-600 uppercase tracking-widest w-[30%]">Role / Type</th>
+                              <th className="px-4 py-2.5 text-left text-[10px] font-bold text-gray-600 uppercase tracking-widest">Character</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {castOnly.map((member: any, i: number) => (
+                              <tr key={i} className="group border-b border-[#1a1a1a] last:border-0 hover:bg-orange-500/3 transition-colors">
+                                {/* Photo + Name */}
+                                <td className="px-4 py-2.5 align-middle">
+                                  <LoadingCard href={member.castId ? `/cast/${member.castId}` : "#"}
+                                    className="flex items-start gap-2.5 group/link"
+                                    aria-disabled={!member.castId}>
+                                    <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-[#333]">
+                                      <Image
+                                        src={member.photo || "/placeholder-person.svg"}
+                                        priority={true}
+                                        alt={`${member.name} in ${movie.title}`}
+                                        fill className="object-cover"
+                                      />
+                                    </div>
+                                    <span className="text-sm font-semibold text-white group-hover/link:text-orange-400 transition-colors break-words min-w-0">
+                                      {member.name}
+                                    </span>
+                                  </LoadingCard>
+                                </td>
+                                {/* Role / Type */}
+                                <td className="px-4 py-2.5 align-middle">
+                                  <span className="text-[10px] font-bold text-orange-400/70 uppercase tracking-widest">
+                                    {member.role || member.type || "Actor"}
+                                  </span>
+                                </td>
+                                {/* Character name */}
+                                <td className="px-4 py-2.5 align-middle">
+                                  <span className="text-xs text-gray-400 italic">
+                                    {member.character || member.characterName || "—"}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  )}
+                </>
+              );
+            })()}
+
+            <div className="py-2">
+              {/* Mid Content Ad (Visible on all screen sizes, responsive) */}
+              <DisplayAd slot="8191172163" format="auto" />
+            </div>
+
+            {/* ── Songs ── */}
+            {songs.length > 0 && (
+              <section aria-label={`${movie.title} songs soundtrack`}>
+                <SectionHeading icon={Music} title="Songs" count={songs.length} />
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {songs.map((song: any, i: number) => (
+                    <SongCard 
+                      key={i}
+                      href={`/songs/${movie.slug}/${i}/${toSlug(song.title) || String(i)}`}
+                      song={{ ...song, movieTitle: movie.title }} 
+                    />
+                  ))}
+                </div>
+                {/* SEO: song anchor links for Google — visually hidden, only for crawlers */}
+                <div className="sr-only" aria-hidden="true">
+                  {songs.map((s: any, i: number) => (
+                    <Link key={i}
+                      href={`/songs/${movie.slug}/${i}/${toSlug(s.title) || String(i)}`}
+                      tabIndex={-1}>
+                      {s.title}{s.singer ? ` by ${s.singer}` : ""}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* ── Ollypedia Review ── */}
+            {movie.review && (
+              <section aria-label={`Ollypedia review of ${movie.title}`}>
+                <SectionHeading icon={Award} title="Ollypedia Review" />
+                <div className="bg-[#111] border border-[#1f1f1f] rounded-2xl p-6">
+                  <div className="prose-odia" dangerouslySetInnerHTML={{ __html: movie.review }} />
+                </div>
+              </section>
+            )}
+
+            {/* ── Community & Discussion Callout Banner ── */}
+            <section aria-label={`Join community discussion for ${movie.title}`} className="bg-gradient-to-r from-orange-950/30 via-[#111] to-[#111] border border-orange-500/25 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_4px_24px_rgba(249,115,22,0.06)]">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2.5 w-2.5 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
+                  </span>
+                  <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-orange-400" />
+                    Community &amp; Discussion Room
                   </h2>
                 </div>
-                <p className="text-sm text-gray-500 mb-4">
-                  {movie.title} hasn&apos;t released yet, so reviews aren&apos;t open. Let us know if you&apos;re looking forward to it — the review section unlocks once it&apos;s out.
+                <p className="text-xs sm:text-sm text-gray-400 max-w-xl">
+                  Vote in the Ollypedia Meter (Skip, Timepass, Go for it, Perfection), participate in fan discussions, and debate about {movie.title}!
                 </p>
-                <VoteButtons
-                  movieId={String(movie._id)}
-                  initialYes={movie.interestedYes || 0}
-                  initialNo={movie.interestedNo || 0}
-                />
-              </section>
-            ) : (
+              </div>
+              <Link
+                href={`/discussion/movie/${movie.slug || movie._id}`}
+                className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-[0_0_15px_rgba(249,115,22,0.3)] hover:shadow-[0_0_20px_rgba(249,115,22,0.5)] flex items-center gap-2 flex-shrink-0"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Join Discussion &rarr;
+              </Link>
+            </section>
+
+            {/* ── User Reviews (released movies only) ── */}
+            {!isUnreleased && (
               <section aria-label={`User reviews for ${movie.title}`}>
                 <ReviewForm
                   movieId={String(movie._id)}
@@ -1673,8 +1877,6 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   </div>
                 </div>
               )}
-
-              {/* Pre-FAQ Ad (Visible on all screen sizes, responsive) */}
               <div className="py-2">
                 <DisplayAd slot="8191172163" format="auto" />
               </div>
@@ -1686,7 +1888,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                   {[
                     {
                       q: `What is ${movie.title} movie about?`,
-                      a: movie.synopsis?.slice(0, 250) ||
+                      a: cleanTruncate(movie.synopsis, 250) ||
                         `${movie.title} is an Odia ${(movie.genre || []).join(", ") || "drama"} film${year ? ` released in ${year}` : ""}${movie.director ? `, directed by ${movie.director}` : ""}.`,
                     },
                     ...(() => {
@@ -1698,28 +1900,27 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                         a: `${movie.title} features ${actorNames.slice(0, 5).join(", ")} in the lead and supporting roles.`,
                       }];
                     })(),
-                    ...(movie.verdict ? [{
+                    ...(movie.verdict && movie.verdict !== "Upcoming" ? [{
                       q: `What is the box office verdict of ${movie.title}?`,
-                      a: `${movie.title} was declared a ${movie.verdict} at the Ollywood box office${movie.boxOffice?.total ? `, collecting a total of ${movie.boxOffice.total}` : ""}.`,
+                      a: `${movie.title} was declared ${movie.verdict} at the Ollywood box office${movie.boxOffice?.total ? `, with a total collection of ${movie.boxOffice.total}` : ""}.`,
                     }] : []),
                     ...(songs.length > 0 ? [{
                       q: `How many songs does ${movie.title} have?`,
-                      a: `${movie.title} has ${songs.length} song${songs.length > 1 ? "s" : ""} in its soundtrack${songs[0]?.singer ? `, sung by ${[...new Set(songs.slice(0,3).map((s:any)=>s.singer).filter(Boolean))].join(", ")}` : ""}.`,
+                      a: `${movie.title} has ${songs.length} song${songs.length > 1 ? "s" : ""} in its soundtrack.`,
                     }] : []),
                     ...(directorName ? [{
                       q: `Who directed ${movie.title}?`,
-                      a: `${movie.title} was directed by ${directorName}${producerName ? `, produced by ${producerName}` : ""}${year ? ` and released in ${year}` : ""}.`,
+                      a: `${movie.title} was directed by ${directorName}${producerName ? `, produced by ${producerName}` : ""}${year ? ` and ${movie.verdict === "Upcoming" ? "will release" : "released"} in ${year}` : ""}.`,
                     }] : []),
                     {
                       q: `What is the release date of ${movie.title}?`,
                       a: movie.releaseDate
-                        ? `${movie.title} was released on ${formatReleaseDate(movie.releaseDate, movie.releaseDatePrecision, "long")}.`
+                        ? `${movie.title} ${movie.verdict === "Upcoming" ? "is scheduled to release" : "was released"} on ${formatReleaseDate(movie.releaseDate, movie.releaseDatePrecision, "long")}.`
                         : movie.releaseTBA
                         ? `The release date of ${movie.title} is yet to be announced (TBA). Follow Ollypedia for the latest updates.`
                         : `Release date information for ${movie.title} is available on Ollypedia.`,
                     },
-                    // ── OTT FAQs block ──────────────────────────────────────
-                    {
+                    ...(movie.streamingOn || movie.verdict !== "Upcoming" ? [{
                       q: `Is ${movie.title} available on OTT?`,
                       a: movie.streamingOn
                         ? (() => {
@@ -1728,12 +1929,12 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                             const live = !tba && (!od || new Date(od) <= new Date());
                             const coming = !tba && !!od && new Date(od) > new Date();
                             const fmtD = od && od !== "TBA" ? new Date(od).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"}) : "";
-                            if (live) return `Yes, ${movie.title} is available on OTT. You can watch ${movie.title} online on ${movie.streamingOn}${movie.streamingUrl ? ` at ${movie.streamingUrl}` : ""}. The film is currently streaming and available to watch anytime.`;
-                            if (coming) return `Yes, ${movie.title} will be available on ${movie.streamingOn} from ${fmtD}. Mark your calendar for the OTT release of ${movie.title} on ${movie.streamingOn}.`;
-                            if (tba) return `${movie.title} has been confirmed for OTT release on ${movie.streamingOn}. The exact OTT release date of ${movie.title} is yet to be announced. Follow Ollypedia for updates on ${movie.title} OTT release date.`;
-                            return `${movie.title} is available on ${movie.streamingOn}. Check the platform directly for availability.`;
+                            if (live) return `Yes, ${movie.title} is currently streaming on ${movie.streamingOn}.`;
+                            if (coming) return `${movie.title} will be available on ${movie.streamingOn} from ${fmtD}.`;
+                            if (tba) return `${movie.title} has been confirmed for OTT release on ${movie.streamingOn}. The exact date has not been announced yet.`;
+                            return `${movie.title} is available on ${movie.streamingOn}.`;
                           })()
-                        : `OTT release details for ${movie.title} have not been officially announced yet. It may release on Aao NXT (aaonxt.com), Tarang Plus (tarangplus.in), or Kanccha Lannka (kancchalannka.com). Follow Ollypedia for the latest ${movie.title} OTT release date updates.`,
+                        : `OTT release details for ${movie.title} have not been officially announced yet. Odia movies typically stream on Aao NXT, Tarang Plus, or Kanccha Lannka. Follow Ollypedia for updates.`,
                     },
                     {
                       q: `When is ${movie.title} OTT release date?`,
@@ -1744,25 +1945,25 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
                             const live = !tba && (!od || new Date(od) <= new Date());
                             const coming = !tba && !!od && new Date(od) > new Date();
                             const fmtD = od && od !== "TBA" ? new Date(od).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"}) : "";
-                            if (live) return `${movie.title} has already released on OTT. It is currently streaming on ${movie.streamingOn}${od && od !== "TBA" ? `, which went live on ${fmtD}` : ""}. You can watch it now online.`;
-                            if (coming) return `The OTT release date of ${movie.title} is ${fmtD}. It will be available to stream on ${movie.streamingOn} from ${fmtD}.`;
-                            if (tba) return `The OTT release date of ${movie.title} on ${movie.streamingOn} is yet to be officially announced (TBA). Ollypedia will update this page as soon as the ${movie.title} OTT date is confirmed.`;
-                            return `${movie.title} is available on ${movie.streamingOn}. The exact OTT date information is on Ollypedia.`;
+                            if (live) return `Yes, ${movie.title} has already released on OTT and is streaming on ${movie.streamingOn}.`;
+                            if (coming) return `The OTT release date of ${movie.title} is ${fmtD} on ${movie.streamingOn}.`;
+                            if (tba) return `The OTT release date of ${movie.title} on ${movie.streamingOn} is yet to be announced.`;
+                            return `${movie.title} is streaming on ${movie.streamingOn}.`;
                           })()
-                        : `The OTT release date of ${movie.title} has not been announced yet. The film may stream on platforms like Aao NXT, Tarang Plus, or Kanccha Lannka. Follow Ollypedia for ${movie.title} OTT release date news.`,
+                        : `The OTT release date of ${movie.title} has not been announced yet.`,
                     },
                     {
                       q: `On which platform can I watch ${movie.title} online?`,
                       a: movie.streamingOn
-                        ? `You can watch ${movie.title} online on ${movie.streamingOn}${movie.streamingUrl ? ` (${movie.streamingUrl})` : ""}. ${movie.streamingOn} is the official OTT platform for ${movie.title} in India.`
-                        : `The official OTT platform for ${movie.title} has not been announced yet. Odia movies typically stream on platforms like Aao NXT, Tarang Plus, Kanccha Lannka, SonyLIV, or ZEE5. Check back on Ollypedia for updates.`,
+                        ? `You can watch ${movie.title} online on ${movie.streamingOn}${movie.streamingUrl ? ` (${movie.streamingUrl})` : ""}.`
+                        : `The official OTT platform for ${movie.title} has not been announced yet. Odia movies typically stream on Aao NXT, Tarang Plus, Kanccha Lannka, SonyLIV, or ZEE5.`,
                     },
                     {
                       q: `Can I watch ${movie.title} for free online?`,
                       a: movie.streamingOn
-                        ? `${movie.title} is available on ${movie.streamingOn}. Please check ${movie.streamingOn}'s subscription plans — some platforms offer a free trial or ad-supported viewing. Visit ${movie.streamingUrl || `the ${movie.streamingOn} platform`} to check current availability and pricing.`
+                        ? `${movie.title} is available on ${movie.streamingOn}. Check ${movie.streamingOn}'s subscription plans — some platforms offer a free trial or ad-supported viewing.`
                         : `${movie.title} has not been officially released on any free OTT platform. Watching from unofficial or pirated sources is illegal. Support Odia cinema by watching from official platforms.`,
-                    },
+                    }] : []),
                   ].map((faq, i) => (
                     <details key={i} className="group border border-[#1a1a1a] rounded-xl overflow-hidden">
                       <summary className="cursor-pointer px-4 py-3.5 text-sm font-semibold text-gray-200 list-none flex justify-between items-center gap-3 select-none hover:text-orange-400 hover:bg-[#0d0d0d] transition-all">
