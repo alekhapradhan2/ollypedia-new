@@ -44,6 +44,7 @@ Disallow: /admin/
 Disallow: /discussion/profile
 Disallow: /search
 Disallow: /blog?
+Disallow: /songs/
 
 # ── AI training scrapers — block content harvesting ─────
 # These bots scrape content to train AI models without compensation.
