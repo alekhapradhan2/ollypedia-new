@@ -28,6 +28,19 @@ export interface CastSeoDoc {
     releaseDate?: string;
     posterUrl?: string;
   }[];
+  movies?: any[];
+}
+
+/**
+ * Quality Gate for Cast indexing:
+ * Only cast who have BOTH a substantive biography and at least 5 verified movies
+ * qualify for search engine indexing. Thin stubs receive noindex, follow.
+ */
+export function isHighQualityCast(person: CastSeoDoc): boolean {
+  if (!person || !person.name?.trim()) return false;
+  const hasBio = typeof person.bio === "string" && person.bio.trim().length >= 30;
+  const movieCount = (person.moviesList?.length ?? 0) || (Array.isArray(person.movies) ? person.movies.length : 0);
+  return hasBio && movieCount >= 5;
 }
 
 /**
@@ -37,6 +50,7 @@ export function buildCastMeta(person: CastSeoDoc): Metadata {
   const profession = person.type || "Odia Film Actor & Artist";
   const title = `${person.name} (${profession}) – Biography, Age, Movies, Photos & Profile`;
   const desc = `${person.name} is a renowned ${profession} in the Odia (Ollywood) film industry. Read ${person.name}'s complete biography, age, date of birth, upcoming & past Odia movies list, photos, and news on Ollypedia.`;
+  const qualified = isHighQualityCast(person);
 
   return buildMeta({
     title,
@@ -54,6 +68,7 @@ export function buildCastMeta(person: CastSeoDoc): Metadata {
     url: `/cast/${person._id}`,
     image: person.photo,
     type: "profile",
+    noindex: !qualified,
   });
 }
 

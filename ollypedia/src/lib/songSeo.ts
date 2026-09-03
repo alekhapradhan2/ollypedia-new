@@ -4,6 +4,7 @@
 
 import { Metadata } from "next";
 import { buildMeta, SITE_NAME, SITE_URL } from "./seo";
+import { toSlug } from "./slug";
 
 export interface SongSeoDoc {
   title: string;
@@ -54,7 +55,8 @@ export function buildSongMeta(song: SongSeoDoc): Metadata {
  * Generates MusicRecording, MusicAlbum, & VideoObject structured JSON-LD schemas
  */
 export function generateSongJsonLd(song: SongSeoDoc) {
-  const songUrl = `${SITE_URL}/songs/${song.movieSlug}/${song.songIndex || 0}${song.songSlug ? `/${song.songSlug}` : ""}`;
+  const slugPart = song.songSlug ? `/${toSlug(song.songSlug)}` : (song.title ? `/${toSlug(song.title)}` : "");
+  const songUrl = `${SITE_URL}/songs/${song.movieSlug}/${song.songIndex || 0}${slugPart}`;
   const movieUrl = `${SITE_URL}/movie/${song.movieSlug}`;
 
   // Singer / Artists array

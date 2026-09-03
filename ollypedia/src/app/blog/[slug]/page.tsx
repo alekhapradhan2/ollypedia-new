@@ -19,20 +19,12 @@ import { connectDB } from "@/lib/db";
 import Blog from "@/models/Blog";
 import Movie from "@/models/Movie";
 import BlogDetailClient from "./BlogDetailClient";
+import { toSlug } from "@/lib/slug";
 
 export const revalidate = 21600; // 6 hours
 export const dynamicParams = true;
 
 // ─── helpers ───────────────────────────────────────────────────
-function toSlug(str?: string): string {
-  return (str || "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
 
 function stripHtml(str?: string): string {
   if (!str) return "";

@@ -32,20 +32,12 @@ import {
   Play, Info, Tag, MessageSquare,
 } from "lucide-react";
 import { DisplayAd } from "@/components/ads/DisplayAd";
+import { toSlug } from "@/lib/slug";
 
 export const revalidate    = 3600;
 export const dynamicParams = true;
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-function toSlug(str?: string): string {
-  return (str || "")
-    .toLowerCase().trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
-
 function fmtDate(iso?: string, precision?: string): string {
   if (!iso) return "";
   return formatReleaseDate(iso, precision, "long");

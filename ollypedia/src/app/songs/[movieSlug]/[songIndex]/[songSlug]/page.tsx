@@ -20,20 +20,10 @@ import Movie from "@/models/Movie";
 import Blog from "@/models/Blog";
 import { SongDetailClient } from "../SongDetailClient";
 import type { MovieData } from "../types";
+import { toSlug } from "@/lib/slug";
 
 export const revalidate    = 86400; // 24 hours â€” on-demand ISR
 export const dynamicParams = true;
-
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function toSlug(str?: string): string {
-  return (str || "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
 
 // â”€â”€â”€ Data fetching â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function getMovieWithSongs(movieSlug: string): Promise<MovieData | null> {

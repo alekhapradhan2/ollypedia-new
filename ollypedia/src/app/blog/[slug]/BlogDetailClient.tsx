@@ -16,6 +16,7 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import DOMPurify from "isomorphic-dompurify";
 import { DisplayAd } from "@/components/ads/DisplayAd";
+import { toSlug } from "@/lib/slug";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "/api").replace(/\/$/, "");
 
@@ -1254,7 +1255,7 @@ export default function BlogDetailClient({
                 <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
                   {[
                     { href: `/movie/${relMovies[0].slug || relMovies[0]._id}`, icon: "🎬", label: "Full Movie Info", sub: "Cast, story, trailer" },
-                    ...(relSongs.length > 0 ? [{ href: `/songs/${relMovies[0].slug || relMovies[0]._id}/0/${(relSongs[0]?.title || "").toLowerCase().replace(/[^a-z0-9]/g, "-")}`, icon: "🎵", label: `${post.movieTitle} Songs`, sub: `${relSongs.length} tracks` }] : []),
+                    ...(relSongs.length > 0 ? [{ href: `/songs/${relMovies[0].slug || relMovies[0]._id}/0/${toSlug(relSongs[0]?.title, "0")}`, icon: "🎵", label: `${post.movieTitle} Songs`, sub: `${relSongs.length} tracks` }] : []),
                     ...(boxOfficeSlug ? [{ href: `/box-office/${boxOfficeSlug}`, icon: "📊", label: "Box Office", sub: "Day-wise collection" }] : []),
                     { href: `/blog?movie=${encodeURIComponent(post.movieTitle)}`, icon: "📰", label: "All Articles", sub: "Reviews & blogs" },
                   ].map(link => (

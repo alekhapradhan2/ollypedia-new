@@ -535,7 +535,7 @@ export default async function BlogPage({
                 )}
 
                 {/* ── RIGHT: Top Stories 3-Pack (5 cols) ── */}
-                <div className="lg:col-span-5 flex flex-col justify-between h-full space-y-4">
+                <div className="lg:col-span-5 flex flex-col space-y-4">
                   <div className="flex items-center justify-between pb-2 border-b border-[#1f1f1f]">
                     <h3 className="text-xs font-black uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
                       <Flame className="w-3.5 h-3.5" /> Top Breaking Stories

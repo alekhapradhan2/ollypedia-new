@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { connectDB } from "@/lib/db";
 import Movie from "@/models/Movie";
 import { SITE_URL } from "@/lib/seo";
+import { toSlug } from "@/lib/slug";
 import { ChevronRight, Music, Play, Disc, Film, Tv } from "lucide-react";
 
 export const revalidate = 600;
@@ -45,8 +46,13 @@ export default async function MovieSongsPage({ params }: Props) {
     $or: [{ slug: params.movieSlug }, { _id: params.movieSlug.length === 24 ? params.movieSlug : null }],
   }).lean() as any;
 
-  if (!movie || !movie.media?.songs?.length) {
+  if (!movie) {
     notFound();
+  }
+
+  // Gracefully redirect to the main movie page if no songs exist (avoids 404 / empty crawl stubs)
+  if (!movie.media?.songs?.length) {
+    permanentRedirect(`/movie/${movie.slug || params.movieSlug}`);
   }
 
   const songs = movie.media.songs;
@@ -77,7 +83,7 @@ export default async function MovieSongsPage({ params }: Props) {
     "track": songs.map((s: any, i: number) => ({
       "@type": "MusicRecording",
       "name": s.title,
-      "url": `${movieUrl}/${i}/${s.slug || String(s.title).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      "url": `${SITE_URL}/songs/${movie.slug || movie._id}/${i}/${toSlug(s.title, String(i))}`,
       "byArtist": s.singer ? [{ "@type": "Person", "name": s.singer }] : undefined,
       "duration": s.duration || undefined
     }))
@@ -126,7 +132,7 @@ export default async function MovieSongsPage({ params }: Props) {
               </p>
 
               <div className="mt-3 sm:mt-8 flex flex-wrap gap-2 sm:gap-3 justify-start">
-                <Link href={`/songs/${movie.slug || movie._id}/0/${songs[0]?.slug || 'play'}`}
+                <Link href={`/songs/${movie.slug || movie._id}/0/${toSlug(songs[0]?.title, 'play')}`}
                   className="bg-orange-500 hover:bg-orange-400 text-black px-4 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold text-[11px] sm:text-sm transition-all flex items-center gap-1.5 sm:gap-2 shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:shadow-[0_0_30px_rgba(249,115,22,0.5)]">
                   <Play className="w-3 h-3 sm:w-4 sm:h-4 fill-black" />
                   Play All
@@ -167,7 +173,7 @@ export default async function MovieSongsPage({ params }: Props) {
 
             <div className="flex flex-col gap-3">
               {songs.map((song: any, i: number) => {
-                const songSlug = song.slug || String(song.title).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+                const songSlug = toSlug(song.title, String(i));
                 const url = `/songs/${movie.slug || movie._id}/${i}/${songSlug}`;
                 const thumb = song.thumbnailUrl || (song.ytId ? `https://img.youtube.com/vi/${song.ytId}/mqdefault.jpg` : "/placeholder-movie.jpg");
 

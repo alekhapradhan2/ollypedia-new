@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { connectDB }      from "@/lib/db";
+import { toSlug }         from "@/lib/slug";
 import Movie              from "@/models/Movie";
 import {
   buildIndividualTrailerMeta,
@@ -76,11 +77,6 @@ async function fetchRelated(movie: TrailerMovieDoc, limit = 6): Promise<TrailerM
     .limit(limit)
     .lean();
   return related as unknown as TrailerMovieDoc[];
-}
-
-function toSlug(str?: string): string {
-  if (!str) return "";
-  return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
 async function getMovieBlogs(movieTitle: string) {
