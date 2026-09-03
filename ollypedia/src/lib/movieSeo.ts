@@ -50,6 +50,38 @@ export interface MovieSeoDoc {
 }
 
 /**
+ * Quality Gate for Movie indexing:
+ * Only movies with substantive content (synopsis/story/review, or media assets + basic metadata)
+ * qualify for search engine indexing. Bare skeleton stubs receive noindex, follow.
+ */
+export function isHighQualityMovie(movie: any): boolean {
+  if (!movie || !movie.title?.trim()) return false;
+
+  const hasSubstantiveText = Boolean(
+    (movie.synopsis && typeof movie.synopsis === "string" && movie.synopsis.trim().length >= 40) ||
+    (movie.story && typeof movie.story === "string" && movie.story.trim().length >= 40) ||
+    (movie.review && typeof movie.review === "string" && movie.review.trim().length >= 40)
+  );
+
+  const hasMediaOrBoxOffice = Boolean(
+    (Array.isArray(movie.media?.songs) && movie.media.songs.length > 0) ||
+    (Array.isArray(movie.media?.videos) && movie.media.videos.length > 0) ||
+    (Array.isArray(movie.boxOfficeDays) && movie.boxOfficeDays.length > 0) ||
+    (Array.isArray(movie.reReleaseBoxOfficeDays) && movie.reReleaseBoxOfficeDays.length > 0)
+  );
+
+  const hasVisualOrCast = Boolean(
+    movie.posterUrl ||
+    movie.thumbnailUrl ||
+    movie.bannerUrl ||
+    movie.director?.trim() ||
+    (Array.isArray(movie.cast) && movie.cast.length > 0)
+  );
+
+  return (hasSubstantiveText || hasMediaOrBoxOffice) && hasVisualOrCast;
+}
+
+/**
  * Builds rich metadata for movie details page.
  *
  * Dynamically tailors the <title> tag, meta description, and keywords based on:
@@ -128,6 +160,7 @@ export function buildMovieMeta(movie: MovieSeoDoc): Metadata {
   }
 
   const title = `${movie.title}${yearLabel} Odia Movie – ${titleSuffix}`;
+  const isHighQuality = isHighQualityMovie(movie);
 
   return buildMeta({
     title,
@@ -136,6 +169,7 @@ export function buildMovieMeta(movie: MovieSeoDoc): Metadata {
     url: `/movie/${movie.slug || movie._id}`,
     image: movie.bannerUrl || movie.posterUrl || movie.thumbnailUrl,
     type: "video.movie",
+    noindex: !isHighQuality,
   });
 }
 

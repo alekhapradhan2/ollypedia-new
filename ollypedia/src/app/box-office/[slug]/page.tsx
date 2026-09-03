@@ -134,9 +134,9 @@ export async function generateMetadata({
   const totalNet   = days.reduce((s: number, d: any) => s + parseNum(d.net),   0);
   const totalGross = days.reduce((s: number, d: any) => s + parseNum(d.gross), 0);
   const lastDay    = days[days.length - 1]?.day || 0;
-  const hasBoxOffice = days.length > 0 || (movie.reReleaseBoxOfficeDays && movie.reReleaseBoxOfficeDays.length > 0) || totalNet > 0;
+  const hasRealData = totalNet > 0 || totalGross > 0 || days.some((d: any) => parseNum(d.net) > 0 || parseNum(d.gross) > 0);
 
-  if (!hasBoxOffice) return { robots: { index: false, follow: false } };
+  if (!hasRealData) return { robots: { index: false, follow: true } };
 
   // Delegate to boxOfficeSeo module — clean, focused keyword set (no SpamBrain risk)
   return buildBoxOfficeMeta({

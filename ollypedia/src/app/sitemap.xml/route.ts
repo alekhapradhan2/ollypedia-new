@@ -22,6 +22,9 @@ import Movie         from "@/models/Movie";
 import Cast          from "@/models/Cast";
 import Blog          from "@/models/Blog";
 import { SITE_URL }  from "@/lib/seo";
+import { toSlug }    from "@/lib/slug";
+import { isHighQualityCast } from "@/lib/castSeo";
+import { isHighQualityMovie } from "@/lib/movieSeo";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -45,14 +48,15 @@ function safeDate(value: unknown): string {
   return d.toISOString().split("T")[0];
 }
 
-function toSlug(str?: string): string {
-  return (str || "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/(^-|-$)/g, "");
+function parseRevenue(val: unknown): number {
+  if (!val) return 0;
+  const str = String(val).replace(/[₹,\s]/g, "").toLowerCase();
+  const n = parseFloat(str);
+  if (isNaN(n)) return 0;
+  if (str.includes("cr") || str.includes("crore")) return Math.round(n * 1_00_00_000);
+  if (str.includes("l") || str.includes("lakh"))   return Math.round(n * 1_00_000);
+  if (n >= 1000) return Math.round(n);
+  return 0;
 }
 
 function urlEntry(loc: string, lastmod: string, freq = "monthly", pri = "0.7") {
@@ -164,14 +168,18 @@ export async function GET() {
     // ── Movies + Songs ─────────────────────────────────────────────────────
     const movies = await Movie.find(
       {},
-      "slug _id releaseDate updatedAt createdAt media.songs media.videos boxOfficeDays reReleaseBoxOfficeDays ott streamingOn"
+      "title slug _id synopsis story review posterUrl thumbnailUrl bannerUrl releaseDate director cast updatedAt createdAt media.songs media.videos boxOfficeDays reReleaseBoxOfficeDays ott streamingOn"
     ).lean() as any[];
 
     movies.forEach((m) => {
+      // Only submit high-quality movies with substantive story/synopsis/media/cast
+      if (!isHighQualityMovie(m)) return;
+
       const movieSlug   = m.slug || String(m._id);
       const lastmod     = safeDate(m.updatedAt ?? m.createdAt ?? m.releaseDate);
-      const hasBoxOffice = (m.boxOfficeDays?.length > 0) || (m.reReleaseBoxOfficeDays?.length > 0);
-      const hasTrailerVideo = !!(m.media?.videos && m.media.videos.length > 0 && m.media.videos.some((v: any) => v.ytId));
+      const hasBoxOfficeDays = Array.isArray(m.boxOfficeDays) && m.boxOfficeDays.some((d: any) => parseRevenue(d.net) > 0 || parseRevenue(d.gross) > 0);
+      const hasReReleaseDays = Array.isArray(m.reReleaseBoxOfficeDays) && m.reReleaseBoxOfficeDays.some((d: any) => parseRevenue(d.net) > 0 || parseRevenue(d.gross) > 0);
+      const hasBoxOffice = hasBoxOfficeDays || hasReReleaseDays;
 
       // Movie detail page — primary indexable entity (highest priority)
       entries.push(urlEntry(
@@ -181,7 +189,7 @@ export async function GET() {
         "0.95"
       ));
 
-      // Box office page per movie — only for movies with real tracked box office data
+      // Box office page per movie — only for movies with REAL tracked box office data (excludes unreleased TBA stubs)
       if (hasBoxOffice) {
         entries.push(urlEntry(
           `${SITE_URL}/box-office/${movieSlug}`,
@@ -193,27 +201,20 @@ export async function GET() {
     });
 
     // ── Cast ───────────────────────────────────────────────────────────────
-    // ★ SEO FIX: Only submit cast profiles with substantive content
-    // (non-empty bio OR profile photo OR at least 2 linked movies).
-    // Eliminates thousands of thin cast stubs from the sitemap, freeing up
+    // ★ SEO FIX: Only submit cast profiles with substantive content:
+    // Requires BOTH non-empty biography AND at least 5 linked movies.
+    // Eliminates hundreds of thin cast stubs from the sitemap, freeing up
     // crawl budget for primary movies, reviews, and high-value entities.
     const casts = await Cast.find(
       {
-        $or: [
-          { bio: { $exists: true, $nin: ["", null] } },
-          { photo: { $exists: true, $nin: ["", null] } },
-          { "movies.1": { $exists: true } }, // at least 2 movies
-        ],
+        bio: { $exists: true, $nin: ["", null] },
+        "movies.4": { $exists: true }, // at least 5 movies
       },
       "_id slug name bio photo movies updatedAt createdAt"
     ).lean() as any[];
 
     casts.forEach((c) => {
-      if (!c.name?.trim()) return;
-      const hasBio = typeof c.bio === "string" && c.bio.trim().length > 0;
-      const hasPhoto = typeof c.photo === "string" && c.photo.trim().length > 0;
-      const hasMultipleMovies = Array.isArray(c.movies) && c.movies.length >= 2;
-      if (!hasBio && !hasPhoto && !hasMultipleMovies) return;
+      if (!isHighQualityCast(c)) return;
 
       const lastmod = safeDate(c.updatedAt ?? c.createdAt);
       // Route is /cast/[id] — always use MongoDB _id, never slug

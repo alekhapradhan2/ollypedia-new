@@ -9,6 +9,7 @@ import { useState } from "react";
 import { TrendingUp, Calendar, IndianRupee, BarChart3, ChevronDown, ChevronUp, Film, Music, BookOpen, ExternalLink } from "lucide-react";
 import { DisplayAd } from "@/components/ads/DisplayAd";
 import { formatReleaseDate } from "@/lib/dateUtils";
+import { toSlug } from "@/lib/slug";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api").replace(/\/$/, "");
 
@@ -118,7 +119,7 @@ function fmtDate(d?: string, precision?: string) {
 }
 
 function toSongSlug(str?: string): string {
-  return (str || "").toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/(^-|-$)/g, "");
+  return toSlug(str || "");
 }
 
 function buildPerformanceSummary(movie: Movie, days: BoxOfficeDay[], totalNet: number, totalGross: number, isReRelease: boolean = false): string {

@@ -13,6 +13,7 @@ export function buildMeta({
   imageAlt,
   url,
   type = "website",
+  noindex = false,
 }: {
   title: string;
   description: string;
@@ -21,6 +22,7 @@ export function buildMeta({
   imageAlt?: string;
   url?: string;
   type?: string;
+  noindex?: boolean;
 }) {
   const canonical = url ? `${SITE_URL}${url}` : SITE_URL;
   const ogImages = image
@@ -48,7 +50,7 @@ export function buildMeta({
     },
     alternates: { canonical },
     robots: {
-      index: true,
+      index: !noindex,
       follow: true,
       // Unlock full snippet display, large image preview, and full video preview
       "max-snippet": -1 as any,

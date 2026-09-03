@@ -46,7 +46,6 @@ Disallow: /admin/
 Disallow: /discussion/profile
 Disallow: /search
 Disallow: /blog?
-Disallow: /songs/
 Disallow: /songs?
 
 # ── AI training scrapers — block content harvesting ─────
