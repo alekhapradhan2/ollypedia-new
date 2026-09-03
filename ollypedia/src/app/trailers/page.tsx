@@ -225,7 +225,7 @@ function TrailersHero() {
           }} />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+      <div className="relative w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-10 md:py-14">
 
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-xs text-gray-600 mb-10" aria-label="Breadcrumb">
@@ -502,11 +502,11 @@ export default async function TrailersPage() {
       <TrailersHero />
 
       {/* ══ GLOBAL BANNER AD ══ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mt-8">
         <DisplayAd slot="8191172163" format="horizontal" className="rounded-xl border border-[#222]" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-12 space-y-20">
 
         {/* ── Section 1: This Month ─────────────────────────────────────────── */}
         <section aria-labelledby="this-month-heading">

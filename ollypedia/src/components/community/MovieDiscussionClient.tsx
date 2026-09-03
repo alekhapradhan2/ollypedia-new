@@ -366,7 +366,7 @@ export function MovieDiscussionClient({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
       {/* ── Movie Hero Header with Backdrop ── */}
       <div className="relative overflow-hidden bg-gradient-to-b from-[#181818] via-[#141414] to-[#0e0e0e] border border-white/10 rounded-3xl p-6 sm:p-8 mb-8 shadow-2xl">
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-orange-500/10 blur-3xl pointer-events-none" />

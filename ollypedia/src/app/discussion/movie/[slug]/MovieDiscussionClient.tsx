@@ -126,7 +126,7 @@ export default function MovieDiscussionClient({
   const poster = movie.posterUrl || movie.thumbnailUrl || "/placeholder-movie.jpg";
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
       {/* ── Movie Context Banner & Sitelinks Header ── */}
       <div className="relative overflow-hidden bg-gradient-to-r from-[#181818] via-[#141414] to-[#0f0f0f] border border-white/10 rounded-3xl p-6 sm:p-8 mb-8 shadow-xl">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-6">

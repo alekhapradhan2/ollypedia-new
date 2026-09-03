@@ -99,7 +99,7 @@ export default async function MovieSongsPage({ params }: Props) {
           )}
         </div>
 
-        <div className="max-w-5xl mx-auto px-4 py-12 relative z-20">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-12 relative z-20">
           <nav className="flex items-center gap-1.5 text-xs text-gray-500 mb-6">
             <Link href="/" className="hover:text-orange-400">Home</Link>
             <ChevronRight className="w-3 h-3" />
@@ -154,7 +154,7 @@ export default async function MovieSongsPage({ params }: Props) {
       </section>
 
       {/* ══ CONTENT GRID ══ */}
-      <div className="max-w-5xl mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-12">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-12">
 
         {/* LEFT COLUMN: Tracklist & SEO Prose */}
         <div className="lg:col-span-2 space-y-12">

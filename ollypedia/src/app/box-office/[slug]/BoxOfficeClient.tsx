@@ -527,7 +527,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet: initialT
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0a0a]/60 to-[#0a0a0a]" />
           </>
         )}
-        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-10">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-xs text-gray-500 mb-6">
             <Link href="/" className="hover:text-orange-400 transition-colors">Home</Link>
@@ -623,7 +623,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet: initialT
 
       {/* ── Tabs for Original vs Re-Release ── */}
       {hasReRelease && (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2 mb-6">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 -mt-2 mb-6">
           <div className="flex items-center p-1 bg-[#111] border border-[#1f1f1f] rounded-lg w-fit">
             <button
               onClick={() => { setActiveTrack("original"); setShowAll(false); }}
@@ -646,7 +646,7 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet: initialT
       )}
 
       {/* ── Stats Cards ── */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mb-8">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {[
             { label: "Total Net",    value: fmtINR(totalNet),   icon: <IndianRupee className="w-4 h-4" />, color: "#f97316" },
@@ -665,17 +665,17 @@ export default function BoxOfficeClient({ movie, initialDays, totalNet: initialT
       </div>
 
       {/* ── Top Content Ad (Visible on all screen sizes, responsive) ── */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mb-6">
         <DisplayAd slot="8191172163" format="auto" />
       </div>
 
       {/* ── Data Disclaimer ── */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mb-6">
         <BoxOfficeDisclaimer />
       </div>
 
       {/* ── Two-column layout: main content + sidebar ── */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 pb-16">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
 
           {/* ── LEFT: Main content ── */}

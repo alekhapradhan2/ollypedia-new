@@ -483,7 +483,7 @@ export function SongDetailClient({ movie, initialSongIndex, relatedMovies }: Pro
         )}
 
         {/* Back + Breadcrumb */}
-        <div className="relative z-10 px-4 sm:px-6 lg:px-10 pb-2">
+        <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 pb-2">
           <Link href={`/movie/${movie.slug}`}
             className="inline-flex items-center gap-1.5 text-white/55 text-xs font-semibold hover:text-orange-400 transition-colors py-1.5">
             ← {movie.title}
@@ -500,7 +500,7 @@ export function SongDetailClient({ movie, initialSongIndex, relatedMovies }: Pro
         </div>
 
         {/* Main 2-col grid */}
-        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_320px] gap-5 px-4 sm:px-6 lg:px-10 pb-10 max-w-[1380px] items-start">
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_320px] gap-5 px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 pb-10 w-full items-start">
 
           {/* ── LEFT: Player + Info ─── */}
           <div className="min-w-0">

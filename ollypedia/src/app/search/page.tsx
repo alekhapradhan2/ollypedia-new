@@ -61,7 +61,7 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-10">
       <div className="mb-8">
         <h1 className="section-title mb-2">
           {q ? `Results for "${q}"` : "Search Ollypedia"}

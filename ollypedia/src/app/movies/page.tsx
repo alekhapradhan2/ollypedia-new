@@ -219,7 +219,7 @@ export default async function MoviesPage({
             }} />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+        <div className="relative w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-10 md:py-14">
           
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-xs text-gray-600 mb-10">
@@ -365,7 +365,7 @@ export default async function MoviesPage({
         className="sticky top-0 z-30 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-[#1a1a1a]"
         aria-label="Browse movies by verdict"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-3">
             {VERDICT_TABS.map(({ label, value, icon: Icon, color }) => {
               const isActive = (value === null && !verdict) || value === verdict;
@@ -395,11 +395,11 @@ export default async function MoviesPage({
           AdSense approval note: place after meaningful content,
           not at very top of page. This position is after nav.
       ══════════════════════════════════════════════════════════ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-5">
         <DisplayAd slot="8191172163" format="horizontal" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-12">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 pb-16 space-y-12">
 
         {/* ══════════════════════════════════════════════════════
             FILTER & SORT BAR

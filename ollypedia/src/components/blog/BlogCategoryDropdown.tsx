@@ -23,7 +23,7 @@ export function BlogCategoryDropdown({ currentCategory, categories }: { currentC
         </div>
       )}
       
-      <div className="relative w-full sm:w-64">
+      <div className="relative w-full">
         <select
           value={currentCategory}
           onChange={(e) => {
@@ -35,14 +35,14 @@ export function BlogCategoryDropdown({ currentCategory, categories }: { currentC
               }
             });
           }}
-          className="w-full appearance-none bg-[#111] border border-[#2a2a2a] text-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 transition-all font-medium text-sm cursor-pointer shadow-sm hover:border-gray-600"
+          className="w-full appearance-none bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-xl px-4 py-2.5 pr-9 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all font-medium text-sm cursor-pointer shadow-sm hover:border-zinc-600"
         >
           <option value="All">All Categories</option>
           {categories.map((cat) => (
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
-        <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
+        <div className="absolute inset-y-0 right-0 flex items-center px-3.5 pointer-events-none text-zinc-400">
           <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
             <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd" />
           </svg>

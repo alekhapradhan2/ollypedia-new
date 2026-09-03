@@ -357,7 +357,7 @@ export default async function DiscussionLandingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(forumSchema) }}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-12">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-6 sm:py-10 space-y-12">
         {/* ── Clean Hero Banner ── */}
         <div className="relative overflow-hidden bg-gradient-to-b from-orange-500/15 via-[#141414] to-[#0a0a0a] border border-white/10 rounded-3xl p-6 sm:p-10 shadow-2xl text-center">
           <div className="flex flex-wrap items-center justify-center gap-3 mb-4">

@@ -110,7 +110,7 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
           <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent" />
         </div>
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full pb-16">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 relative z-10 pb-16">
           <div className="mb-6">
             <Breadcrumb crumbs={[{ label: "OTT", href: "/ott" }, { label: "Movies", href: "/ott" }, { label: m.title }]} />
           </div>
@@ -165,7 +165,7 @@ export default async function OttMovieDetailPage({ params }: { params: { movieSl
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
         {/* Left Column - Main Info */}
         <div className="lg:col-span-2 space-y-12">
           {m.synopsis && (

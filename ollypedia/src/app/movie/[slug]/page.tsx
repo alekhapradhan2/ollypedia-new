@@ -707,7 +707,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
         </div>
 
         {/* Info section — sits directly below banner, dark bg continues */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
 
           {/* Breadcrumb */}
           <div className="pt-3 pb-3 border-b border-[#1a1a1a]">
@@ -942,7 +942,7 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
 
       {/* ── SITELINKS NAVIGATION (Sacnilk Style SEO) ── */}
       <div className="sticky top-14 md:top-16 z-40 w-full bg-[#0a0a0a]/95 backdrop-blur-md border-y border-[#1a1a1a] shadow-lg mb-6">
-        <nav aria-label="Movie Sections" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <nav aria-label="Movie Sections" className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
           <ul className="flex items-center gap-1 sm:gap-6 overflow-x-auto scrollbar-none py-2 sm:py-3">
             <li>
               <Link href={`/movie/${movie.slug || movie._id}`} className="block px-3 py-1.5 text-[11px] sm:text-sm font-bold text-white bg-[#1f1f1f] rounded-lg whitespace-nowrap">
@@ -1000,11 +1000,11 @@ export default async function MovieDetailPage({ params }: { params: { slug: stri
       </div>
 
       {/* ── Top Content Ad (Visible on all screen sizes, responsive) ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mb-6">
         <DisplayAd slot="8191172163" format="auto" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 pb-16">
 
         {/* ══ MAIN CONTENT GRID ══ */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">

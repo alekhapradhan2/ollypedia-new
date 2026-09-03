@@ -236,7 +236,7 @@ export async function Footer() {
       itemScope
       itemType="https://schema.org/WPFooter"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-10 sm:py-14">
 
         {/* ══════════════════════════════════════════════════════
             SEO PREMIUM LINKS

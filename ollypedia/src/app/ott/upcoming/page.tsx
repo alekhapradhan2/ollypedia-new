@@ -64,7 +64,7 @@ export default async function UpcomingOttPage() {
   return (
     <main className="min-h-screen bg-[#0a0a0a] pt-24 pb-20">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
         <div className="mb-6">
           <Breadcrumb crumbs={[{ label: "OTT", href: "/ott" }, { label: "Upcoming" }]} />
         </div>

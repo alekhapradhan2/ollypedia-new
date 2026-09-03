@@ -196,7 +196,7 @@ export default async function IndividualTrailerPage({ params }: { params: Params
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-6">
+        <div className="relative w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 pt-10 pb-6">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-xs text-gray-600 mb-6 flex-wrap" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-orange-400 transition-colors">Home</Link>
@@ -269,7 +269,7 @@ export default async function IndividualTrailerPage({ params }: { params: Params
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
         {/* ── Main 2-column layout ─────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 

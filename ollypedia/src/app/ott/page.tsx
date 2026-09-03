@@ -108,7 +108,7 @@ export default async function OttLandingPage() {
            <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 relative z-10">
           <div className="relative grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
             
             {/* Left Content */}
@@ -215,11 +215,11 @@ export default async function OttLandingPage() {
       </section>
 
       {/* ══ GLOBAL BANNER AD ══ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mt-8">
         <DisplayAd slot="8191172163" format="horizontal" className="rounded-xl border border-[#222]" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-20">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-16 space-y-20">
         
         {/* Browse By Platform */}
         <section>
