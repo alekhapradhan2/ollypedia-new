@@ -123,8 +123,8 @@ function parseNum(s: unknown): number {
   const str = String(s || "").trim();
   const crMatch = str.match(/([\d.]+)\s*Cr/i);
   if (crMatch) return parseFloat(crMatch[1]) * 1_00_00_000;
-  const lMatch  = str.match(/([\d.]+)\s*L/i);
-  if (lMatch)  return parseFloat(lMatch[1])  * 1_00_000;
+  const lMatch = str.match(/([\d.]+)\s*L/i);
+  if (lMatch) return parseFloat(lMatch[1]) * 1_00_000;
   const v = parseFloat(str.replace(/[^0-9.]/g, ""));
   return isNaN(v) ? 0 : v;
 }
@@ -215,25 +215,25 @@ async function getHomeData() {
     })
     .slice(0, 8)
     .map((m: any) => ({
-      _id:         String(m._id),
-      slug:        m.slug        || undefined,
-      title:       m.title,
-      category:    m.category    || undefined,
-      genre:       m.genre       || undefined,
-      language:    m.language    || undefined,
+      _id: String(m._id),
+      slug: m.slug || undefined,
+      title: m.title,
+      category: m.category || undefined,
+      genre: m.genre || undefined,
+      language: m.language || undefined,
       releaseDate: m.releaseDate || undefined,
       releaseDatePrecision: m.releaseDatePrecision || undefined,
       isReRelease: m.isReRelease || undefined,
       reReleaseDate: m.reReleaseDate || undefined,
       reReleaseDatePrecision: m.reReleaseDatePrecision || undefined,
-      releaseTBA:  m.releaseTBA  || undefined,
-      director:    m.director    || undefined,
-      verdict:     m.verdict     || undefined,
-      synopsis:    m.synopsis    || undefined,
+      releaseTBA: m.releaseTBA || undefined,
+      director: m.director || undefined,
+      verdict: m.verdict || undefined,
+      synopsis: m.synopsis || undefined,
       thumbnailUrl: m.thumbnailUrl || undefined,
-      posterUrl:   m.posterUrl   || undefined,
-      bannerUrl:   m.bannerUrl   || undefined,
-      videos:      m.media?.videos || undefined,
+      posterUrl: m.posterUrl || undefined,
+      bannerUrl: m.bannerUrl || undefined,
+      videos: m.media?.videos || undefined,
     }));
 
   // ── Latest released movies ────────────────────────────────────
@@ -244,7 +244,7 @@ async function getHomeData() {
 
   // ── Top-rated / blockbuster movies ───────────────────────────
   const topMovies = (allMovies as any[])
-    .filter((m) => ["Blockbuster","Super Hit","Hit"].includes(m.verdict || ""))
+    .filter((m) => ["Blockbuster", "Super Hit", "Hit"].includes(m.verdict || ""))
     .sort((a: any, b: any) => new Date(b.releaseDate || 0).getTime() - new Date(a.releaseDate || 0).getTime())
     .slice(0, 5);
 
@@ -258,7 +258,7 @@ async function getHomeData() {
     )
     .map((m) => {
       const days = (m.boxOfficeDays as any[]).slice().sort((a, b) => a.day - b.day);
-      const totalNet   = days.reduce((s, d) => s + parseNum(d.net),   0);
+      const totalNet = days.reduce((s, d) => s + parseNum(d.net), 0);
       const totalGross = days.reduce((s, d) => s + parseNum(d.gross), 0);
       return { ...m, _days: days, _totalNet: totalNet, _totalGross: totalGross };
     })
@@ -295,28 +295,28 @@ async function getHomeData() {
   // ── Community movie cards (no extra DB query, sliced from existing data) ─
   function toCommunityMovie(m: any): CommunityMovieData {
     return {
-      _id:   String(m._id),
+      _id: String(m._id),
       title: m.title,
-      slug:  m.slug || String(m._id),
-      posterUrl:    m.posterUrl    || undefined,
+      slug: m.slug || String(m._id),
+      posterUrl: m.posterUrl || undefined,
       thumbnailUrl: m.thumbnailUrl || undefined,
-      releaseDate:  m.releaseDate  || undefined,
+      releaseDate: m.releaseDate || undefined,
       releaseDatePrecision: m.releaseDatePrecision || undefined,
-      releaseTBA:   m.releaseTBA   || false,
+      releaseTBA: m.releaseTBA || false,
       interestedYes: m.interestedYes || 0,
-      interestedNo:  m.interestedNo  || 0,
-      status:  m.status  || undefined,
+      interestedNo: m.interestedNo || 0,
+      status: m.status || undefined,
       language: m.language || undefined,
-      genre:   m.genre   || [],
+      genre: m.genre || [],
       verdict: m.verdict || undefined,
       community: {
-        totalVotes:    0,
-        breakdown:     { skip: 0, timepass: 0, go_for_it: 0, perfection: 0 },
-        topCategory:   "go_for_it",
+        totalVotes: 0,
+        breakdown: { skip: 0, timepass: 0, go_for_it: 0, perfection: 0 },
+        topCategory: "go_for_it",
         topPercentage: 0,
-        threadsCount:  0,
+        threadsCount: 0,
         commentsCount: 0,
-        lastActivity:  null,
+        lastActivity: null,
       },
     };
   }
@@ -336,14 +336,14 @@ async function getHomeData() {
 
 // ── Category pills for blog ───────────────────────────────────────
 const BLOG_CATEGORIES = [
-  { label: "Movie Review",    href: "/blog?category=Movie+Review",    emoji: "🎬" },
+  { label: "Movie Review", href: "/blog?category=Movie+Review", emoji: "🎬" },
   { label: "Actor Spotlight", href: "/blog?category=Actor+Spotlight", emoji: "🌟" },
-  { label: "Top 10",          href: "/blog?category=Top+10",          emoji: "🏆" },
-  { label: "Behind the Scenes",href: "/blog?category=Behind+the+Scenes",emoji: "🎥" },
-  { label: "Music",           href: "/blog?category=Music",           emoji: "🎵" },
-  { label: "Opinion",         href: "/blog?category=Opinion",         emoji: "💬" },
-  { label: "Box Office",      href: "/blog?category=Box+Office",      emoji: "📊" },
-  { label: "Industry News",   href: "/blog?category=News",            emoji: "📰" },
+  { label: "Top 10", href: "/blog?category=Top+10", emoji: "🏆" },
+  { label: "Behind the Scenes", href: "/blog?category=Behind+the+Scenes", emoji: "🎥" },
+  { label: "Music", href: "/blog?category=Music", emoji: "🎵" },
+  { label: "Opinion", href: "/blog?category=Opinion", emoji: "💬" },
+  { label: "Box Office", href: "/blog?category=Box+Office", emoji: "📊" },
+  { label: "Industry News", href: "/blog?category=News", emoji: "📰" },
 ];
 
 export default async function HomePage() {
@@ -480,7 +480,7 @@ export default async function HomePage() {
           <div className="absolute right-0 top-0 bottom-0 w-64 bg-gradient-to-l from-purple-500/4 to-transparent" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        <div className="relative w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8 sm:py-10">
 
           {/* — Header row — */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
@@ -568,19 +568,19 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-5">
         <DisplayAd slot="8191172163" format="horizontal" />
       </div>
 
       {/* ══ STATS BAR ══ */}
       <section className="bg-[#111] border-y border-[#1f1f1f]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
           <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-[#1f1f1f]">
             {[
-              { icon: Film,      label: "Odia Movies",   value: "500+"  },
-              { icon: Users,     label: "Cast Profiles",  value: "1000+" },
-              { icon: Music,     label: "Odia Songs",    value: "5000+" },
-              { icon: BookOpen,  label: "Blog Articles", value: "100+"  },
+              { icon: Film, label: "Odia Movies", value: "500+" },
+              { icon: Users, label: "Cast Profiles", value: "1000+" },
+              { icon: Music, label: "Odia Songs", value: "5000+" },
+              { icon: BookOpen, label: "Blog Articles", value: "100+" },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-3 sm:py-4">
                 <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 flex-shrink-0" />
@@ -594,7 +594,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 sm:space-y-20">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8 sm:py-12 space-y-12 sm:space-y-20">
 
         {/* ══ LATEST RELEASES ══ */}
         {latestMovies.length > 0 && (
@@ -605,7 +605,7 @@ export default async function HomePage() {
               href="/movies"
             />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-              {latestMovies.slice(0, 10).map((m: any, idx: number) => (
+              {latestMovies.slice(0, 9).map((m: any, idx: number) => (
                 <React.Fragment key={String(m._id)}>
                   {idx === 4 && (
                     <div className="col-span-2 sm:col-span-1 h-full">
@@ -644,10 +644,10 @@ export default async function HomePage() {
               {(() => {
                 const m = boxOfficeMovies[0] as any;
                 if (!m) return null;
-                const days      = m._days as any[];
-                const totalNet  = m._totalNet  as number;
-                const totalGross= m._totalGross as number;
-                const maxNet    = Math.max(...days.map((d: any) => parseNum(d.net)), 1);
+                const days = m._days as any[];
+                const totalNet = m._totalNet as number;
+                const totalGross = m._totalGross as number;
+                const maxNet = Math.max(...days.map((d: any) => parseNum(d.net)), 1);
 
                 const verdictColor: Record<string, string> = {
                   Blockbuster: "#22c55e", "Super Hit": "#4ade80", Hit: "#86efac",
@@ -690,7 +690,7 @@ export default async function HomePage() {
                       <div className="absolute bottom-0 left-0 right-0 p-5">
                         <p className="text-xs text-orange-400 font-semibold mb-1">
                           {m.releaseDate ? formatReleaseDate(m.releaseDate, m.releaseDatePrecision, "short") : ""}
-                          {(m.genre || []).length > 0 && ` · ${(m.genre as string[]).slice(0,2).join(", ")}`}
+                          {(m.genre || []).length > 0 && ` · ${(m.genre as string[]).slice(0, 2).join(", ")}`}
                         </p>
                         <h2 className="font-display text-lg sm:text-xl lg:text-2xl font-bold text-white leading-snug group-hover:text-orange-300 transition-colors">
                           {m.title}
@@ -760,8 +760,8 @@ export default async function HomePage() {
               {/* ── Side list — remaining movies ── */}
               <div className="lg:col-span-2 flex flex-col gap-3">
                 {boxOfficeMovies.slice(1).map((m: any) => {
-                  const dayCount  = (m._days as any[]).length;
-                  const totalNet  = m._totalNet  as number;
+                  const dayCount = (m._days as any[]).length;
+                  const totalNet = m._totalNet as number;
                   const verdictColor: Record<string, string> = {
                     Blockbuster: "#22c55e", "Super Hit": "#4ade80", Hit: "#86efac",
                     Average: "#facc15", Flop: "#f87171", Disaster: "#ef4444",
@@ -832,8 +832,8 @@ export default async function HomePage() {
         {(() => {
           const now30 = Date.now();
           const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-          const sevenDays  =  7 * 24 * 60 * 60 * 1000;
-          const oneDay     = 24 * 60 * 60 * 1000;
+          const sevenDays = 7 * 24 * 60 * 60 * 1000;
+          const oneDay = 24 * 60 * 60 * 1000;
 
           // Films released in the last 30 days that have box office data
           const running = (boxOfficeMovies as any[])
@@ -940,12 +940,12 @@ export default async function HomePage() {
                     {/* Footer */}
                     <div className="relative z-10 mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
                       <div>
-                        {weekTop.verdict && !["Released","Upcoming"].includes(weekTop.verdict) && (
+                        {weekTop.verdict && !["Released", "Upcoming"].includes(weekTop.verdict) && (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                             style={{
                               background: `${verdictColorMap[weekTop.verdict] || "#94a3b8"}18`,
-                              color:       verdictColorMap[weekTop.verdict] || "#94a3b8",
-                              border:      `1px solid ${verdictColorMap[weekTop.verdict] || "#94a3b8"}40`,
+                              color: verdictColorMap[weekTop.verdict] || "#94a3b8",
+                              border: `1px solid ${verdictColorMap[weekTop.verdict] || "#94a3b8"}40`,
                             }}>
                             {weekTop.verdict}
                           </span>
@@ -1006,7 +1006,7 @@ export default async function HomePage() {
                               <span className="text-xs font-bold text-orange-400">
                                 {fmtINR(m._totalNet)}
                               </span>
-                              {m.verdict && !["Released","Upcoming"].includes(m.verdict) && (
+                              {m.verdict && !["Released", "Upcoming"].includes(m.verdict) && (
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
                                   style={{ background: `${vc}18`, color: vc, border: `1px solid ${vc}40` }}>
                                   {m.verdict}
@@ -1073,7 +1073,7 @@ export default async function HomePage() {
         {/* ══ THIS MONTH IN OLLYWOOD ══ */}
         {thisMonthAll.length > 0 && (() => {
           const monthName = _now.toLocaleDateString("en-IN", { month: "long" });
-          const year      = _now.getFullYear();
+          const year = _now.getFullYear();
           return (
             <section aria-label={`Odia movies releasing in ${monthName} ${year}`}>
               <SectionHeader
@@ -1091,16 +1091,16 @@ export default async function HomePage() {
                   {thisMonthAll.map((m: any, i: number) => {
                     const rdStr = m.isReRelease && m.reReleaseDate ? m.reReleaseDate : m.releaseDate;
                     const isRe = m.isReRelease && m.reReleaseDate;
-                    const released  = rdStr ? new Date(rdStr) <= _now : false;
-                    const isToday   = rdStr ? new Date(rdStr).toDateString() === _now.toDateString() : false;
+                    const released = rdStr ? new Date(rdStr) <= _now : false;
+                    const isToday = rdStr ? new Date(rdStr).toDateString() === _now.toDateString() : false;
                     const dateLabel = rdStr
                       ? (isRe ? "Re-Release: " : "") + formatReleaseDate(rdStr, isRe ? m.reReleaseDatePrecision : m.releaseDatePrecision, "short")
                       : "TBA";
-                    const hasVerdict = m.verdict && !["Upcoming","Released",""].includes(m.verdict);
+                    const hasVerdict = m.verdict && !["Upcoming", "Released", ""].includes(m.verdict);
 
-                    const verdictColorMap: Record<string,string> = {
-                      Blockbuster:"#22c55e","Super Hit":"#4ade80",Hit:"#86efac",
-                      Average:"#facc15",Flop:"#f87171",Disaster:"#ef4444",
+                    const verdictColorMap: Record<string, string> = {
+                      Blockbuster: "#22c55e", "Super Hit": "#4ade80", Hit: "#86efac",
+                      Average: "#facc15", Flop: "#f87171", Disaster: "#ef4444",
                     };
                     const vc = verdictColorMap[m.verdict] || "#94a3b8";
 
@@ -1154,7 +1154,7 @@ export default async function HomePage() {
                               )}
                               {hasVerdict && (
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                                  style={{ background:`${vc}18`, color:vc, border:`1px solid ${vc}40` }}>
+                                  style={{ background: `${vc}18`, color: vc, border: `1px solid ${vc}40` }}>
                                   {m.verdict}
                                 </span>
                               )}
@@ -1218,7 +1218,7 @@ export default async function HomePage() {
           </section>
         )}
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-5">
           <DisplayAd slot="8191172163" format="horizontal" />
         </div>
 
@@ -1261,7 +1261,7 @@ export default async function HomePage() {
           </section>
         )}
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-5">
           <DisplayAd slot="8191172163" format="horizontal" />
         </div>
 

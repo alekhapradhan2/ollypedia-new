@@ -146,7 +146,7 @@ function CastSection({
   return (
     <section aria-labelledby={`section-${title.replace(/\s+/g, "-").toLowerCase()}`} className="mb-2">
       {/* Section header */}
-      <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 mb-3">
+      <div className="w-full flex items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <h2
             id={`section-${title.replace(/\s+/g, "-").toLowerCase()}`}
@@ -174,9 +174,9 @@ function CastSection({
       </div>
 
       {/* Horizontal scroll row */}
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
       <div
-        className="flex gap-3 overflow-x-auto px-4 sm:px-6 pb-3"
+        className="flex gap-3 overflow-x-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 pb-3"
         style={{ scrollbarWidth: "none" }}
       >
         {people.map((p, i) => (
@@ -246,7 +246,7 @@ export default async function CastPage({
             background: "linear-gradient(to bottom, rgba(201,151,58,0.07) 0%, transparent 100%)",
           }}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-0">
+          <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 pt-8 pb-0">
 
             {/* Breadcrumb */}
             <nav aria-label="Breadcrumb" className="mb-5">
@@ -369,7 +369,7 @@ export default async function CastPage({
                 </Link>
               </div>
             ) : (
-              <section className="max-w-7xl mx-auto px-4 sm:px-6" aria-labelledby="filtered-heading">
+              <section className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16" aria-labelledby="filtered-heading">
                 <div className="flex items-center justify-between mb-4">
                   <h2 id="filtered-heading" className="text-sm font-black text-white">
                     {ROLE_ICON[type!]} All {type}s
@@ -409,7 +409,7 @@ export default async function CastPage({
               aria-labelledby="about-cast-heading"
               className="mt-12 pt-8 border-t border-zinc-800"
             >
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div>
                   <h2 id="about-cast-heading" className="text-lg font-bold text-white mb-3">
                     About Ollywood Cast &amp; Crew

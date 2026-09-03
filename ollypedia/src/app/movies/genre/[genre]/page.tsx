@@ -108,7 +108,7 @@ export default async function GenreMoviesPage({
 
       {/* Header */}
       <div className="bg-[#111] border-b border-[#1f1f1f] py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
           <div className="mb-4">
             <Breadcrumb
               crumbs={[
@@ -134,7 +134,7 @@ export default async function GenreMoviesPage({
       </div>
 
       {/* Movies Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
         <div className="mb-6">
           <DisplayAd slot="8191172163" format="horizontal" />
         </div>

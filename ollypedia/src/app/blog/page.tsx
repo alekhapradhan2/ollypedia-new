@@ -5,6 +5,7 @@
 import { SITE_URL } from "@/lib/seo";
 
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { connectDB } from "@/lib/db";
 import Blog from "@/models/Blog";
@@ -358,326 +359,255 @@ export default async function BlogPage({
 
       <main className="min-h-screen bg-[#0a0a0a] text-white">
 
-        {/* ── HERO / SEO HEADER ─────────────────────────────────────────── */}
-        <header className="relative overflow-hidden border-b border-white/6" style={{ background: "linear-gradient(135deg, #050505 0%, #0f0500 40%, #080010 100%)" }}>
-          <div className="absolute inset-0 pointer-events-none">
-            {/* Animated Gradients */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[900px] h-[600px] rounded-full"
-              style={{ background: "radial-gradient(ellipse, rgba(249,115,22,0.08) 0%, transparent 70%)" }} />
-            <div className="absolute -left-20 top-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full"
-              style={{ background: "radial-gradient(ellipse, rgba(239,68,68,0.07) 0%, transparent 70%)" }} />
-            <div className="absolute -right-20 bottom-0 w-[500px] h-[400px] rounded-full"
-              style={{ background: "radial-gradient(ellipse, rgba(168,85,247,0.06) 0%, transparent 70%)" }} />
-            
-            <div className="absolute inset-0 opacity-[0.025]"
-              style={{
-                backgroundImage: "linear-gradient(rgba(249,115,22,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(249,115,22,0.5) 1px, transparent 1px)",
-                backgroundSize: "60px 60px",
-              }} />
+        {/* ── EDITORIAL HEADER & TOP NAV BAR ─────────────────────────────── */}
+        <header className="border-b border-[#1c1c1c] bg-[#090909]">
+          
+          {/* Top Editorial Ticker Bar */}
+          <div className="border-b border-[#161616] bg-[#050505] text-[11px] text-zinc-400 py-2">
+            <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 text-red-500 font-bold uppercase tracking-wider text-[10px]">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  LIVE
+                </span>
+                <span className="text-zinc-700">|</span>
+                <span className="text-zinc-300 font-medium">
+                  {new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                </span>
+                <span className="text-zinc-700 hidden sm:inline">|</span>
+                <span className="text-zinc-400 hidden sm:inline">Ollywood Entertainment &amp; Cinema Wire</span>
+              </div>
+              <div className="flex items-center gap-3 text-zinc-400 text-[11px]">
+                <span><strong>{stats.totalPosts}</strong> Stories</span>
+                <span className="text-zinc-700">•</span>
+                <Link href="/box-office" className="text-orange-400 hover:underline">Box Office Reports</Link>
+                <span className="text-zinc-700">•</span>
+                <Link href="/discussion" className="text-zinc-300 hover:text-orange-400">Community Meter</Link>
+              </div>
+            </div>
           </div>
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
-
-            {/* Breadcrumb — SEO + AdSense loves clear site structure */}
-            <nav aria-label="Breadcrumb" className="mb-10">
-              <ol
-                className="flex items-center gap-1.5 text-xs text-gray-500"
-                itemScope
-                itemType="https://schema.org/BreadcrumbList"
-              >
-                <li itemScope itemType="https://schema.org/ListItem" itemProp="itemListElement">
-                  <a href="/" itemProp="item" className="hover:text-orange-400 transition-colors">
-                    <span itemProp="name">Home</span>
-                  </a>
-                  <meta itemProp="position" content="1" />
-                </li>
-                <span aria-hidden className="mx-0.5">
-                  <ChevronRight className="w-3 h-3" />
-                </span>
-                <li itemScope itemType="https://schema.org/ListItem" itemProp="itemListElement">
-                  {category ? (
+          {/* Newspaper Nameplate & Search */}
+          <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-4 sm:py-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-xs text-zinc-500 mb-1">
+                  <Link href="/" className="hover:text-orange-400 transition-colors">Home</Link>
+                  <span>/</span>
+                  <Link href="/blog" className={category ? "hover:text-orange-400 transition-colors" : "text-orange-400 font-semibold"}>Entertainment News</Link>
+                  {category && (
                     <>
-                      <a href="/blog" itemProp="item" className="hover:text-orange-400 transition-colors">
-                        <span itemProp="name">Blog</span>
-                      </a>
-                      <meta itemProp="position" content="2" />
-                    </>
-                  ) : (
-                    <>
-                      <span itemProp="name" className="text-gray-400">Blog</span>
-                      <meta itemProp="position" content="2" />
+                      <span>/</span>
+                      <span className="text-orange-400 font-semibold">{category}</span>
                     </>
                   )}
-                </li>
-                {category && (
-                  <>
-                    <span aria-hidden className="mx-0.5">
-                      <ChevronRight className="w-3 h-3" />
-                    </span>
-                    <li itemScope itemType="https://schema.org/ListItem" itemProp="itemListElement">
-                      <span itemProp="name" className="text-gray-400">{category}</span>
-                      <meta itemProp="position" content="3" />
-                    </li>
-                  </>
-                )}
-              </ol>
-            </nav>
-
-            <div className="relative grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
-              
-              {/* ── LEFT: Text content ── */}
-              <div className="space-y-8">
-                
-                {/* Badge */}
-                <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border text-xs font-bold uppercase tracking-widest"
-                  style={{ color: "#f97316", borderColor: "rgba(249,115,22,0.3)", background: "rgba(249,115,22,0.08)" }}>
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
-                  </span>
-                  <BookOpen className="w-3.5 h-3.5" />
-                  {category ? `${category} Articles` : "Odia Cinema Blog"}
                 </div>
-
-                {/* Heading */}
-                <div>
-                  <h1 className="font-black text-white leading-[1.05]" style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)" }}>
-                    <span className="block text-gray-300 font-extrabold" style={{ fontSize: "0.55em", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "0.3em", color: "rgba(249,115,22,0.7)" }}>
-                      Ollywood Reading
-                    </span>
-                    {category ? (
-                      <>{category} <span style={{ background: "linear-gradient(135deg, #f97316 0%, #ef4444 60%, #ec4899 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Articles</span></>
-                    ) : query ? (
-                      <>Search <span style={{ background: "linear-gradient(135deg, #f97316 0%, #ef4444 60%, #ec4899 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Results</span></>
-                    ) : (
-                      <>Ollywood <span style={{ background: "linear-gradient(135deg, #f97316 0%, #ef4444 60%, #ec4899 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Blog</span></>
-                    )}
-                  </h1>
-                </div>
-
-                {/* Description */}
-                <p className="text-gray-400 leading-relaxed max-w-lg" style={{ fontSize: "clamp(0.95rem, 1.5vw, 1.1rem)" }}>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white font-serif">
+                  {category ? (
+                    <><span className="text-orange-400">{category}</span> &bull; Ollywood Wire</>
+                  ) : query ? (
+                    <>Search: <span className="text-orange-400">"{query}"</span></>
+                  ) : (
+                    <>Ollywood <span className="text-orange-400">Cinema Wire</span></>
+                  )}
+                </h1>
+                <p className="text-zinc-400 text-xs sm:text-sm mt-1">
                   {category && CATEGORY_DESCRIPTIONS[category]
                     ? CATEGORY_DESCRIPTIONS[category]
-                    : query
-                    ? `Showing results for "${query}" across all Odia cinema articles.`
-                    : <>In-depth movie reviews, actor profiles, top lists, song breakdowns and news from <strong className="text-gray-300 font-medium">Odia cinema</strong> — updated every week.</>
-                  }
+                    : "Breaking news, honest movie reviews, daily box office analysis, and celebrity interviews from Odisha."}
                 </p>
-
-                {/* Stats row */}
-                <div className="flex flex-wrap gap-6 pt-6 border-t border-white/[0.06]">
-                  <div className="text-center">
-                    <div className="text-2xl font-black text-white">{stats.totalPosts}</div>
-                    <div className="text-xs text-gray-600 font-medium mt-0.5">Total Articles</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-black text-white">{stats.totalCategories}</div>
-                    <div className="text-xs text-orange-500 font-medium mt-0.5">Categories</div>
-                  </div>
-                  {totalViews > 0 && (
-                    <div className="text-center">
-                      <div className="text-2xl font-black text-white">
-                        {totalViews >= 1_000_000 ? `${(totalViews / 1_000_000).toFixed(1)}M` : totalViews >= 1_000 ? `${(totalViews / 1_000).toFixed(0)}K` : totalViews}
-                      </div>
-                      <div className="text-xs text-yellow-500 font-medium mt-0.5">Total Reads</div>
-                    </div>
-                  )}
-                  <div className="text-center">
-                    <div className="text-2xl font-black text-white">24/7</div>
-                    <div className="text-xs text-purple-500 font-medium mt-0.5">Updates</div>
-                  </div>
-                </div>
               </div>
 
-              {/* ── RIGHT: Visual panel ── */}
-              <div className="absolute right-0 sm:-right-4 top-0 lg:relative lg:right-auto lg:top-auto flex items-center justify-center min-h-[300px] lg:min-h-[400px] scale-[0.55] sm:scale-75 lg:scale-100 origin-top-right lg:origin-center pointer-events-none lg:pointer-events-auto opacity-20 sm:opacity-40 lg:opacity-100 z-0 lg:z-10">
-                
-                {/* Outer ring glow */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-80 h-80 rounded-full border border-orange-500/10 animate-[pulse_4s_ease-in-out_infinite]" />
-                  <div className="absolute w-64 h-64 rounded-full border border-orange-500/15" />
+              {/* Integrated Search Input & Category Dropdown */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto flex-shrink-0">
+                <div className="w-full sm:w-52">
+                  <BlogCategoryDropdown currentCategory={category || "All"} categories={categories} />
                 </div>
-
-                {/* Center Icon */}
-                <div className="relative z-10 flex flex-col items-center gap-6">
-                  
-                  {/* Main visual */}
-                  <div className="relative">
-                    <div className="w-40 h-40 rounded-full flex items-center justify-center shadow-2xl animate-[spin_20s_linear_infinite]"
-                      style={{
-                        background: "linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(239,68,68,0.15) 100%)",
-                        border: "1px solid rgba(249,115,22,0.25)",
-                        boxShadow: "0 0 80px rgba(249,115,22,0.12), inset 0 1px 0 rgba(255,255,255,0.05)",
-                      }}>
-                      <BookOpen className="w-20 h-20 text-orange-400" strokeWidth={1.2} />
-                    </div>
-                    {/* Play badge */}
-                    <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full flex items-center justify-center shadow-lg"
-                      style={{ background: "linear-gradient(135deg, #ef4444, #f97316)" }}>
-                      <Star className="w-4 h-4 text-white fill-white ml-0.5" />
-                    </div>
-                  </div>
-
-                  {/* Floating cards around the center */}
-                  <div className="absolute -top-16 -left-20 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 animate-bounce"
-                    style={{ animationDuration: "3s", background: "rgba(15,15,15,0.95)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
-                    <Flame className="w-3 h-3" /> Hot News
-                  </div>
-
-                  <div className="absolute top-1/2 -right-24 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 animate-bounce"
-                    style={{ animationDuration: "2.5s", animationDelay: "1s", background: "rgba(15,15,15,0.95)", border: "1px solid rgba(249,115,22,0.3)", color: "#f97316", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
-                    <TrendingUp className="w-3 h-3" /> Movie Reviews
-                  </div>
-
-                  <div className="absolute -bottom-10 left-0 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 animate-bounce"
-                    style={{ animationDuration: "3.5s", animationDelay: "0.5s", background: "rgba(15,15,15,0.95)", border: "1px solid rgba(168,85,247,0.3)", color: "#a855f7", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
-                    <Eye className="w-3 h-3" /> Deep Analysis
-                  </div>
+                <div className="w-full sm:w-72">
+                  <Suspense>
+                    <BlogSearch initialQuery={query} />
+                  </Suspense>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Unified Search & Category Row */}
-            <div className="mt-10 flex flex-col sm:flex-row items-center gap-4 border-t border-white/[0.06] pt-8">
-              <div className="w-full sm:flex-1 sm:max-w-md">
-                <Suspense>
-                  <BlogSearch initialQuery={query} />
-                </Suspense>
-              </div>
-              <div className="w-full sm:w-auto">
-                {categories.length > 0 && (
-                  <BlogCategoryDropdown currentCategory={category || "All"} categories={categories} />
-                )}
-              </div>
+          {/* Trending News Topics Strip */}
+          <div className="border-t border-[#161616] bg-[#070707] py-2 text-xs">
+            <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 flex items-center gap-2 overflow-x-auto scrollbar-none">
+              <span className="text-orange-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1 flex-shrink-0">
+                <Flame className="w-3 h-3" /> TRENDING:
+              </span>
+              {[
+                { label: "Box Office 2026", href: "/box-office" },
+                { label: "OTT Premieres",   href: "/ott" },
+                { label: "Upcoming Movies", href: "/movies" },
+                { label: "Latest Trailers", href: "/trailers" },
+                { label: "Movie Songs",     href: "/songs" },
+                { label: "Community Meter", href: "/discussion" },
+              ].map((topic) => (
+                <Link
+                  key={topic.label}
+                  href={topic.href}
+                  className="flex-shrink-0 text-[11px] text-zinc-400 hover:text-orange-400 transition-colors whitespace-nowrap px-2 py-0.5 rounded hover:bg-white/5"
+                >
+                  #{topic.label.replace(/\s+/g, "")}
+                </Link>
+              ))}
             </div>
           </div>
         </header>
 
         {/* ══ GLOBAL BANNER AD ══ */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mt-6">
           <DisplayAd slot="8191172163" format="horizontal" className="rounded-xl border border-[#222]" />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* ══ EDITORIAL BODY ══ */}
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
 
-          {/* ── SEARCH RESULT CONTEXT ───────────────────────────────────── */}
+          {/* ── SEARCH / FILTER STATUS ── */}
           {isFiltered && (
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm text-gray-400">
-                  {total === 0
-                    ? "No results found"
-                    : `Found ${total} article${total !== 1 ? "s" : ""}`}
-                  {query    && <> for <strong className="text-white">"{query}"</strong></>}
+            <div className="mb-8 p-4 rounded-xl border border-[#1f1f1f] bg-[#0e0e0e] flex items-center justify-between">
+              <div>
+                <p className="text-sm text-zinc-300 font-medium">
+                  {total === 0 ? "No articles found" : `Showing ${total} article${total !== 1 ? "s" : ""}`}
+                  {query && <> for <strong className="text-white">"{query}"</strong></>}
                   {category && <> in <strong className="text-orange-400">{category}</strong></>}
                 </p>
-                <a
-                  href="/blog"
-                  className="text-xs text-orange-400 hover:text-orange-300 underline underline-offset-4"
-                >
-                  Clear filters
-                </a>
+                {category && CATEGORY_DESCRIPTIONS[category] && (
+                  <p className="text-xs text-zinc-500 mt-1">{CATEGORY_DESCRIPTIONS[category]}</p>
+                )}
               </div>
-              {/* Category description — keyword-rich copy for category pages */}
-              {category && CATEGORY_DESCRIPTIONS[category] && (
-                <p className="text-xs text-gray-600 leading-relaxed border border-[#1c1c1c]
-                  bg-[#0f0f0f] rounded-xl px-4 py-3">
-                  {CATEGORY_DESCRIPTIONS[category]}
-                </p>
-              )}
+              <Link href="/blog" className="text-xs font-bold text-orange-400 hover:underline">
+                Clear Filters &times;
+              </Link>
             </div>
           )}
 
-          {/* ── FEATURED POSTS ───────────────────────────────────────────── */}
-          {showFeatured && (
-            <section aria-labelledby="featured-heading" className="mb-12">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-1 h-5 bg-orange-500 rounded-full" aria-hidden />
-                <h2
-                  id="featured-heading"
-                  className="text-xs font-black uppercase tracking-widest text-orange-400"
-                >
-                  Featured Articles
-                </h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {featured.map((b) => (
-                  <BlogCard key={String(b._id)} blog={b} variant="featured" />
-                ))}
+          {/* ── TOP HEADLINE LEAD SHOWCASE (Indian Express Style 2-Col Lead News) ── */}
+          {!isFiltered && page === 1 && blogs.length > 0 && (
+            <section aria-label="Top Headline Stories" className="mb-12 border-b border-[#1c1c1c] pb-10">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                {/* ── LEFT: Big Lead Headline Story (7 cols) ── */}
+                {blogs[0] && (
+                  <article className="lg:col-span-7 group flex flex-col justify-between">
+                    <Link href={`/blog/${blogs[0].slug}`} className="block overflow-hidden rounded-2xl border border-zinc-800 bg-[#111] mb-4">
+                      <div className="relative aspect-video w-full overflow-hidden bg-zinc-900">
+                        {blogs[0].coverImage ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={blogs[0].coverImage}
+                            alt={blogs[0].title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-4xl">📰</div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        <span className="absolute bottom-4 left-4 px-2.5 py-1 rounded bg-orange-500 text-black font-black text-[10px] uppercase tracking-wider">
+                          {blogs[0].category || "Lead Story"}
+                        </span>
+                      </div>
+                    </Link>
+
+                    <div>
+                      <div className="flex items-center gap-2 text-xs text-zinc-500 mb-2">
+                        <span>{new Date(blogs[0].createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}</span>
+                        <span>•</span>
+                        <span>{blogs[0].readTime || 4} min read</span>
+                        <span>•</span>
+                        <span className="text-zinc-400">{blogs[0].author || "Ollypedia Desk"}</span>
+                      </div>
+                      <Link href={`/blog/${blogs[0].slug}`}>
+                        <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white font-serif group-hover:text-orange-400 transition-colors leading-tight mb-2">
+                          {blogs[0].title}
+                        </h2>
+                      </Link>
+                      {blogs[0].excerpt && (
+                        <p className="text-zinc-400 text-sm leading-relaxed line-clamp-3">
+                          {blogs[0].excerpt.replace(/<[^>]*>/g, " ")}
+                        </p>
+                      )}
+                    </div>
+                  </article>
+                )}
+
+                {/* ── RIGHT: Top Stories 3-Pack (5 cols) ── */}
+                <div className="lg:col-span-5 flex flex-col justify-between h-full space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-[#1f1f1f]">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
+                      <Flame className="w-3.5 h-3.5" /> Top Breaking Stories
+                    </h3>
+                    <span className="text-[11px] text-zinc-500">Updated Daily</span>
+                  </div>
+
+                  <div className="divide-y divide-[#1a1a1a]">
+                    {blogs.slice(1, 4).map((b, idx) => (
+                      <article key={String(b._id)} className="py-4 first:pt-0 last:pb-0 group">
+                        <Link href={`/blog/${b.slug}`} className="flex gap-4 items-start">
+                          <span className="text-2xl font-black text-zinc-700 group-hover:text-orange-500 transition-colors font-serif flex-shrink-0 w-6">
+                            0{idx + 1}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest block mb-1">
+                              {b.category || "Article"}
+                            </span>
+                            <h4 className="text-sm sm:text-base font-bold text-white group-hover:text-orange-400 transition-colors leading-snug line-clamp-2">
+                              {b.title}
+                            </h4>
+                            <div className="flex items-center gap-2 text-[11px] text-zinc-500 mt-2">
+                              <span>{new Date(b.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}</span>
+                              <span>•</span>
+                              <span>{b.readTime || 3} min read</span>
+                            </div>
+                          </div>
+                          {b.coverImage && (
+                            <div className="w-20 sm:w-24 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-zinc-900 border border-zinc-800">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={b.coverImage} alt={b.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                            </div>
+                          )}
+                        </Link>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+
               </div>
             </section>
           )}
 
-          {/* ── MAIN ARTICLE GRID ────────────────────────────────────────── */}
-          {regularBlogs.length > 0 ? (
-            <section aria-labelledby="articles-heading">
-              {!isFiltered && (
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-1 h-5 bg-gray-600 rounded-full" aria-hidden />
-                  <h2
-                    id="articles-heading"
-                    className="text-xs font-black uppercase tracking-widest text-gray-500"
-                  >
-                    {page > 1 ? `Page ${page} — All Articles` : "All Articles"}
-                  </h2>
-                  <span className="ml-auto text-xs text-gray-600">
-                    Showing {(page - 1) * POSTS_PER_PAGE + 1}–
-                    {Math.min(page * POSTS_PER_PAGE, total)} of {total}
-                  </span>
-                </div>
-              )}
+          {/* ── FULL-WIDTH MAGAZINE FEED (Left to Right) ── */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between pb-3 border-b border-[#1f1f1f]">
+              <h3 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+                <span className="w-1.5 h-4 bg-orange-500 rounded-full inline-block" />
+                {isFiltered ? "Search Results" : "All Cinema Stories & Articles"}
+              </h3>
+              <span className="text-xs text-zinc-500">Showing {blogs.length} articles</span>
+            </div>
 
+            {regularBlogs.length > 0 ? (
               <BlogInfiniteScroll
                 initialBlogs={regularBlogs}
                 totalPages={totalPages}
                 searchParams={{ page: page.toString(), q: query, category }}
               />
-            </section>
-          ) : (
-            <div className="text-center py-24">
-              <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4">
-                <Search className="w-7 h-7 text-gray-600" />
+            ) : (
+              <div className="text-center py-20 bg-[#0e0e0e] rounded-2xl border border-zinc-800">
+                <Search className="w-8 h-8 text-zinc-600 mx-auto mb-3" />
+                <p className="text-zinc-300 font-bold mb-1">No articles found</p>
+                <p className="text-zinc-500 text-xs mb-4">Try searching for other keywords or explore categories above.</p>
+                <Link href="/blog" className="text-xs text-orange-400 font-bold hover:underline">
+                  Browse All Stories
+                </Link>
               </div>
-              <p className="text-gray-400 text-lg font-semibold mb-1">No articles found</p>
-              <p className="text-gray-600 text-sm mb-4">
-                {query ? `We couldn't find anything matching "${query}".` : "No posts published yet."}
-              </p>
-              <a href="/blog" className="text-xs text-orange-400 underline underline-offset-4">
-                Browse all articles
-              </a>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* ── POPULAR TAGS ─────────────────────────────────────────────── */}
-          {!isFiltered && page === 1 && popularTags.length > 0 && (
-            <nav aria-label="Browse by tag" className="mt-10 pt-8 border-t border-white/6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-1 h-4 bg-orange-500/50 rounded-full" aria-hidden />
-                <h2 className="text-xs font-black uppercase tracking-widest text-gray-500">
-                  Browse by Topic
-                </h2>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {popularTags.map(({ tag, count }) => (
-                  <a
-                    key={tag}
-                    href={`/blog?q=${encodeURIComponent(tag)}`}
-                    className="inline-flex items-center gap-1.5 text-xs text-gray-400
-                      hover:text-orange-400 border border-white/10 hover:border-orange-500/30
-                      bg-white/3 hover:bg-orange-500/5 rounded-full px-3 py-1.5 transition-all"
-                  >
-                    #{tag}
-                    <span className="text-gray-700 text-[10px]">{count}</span>
-                  </a>
-                ))}
-              </div>
-            </nav>
-          )}
-
-          {/* ── RELATED CATEGORIES (NEW) ──────────────────────────────────
-               Shown only on category pages. Keeps users on-site longer,
-               improves internal linking, and boosts AdSense session RPM.  */}
+          {/* ── RELATED CATEGORIES ── */}
           {isFiltered && category && relatedCategories.length > 0 && (
             <nav
               aria-label="Explore other categories"
@@ -686,12 +616,12 @@ export default async function BlogPage({
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-1 h-4 bg-orange-500/50 rounded-full" aria-hidden />
                 <h2 className="text-xs font-black uppercase tracking-widest text-gray-500">
-                  Explore More
+                  Explore More Categories
                 </h2>
               </div>
               <div className="flex flex-wrap gap-2">
                 {relatedCategories.map((cat) => (
-                  <a
+                  <Link
                     key={cat}
                     href={`/blog?category=${encodeURIComponent(cat)}`}
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400
@@ -699,15 +629,13 @@ export default async function BlogPage({
                       bg-white/3 hover:bg-orange-500/5 rounded-full px-3 py-1.5 transition-all"
                   >
                     {cat} →
-                  </a>
+                  </Link>
                 ))}
               </div>
             </nav>
           )}
 
-          {/* Pagination removed in favor of Infinite Scroll */}
-
-          {/* ── SEO CONTENT SECTION ──────────────────────────────────────── */}
+          {/* ── SEO CONTENT SECTION ── */}
           {!isFiltered && page === 1 && (
             <section
               aria-labelledby="about-blog-heading"
@@ -720,11 +648,11 @@ export default async function BlogPage({
                     id="about-blog-heading"
                     className="text-xl font-bold text-white mb-4"
                   >
-                    About the Ollypedia Blog
+                    About the Ollypedia Cinema Wire
                   </h2>
                   <div className="space-y-3 text-gray-400 text-sm leading-relaxed">
                     <p>
-                      The <strong className="text-gray-300">Ollypedia Blog</strong> is your definitive guide to{" "}
+                      The <strong className="text-gray-300">Ollypedia Cinema Wire</strong> is your definitive guide to{" "}
                       <strong className="text-gray-300">Odia cinema</strong>, popularly known as{" "}
                       <strong className="text-gray-300">Ollywood</strong>. We cover everything from blockbuster
                       movie releases to indie films, from celebrated actors to emerging talent shaping the
@@ -739,9 +667,6 @@ export default async function BlogPage({
                     </p>
                   </div>
 
-                  {/* ── NEW: Last Updated timestamp ──
-                       Signals freshness to both users and Google crawlers. Uses
-                       a machine-readable <time> element for schema.org compatibility. */}
                   <p className="mt-4 text-xs text-gray-600">
                     Last updated:{" "}
                     <time dateTime={mostRecentDate}>
@@ -782,13 +707,13 @@ export default async function BlogPage({
                       { label: "Top Lists",       href: "/blog?category=Top+Lists" },
                       { label: "Odia Songs",      href: "/blog?category=Songs" },
                     ].map((link) => (
-                      <a
+                      <Link
                         key={link.href}
                         href={link.href}
                         className="text-xs font-semibold px-3 py-1.5 rounded-full bg-white/5 border border-white/12 text-gray-400 hover:text-orange-400 hover:border-orange-500/40 transition-all"
                       >
                         {link.label} →
-                      </a>
+                      </Link>
                     ))}
                   </div>
                 </div>

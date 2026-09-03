@@ -352,7 +352,7 @@ export default async function MoviesByYearPage({
               }} />
           </div>
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+          <div className="relative w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-10 md:py-14">
             
             {/* Breadcrumb */}
             <nav className="flex items-center gap-2 text-xs text-gray-600 mb-10">
@@ -483,7 +483,7 @@ export default async function MoviesByYearPage({
 
 
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-10 space-y-10">
 
           {/* ══════════════════════════════════════════════════════════
               VERDICT BREAKDOWN STATS
@@ -604,15 +604,38 @@ export default async function MoviesByYearPage({
                               {index + 1}
                             </td>
 
-                            {/* Movie name */}
-                            <td className="px-2 sm:px-4 py-3 align-top">
+                            {/* Movie name & Poster */}
+                            <td className="px-2 sm:px-4 py-3 align-middle">
                               <Link
                                 href={`/movie/${movie.slug}`}
-                                className="font-semibold text-white hover:text-orange-400 transition-colors inline-flex items-start gap-1 group/link"
+                                className="flex items-center gap-3 group/link"
                                 title={`${movie.title} – Odia Movie ${year}`}
                               >
-                                <span className="leading-snug">{movie.title}</span>
-                                <ExternalLink className="w-3 h-3 mt-0.5 opacity-0 group-hover/link:opacity-50 transition-opacity flex-shrink-0" />
+                                <div className="w-10 sm:w-12 h-14 sm:h-16 rounded-lg overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0 relative shadow-sm">
+                                  {movie.posterUrl || movie.thumbnailUrl ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      src={movie.posterUrl || movie.thumbnailUrl}
+                                      alt={movie.title}
+                                      className="w-full h-full object-cover group-hover/link:scale-105 transition-transform duration-300"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-zinc-600 text-xs font-bold">
+                                      🎬
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <span className="font-bold text-white text-sm sm:text-base group-hover/link:text-orange-400 transition-colors leading-snug line-clamp-2">
+                                    {movie.title}
+                                  </span>
+                                  {movie.originalTitle && movie.originalTitle !== movie.title && (
+                                    <span className="text-[11px] text-zinc-500 line-clamp-1 block mt-0.5">
+                                      {movie.originalTitle}
+                                    </span>
+                                  )}
+                                </div>
                               </Link>
                             </td>
 

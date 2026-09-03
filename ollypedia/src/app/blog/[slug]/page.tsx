@@ -20,7 +20,7 @@ import Blog from "@/models/Blog";
 import Movie from "@/models/Movie";
 import BlogDetailClient from "./BlogDetailClient";
 
-export const revalidate    = 21600; // 6 hours
+export const revalidate = 21600; // 6 hours
 export const dynamicParams = true;
 
 // ─── helpers ───────────────────────────────────────────────────
@@ -101,12 +101,12 @@ async function getRelatedBlogs(currentSlug: string, category?: string) {
   // First: up to 4 same-category blogs (most relevant for bounce rate + dwell time)
   const sameCat = category
     ? await Blog.find(
-        { published: true, slug: { $ne: currentSlug }, category },
-        "title slug excerpt coverImage category createdAt readTime"
-      )
-        .sort({ createdAt: -1 })
-        .limit(4)
-        .lean()
+      { published: true, slug: { $ne: currentSlug }, category },
+      "title slug excerpt coverImage category createdAt readTime"
+    )
+      .sort({ createdAt: -1 })
+      .limit(4)
+      .lean()
     : [];
 
   // Fill remaining slots with recent blogs from other categories
@@ -135,12 +135,12 @@ export async function generateMetadata({
   const title = blog.seoTitle || blog.title;
   const rawDesc = blog.seoDesc || blog.excerpt || blog.content || "";
   const description = cleanTruncate(rawDesc, 160) || `Read ${blog.title} on Ollypedia...`;
-  const image     = blog.coverImage || `${SITE_URL}/default.jpg`;
+  const image = blog.coverImage || `${SITE_URL}/default.jpg`;
   const canonical = `${SITE_URL}/blog/${blog.slug}`;
 
   const movieName = blog.movieTitle || "";
-  const year      = blog.createdAt ? new Date(blog.createdAt).getFullYear() : "";
-  const keywords  = [
+  const year = blog.createdAt ? new Date(blog.createdAt).getFullYear() : "";
+  const keywords = [
     blog.title,
     movieName,
     movieName && `${movieName} review`,
@@ -189,7 +189,7 @@ export async function generateMetadata({
       siteName: "Ollypedia",
       type: "article",
       publishedTime: blog.createdAt ? new Date(blog.createdAt).toISOString() : undefined,
-      modifiedTime:  blog.updatedAt ? new Date(blog.updatedAt).toISOString() : undefined,
+      modifiedTime: blog.updatedAt ? new Date(blog.updatedAt).toISOString() : undefined,
       images: [{ url: image, width: 1200, height: 630, alt: blog.title }],
       locale: "en_IN",
     },
@@ -219,7 +219,7 @@ function SeoInterlinks({ blog, movie }: { blog: any; movie: any | null }) {
   return (
     <section
       aria-label="Related content"
-      className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 pb-10 mt-4"
+      className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 pb-10 mt-4"
     >
       {/* ── About box ── */}
       <div className="bg-[#111] border border-[#1f1f1f] rounded-xl p-5 mb-5">
@@ -295,8 +295,8 @@ function SeoInterlinks({ blog, movie }: { blog: any; movie: any | null }) {
                 <p className="text-xs mt-1 font-semibold" style={{
                   color: movie.verdict === "Blockbuster" || movie.verdict === "Super Hit" ? "#4acf82"
                     : movie.verdict === "Hit" ? "#a3e8a0"
-                    : movie.verdict === "Average" ? "#e8c87a"
-                    : "#e59595"
+                      : movie.verdict === "Average" ? "#e8c87a"
+                        : "#e59595"
                 }}>
                   {movie.verdict}
                 </p>
@@ -350,10 +350,10 @@ function SeoInterlinks({ blog, movie }: { blog: any; movie: any | null }) {
             <span className="w-4 h-[2.5px] bg-orange-500 rounded inline-block" />
             Songs from {movie.title}
           </h2>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(150px, 1fr))", gap:"12px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "12px" }}>
             {songs.slice(0, 10).map((s: any, i: number) => {
               const thumb = s.thumbnailUrl || (s.ytId ? `https://img.youtube.com/vi/${s.ytId}/mqdefault.jpg` : null);
-              const href  = `/songs/${movie.slug}/${i}/${toSlug(s.title) || String(i)}`;
+              const href = `/songs/${movie.slug}/${i}/${toSlug(s.title) || String(i)}`;
               return (
                 <Link key={i} href={href} className="olly-sc">
                   <div className="olly-sc-thumb">
@@ -362,10 +362,10 @@ function SeoInterlinks({ blog, movie }: { blog: any; movie: any | null }) {
                       <img src={thumb} alt={s.title || "Song"} loading="lazy" />
                     ) : (
                       <div className="olly-sc-ph">
-                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style={{ color:"#2a2a2a" }}>
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style={{ color: "#2a2a2a" }}>
                           <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="1.5" />
-                          <circle cx="16" cy="16" r="8"  stroke="currentColor" strokeWidth="1" />
-                          <circle cx="16" cy="16" r="3"  stroke="currentColor" strokeWidth="1" />
+                          <circle cx="16" cy="16" r="8" stroke="currentColor" strokeWidth="1" />
+                          <circle cx="16" cy="16" r="3" stroke="currentColor" strokeWidth="1" />
                         </svg>
                       </div>
                     )}
@@ -383,9 +383,9 @@ function SeoInterlinks({ blog, movie }: { blog: any; movie: any | null }) {
             })}
           </div>
           {songs.length > 10 && (
-            <div style={{ marginTop:12, textAlign:"center" }}>
+            <div style={{ marginTop: 12, textAlign: "center" }}>
               <Link href={`/songs/${movie.slug}/0/${toSlug(songs[0]?.title) || "0"}`}
-                style={{ fontSize:".72rem", color:"#c9973a", fontWeight:700, textDecoration:"none" }}>
+                style={{ fontSize: ".72rem", color: "#c9973a", fontWeight: 700, textDecoration: "none" }}>
                 View all {songs.length} songs →
               </Link>
             </div>
@@ -421,12 +421,12 @@ function RecentBlogs({ blogs }: { blogs: any[] }) {
     iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "";
 
   const CAT_COLORS: Record<string, string> = {
-    "Movie Review":    "bg-yellow-500/15 text-yellow-400 border-yellow-500/20",
+    "Movie Review": "bg-yellow-500/15 text-yellow-400 border-yellow-500/20",
     "Actor Spotlight": "bg-purple-500/15 text-purple-400 border-purple-500/20",
-    "Top 10":          "bg-orange-500/15 text-orange-400 border-orange-500/20",
-    News:              "bg-green-500/15  text-green-400  border-green-500/20",
-    Upcoming:          "bg-blue-500/15   text-blue-400   border-blue-500/20",
-    General:           "bg-pink-500/15   text-pink-400   border-pink-500/20",
+    "Top 10": "bg-orange-500/15 text-orange-400 border-orange-500/20",
+    News: "bg-green-500/15  text-green-400  border-green-500/20",
+    Upcoming: "bg-blue-500/15   text-blue-400   border-blue-500/20",
+    General: "bg-pink-500/15   text-pink-400   border-pink-500/20",
   };
   const catClass = (cat?: string) =>
     CAT_COLORS[cat || ""] || "bg-orange-500/15 text-orange-400 border-orange-500/20";
@@ -434,7 +434,7 @@ function RecentBlogs({ blogs }: { blogs: any[] }) {
   return (
     <section
       aria-label="Recent articles"
-      className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 pb-10 mt-2"
+      className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 pb-10 mt-2"
     >
       <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#1a1a1a]">
@@ -542,7 +542,7 @@ export default async function BlogPage({ params }: { params: { slug: string } })
     getRelatedBlogs(params.slug, blog.category),
   ]);
 
-  const movieYear  = movie?.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
+  const movieYear = movie?.releaseDate ? new Date(movie.releaseDate).getFullYear() : "";
   const movieCanon = movie ? `${SITE_URL}/movie/${movie.slug}` : undefined;
   const songs: any[] = movie?.media?.songs || [];
 
@@ -555,17 +555,17 @@ export default async function BlogPage({ params }: { params: { slug: string } })
   // ─── FAQ items for JSON-LD ───────────────────────────────────
   const faqItems = blog.movieTitle
     ? [
-        { q: `What is ${blog.movieTitle} Odia movie about?`,          a: cleanTruncate(blog.seoDesc || blog.excerpt || blog.content, 250) || `${blog.movieTitle} is an Odia (Ollywood) film covered on Ollypedia.` },
-        { q: `Is ${blog.movieTitle} worth watching?`,                  a: `Read the full review and audience ratings for ${blog.movieTitle} on this Ollypedia article.` },
-        { q: `Who is in the cast of ${blog.movieTitle}?`,             a: `Full cast and crew of ${blog.movieTitle} are listed on the movie page on Ollypedia.` },
-        { q: `What is ${blog.movieTitle} box office collection?`,      a: `Day-wise box office collection of ${blog.movieTitle} is tracked on Ollypedia's box office page.` },
-        { q: `Where can I watch songs from ${blog.movieTitle}?`,       a: `All songs from ${blog.movieTitle} with YouTube videos are on Ollypedia.` },
-      ]
+      { q: `What is ${blog.movieTitle} Odia movie about?`, a: cleanTruncate(blog.seoDesc || blog.excerpt || blog.content, 250) || `${blog.movieTitle} is an Odia (Ollywood) film covered on Ollypedia.` },
+      { q: `Is ${blog.movieTitle} worth watching?`, a: `Read the full review and audience ratings for ${blog.movieTitle} on this Ollypedia article.` },
+      { q: `Who is in the cast of ${blog.movieTitle}?`, a: `Full cast and crew of ${blog.movieTitle} are listed on the movie page on Ollypedia.` },
+      { q: `What is ${blog.movieTitle} box office collection?`, a: `Day-wise box office collection of ${blog.movieTitle} is tracked on Ollypedia's box office page.` },
+      { q: `Where can I watch songs from ${blog.movieTitle}?`, a: `All songs from ${blog.movieTitle} with YouTube videos are on Ollypedia.` },
+    ]
     : [
-        { q: "What is Ollypedia?",                                     a: "Ollypedia is Odisha's complete Odia cinema encyclopedia — movies, actors, songs, box office and news." },
-        { q: "What kind of articles does Ollypedia publish?",          a: "Movie reviews, top 10 lists, actor spotlights, box office reports and Ollywood entertainment news." },
-        { q: "How can I find reviews for a specific Odia movie?",      a: "Search for the movie on Ollypedia's blog or visit the movie's dedicated page for ratings and articles." },
-      ];
+      { q: "What is Ollypedia?", a: "Ollypedia is Odisha's complete Odia cinema encyclopedia — movies, actors, songs, box office and news." },
+      { q: "What kind of articles does Ollypedia publish?", a: "Movie reviews, top 10 lists, actor spotlights, box office reports and Ollywood entertainment news." },
+      { q: "How can I find reviews for a specific Odia movie?", a: "Search for the movie on Ollypedia's blog or visit the movie's dedicated page for ratings and articles." },
+    ];
 
   // word count for content depth signal
   const wordCount = blog.content
@@ -580,29 +580,29 @@ export default async function BlogPage({ params }: { params: { slug: string } })
         "@type": blog.category === "Box Office"
           ? ["Article", "NewsArticle", "ReportageNewsArticle"]
           : ["Article", "NewsArticle"],
-        "headline":        blog.title,
-        "description":     cleanTruncate(blog.seoDesc || blog.excerpt || blog.content, 200) || "",
-        "datePublished":   blog.createdAt ? new Date(blog.createdAt).toISOString() : undefined,
-        "dateModified":    blog.updatedAt ? new Date(blog.updatedAt).toISOString() : undefined,
+        "headline": blog.title,
+        "description": cleanTruncate(blog.seoDesc || blog.excerpt || blog.content, 200) || "",
+        "datePublished": blog.createdAt ? new Date(blog.createdAt).toISOString() : undefined,
+        "dateModified": blog.updatedAt ? new Date(blog.updatedAt).toISOString() : undefined,
         // ★ Google requires ImageObject (not bare string) for NewsArticle Top Stories eligibility
         "image": {
-          "@type":  "ImageObject",
-          "url":    blog.coverImage || `${SITE_URL}/default.jpg`,
-          "width":  1200,
+          "@type": "ImageObject",
+          "url": blog.coverImage || `${SITE_URL}/default.jpg`,
+          "width": 1200,
           "height": 630,
         },
-        "inLanguage":      "en-IN",
-        "articleSection":  blog.category || "Entertainment",
-        "wordCount":       wordCount || undefined,
+        "inLanguage": "en-IN",
+        "articleSection": blog.category || "Entertainment",
+        "wordCount": wordCount || undefined,
         // speakable — Google Assistant reads h1 aloud (voice search traffic)
         "speakable": {
-          "@type":       "SpeakableSpecification",
+          "@type": "SpeakableSpecification",
           "cssSelector": ["h1"],
         },
         "author": {
-          "@type":  "Person",
-          "name":   blog.author || "Ollypedia Editorial Team",
-          "url":    `${SITE_URL}/about`,
+          "@type": "Person",
+          "name": blog.author || "Ollypedia Editorial Team",
+          "url": `${SITE_URL}/about`,
           // sameAs signals authorship authority to Google
           "sameAs": [
             "https://www.facebook.com/ollypedia",
@@ -612,12 +612,12 @@ export default async function BlogPage({ params }: { params: { slug: string } })
         },
         "publisher": {
           "@type": "Organization",
-          "name":  "Ollypedia",
-          "url":   `${SITE_URL}`,
+          "name": "Ollypedia",
+          "url": `${SITE_URL}`,
           "logo": {
-            "@type":  "ImageObject",
-            "url":    `${SITE_URL}/logo.png`,
-            "width":  600,
+            "@type": "ImageObject",
+            "url": `${SITE_URL}/logo.png`,
+            "width": 600,
             "height": 60,
           },
           "sameAs": [
@@ -628,13 +628,13 @@ export default async function BlogPage({ params }: { params: { slug: string } })
         },
         "mainEntityOfPage": {
           "@type": "WebPage",
-          "@id":   `${SITE_URL}/blog/${blog.slug}`,
+          "@id": `${SITE_URL}/blog/${blog.slug}`,
         },
         ...(movie && {
           "about": {
             "@type": "Movie",
-            "name":  movie.title,
-            "url":   movieCanon,
+            "name": movie.title,
+            "url": movieCanon,
             ...(movieYear && { "dateCreated": String(movieYear) }),
             ...(movie.director && { "director": { "@type": "Person", "name": movie.director } }),
             ...(movie.cast?.length > 0 && {
@@ -665,8 +665,8 @@ export default async function BlogPage({ params }: { params: { slug: string } })
       {
         "@type": "BreadcrumbList",
         "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "Home",  "item": `${SITE_URL}/` },
-          { "@type": "ListItem", "position": 2, "name": "Blog",  "item": `${SITE_URL}/blog` },
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE_URL}/` },
+          { "@type": "ListItem", "position": 2, "name": "Blog", "item": `${SITE_URL}/blog` },
           ...(blog.category
             ? [{ "@type": "ListItem", "position": 3, "name": blog.category, "item": `${SITE_URL}/blog/category/${toSlug(blog.category)}` }]
             : []),
@@ -679,33 +679,33 @@ export default async function BlogPage({ params }: { params: { slug: string } })
       // Google to detect duplicate FAQPage → "2 invalid items" error.
       ...(blog.category !== "Box Office"
         ? [{
-            "@type": "FAQPage",
-            "mainEntity": faqItems.map(({ q, a }) => ({
-              "@type":          "Question",
-              "name":           q,
-              "acceptedAnswer": { "@type": "Answer", "text": a },
-            })),
-          }]
+          "@type": "FAQPage",
+          "mainEntity": faqItems.map(({ q, a }) => ({
+            "@type": "Question",
+            "name": q,
+            "acceptedAnswer": { "@type": "Answer", "text": a },
+          })),
+        }]
         : []),
       // Box Office category: add Table schema for day-wise collection data
       // + upgrade @type to include ReportageNewsArticle for Google News eligibility
       ...(blog.category === "Box Office" && movie && movie.boxOfficeDays?.length > 0
         ? [{
-            "@type": "Table",
-            "about": `${movie.title} Day-wise Box Office Collection`,
-            "url": `${SITE_URL}/box-office/${movie.slug}`,
-          }]
+          "@type": "Table",
+          "about": `${movie.title} Day-wise Box Office Collection`,
+          "url": `${SITE_URL}/box-office/${movie.slug}`,
+        }]
         : []),
       // Songs schema
       ...(movie && songs.length > 0
         ? [{
-            "@type": "ItemList",
-            "name": `Songs from ${movie?.title}`,
-            "itemListElement": songs.slice(0, 10).map((s: any, i: number) => ({
-              "@type": "ListItem", "position": i + 1, "name": s.title,
-              "url": `${SITE_URL}/songs/${movie?.slug}/${i}/${toSlug(s.title) || String(i)}`,
-            })),
-          }]
+          "@type": "ItemList",
+          "name": `Songs from ${movie?.title}`,
+          "itemListElement": songs.slice(0, 10).map((s: any, i: number) => ({
+            "@type": "ListItem", "position": i + 1, "name": s.title,
+            "url": `${SITE_URL}/songs/${movie?.slug}/${i}/${toSlug(s.title) || String(i)}`,
+          })),
+        }]
         : []),
     ],
   };
@@ -714,13 +714,13 @@ export default async function BlogPage({ params }: { params: { slug: string } })
     iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "";
 
   const CAT_COLORS: Record<string, string> = {
-    "Movie Review":    "bg-yellow-500/15 text-yellow-400 border-yellow-500/20",
+    "Movie Review": "bg-yellow-500/15 text-yellow-400 border-yellow-500/20",
     "Actor Spotlight": "bg-purple-500/15 text-purple-400 border-purple-500/20",
-    "Top 10":          "bg-orange-500/15 text-orange-400 border-orange-500/20",
-    "Box Office":      "bg-green-500/15  text-green-400  border-green-500/20",
-    News:              "bg-green-500/15  text-green-400  border-green-500/20",
-    Upcoming:          "bg-blue-500/15   text-blue-400   border-blue-500/20",
-    General:           "bg-pink-500/15   text-pink-400   border-pink-500/20",
+    "Top 10": "bg-orange-500/15 text-orange-400 border-orange-500/20",
+    "Box Office": "bg-green-500/15  text-green-400  border-green-500/20",
+    News: "bg-green-500/15  text-green-400  border-green-500/20",
+    Upcoming: "bg-blue-500/15   text-blue-400   border-blue-500/20",
+    General: "bg-pink-500/15   text-pink-400   border-pink-500/20",
   };
   const catClass = (cat?: string) => CAT_COLORS[cat || ""] || "bg-orange-500/15 text-orange-400 border-orange-500/20";
 
@@ -794,11 +794,11 @@ export default async function BlogPage({ params }: { params: { slug: string } })
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "5px 8px" }}>
             {[
-              { label: "🎬 Movies",     href: "/movies" },
-              { label: "🎵 Songs",      href: "/songs" },
-              { label: "⭐ Reviews",    href: "/blog?category=Reviews" },
+              { label: "🎬 Movies", href: "/movies" },
+              { label: "🎵 Songs", href: "/songs" },
+              { label: "⭐ Reviews", href: "/blog?category=Reviews" },
               { label: "📊 Box Office", href: "/box-office" },
-              { label: "🗞️ News",       href: "/blog?category=News" },
+              { label: "🗞️ News", href: "/blog?category=News" },
             ].map(item => (
               <Link key={item.href} href={item.href} style={{
                 fontSize: ".65rem", padding: "4px 10px",

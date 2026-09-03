@@ -36,6 +36,8 @@ Allow: /movies/genre/
 Allow: /box-office?year=
 Allow: /blog?category=
 Allow: /blog?page=
+Allow: /songs/category/
+Allow: /songs$
 Allow: /discussion
 
 # Block thin/low-value/private pages from crawl budget
@@ -45,6 +47,7 @@ Disallow: /discussion/profile
 Disallow: /search
 Disallow: /blog?
 Disallow: /songs/
+Disallow: /songs?
 
 # ── AI training scrapers — block content harvesting ─────
 # These bots scrape content to train AI models without compensation.

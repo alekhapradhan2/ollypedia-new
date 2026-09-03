@@ -236,7 +236,7 @@ function SeoProseBlock({
   return (
     <section
       aria-label="About this song"
-      className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 pb-16"
+      className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 pb-16"
     >
       {/* â”€â”€ 2-col layout: left = prose/blogs, right = more songs â”€â”€ */}
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">

@@ -85,7 +85,7 @@ interface Post {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmtDate  = (iso?: string) => iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "long",  year: "numeric" }) : "";
+const fmtDate = (iso?: string) => iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "";
 const fmtShort = (iso?: string) => iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "";
 
 const avgRating = (reviews?: Review[]) => {
@@ -99,12 +99,12 @@ const VERDICT_COLORS: Record<string, string> = {
 };
 
 const CAT_STYLES: Record<string, { bg: string; c: string }> = {
-  "Movie Review":    { bg: "rgba(201,151,58,.9)",  c: "#000" },
+  "Movie Review": { bg: "rgba(201,151,58,.9)", c: "#000" },
   "Actor Spotlight": { bg: "rgba(167,139,232,.9)", c: "#fff" },
-  "Top 10":          { bg: "rgba(232,200,122,.9)", c: "#000" },
-  News:              { bg: "rgba(74,207,130,.9)",  c: "#000" },
-  Upcoming:          { bg: "rgba(90,170,232,.9)",  c: "#000" },
-  General:           { bg: "rgba(229,121,154,.9)", c: "#fff" },
+  "Top 10": { bg: "rgba(232,200,122,.9)", c: "#000" },
+  News: { bg: "rgba(74,207,130,.9)", c: "#000" },
+  Upcoming: { bg: "rgba(90,170,232,.9)", c: "#000" },
+  General: { bg: "rgba(229,121,154,.9)", c: "#fff" },
 };
 const catStyle = (cat?: string) => {
   const s = CAT_STYLES[cat || ""] || CAT_STYLES["Movie Review"];
@@ -114,24 +114,24 @@ const catStyle = (cat?: string) => {
 // ─── Keyword highlight ────────────────────────────────────────────────────────
 const ACCENT_COLORS = ["text-gold", "text-purple", "text-green", "text-pink", "text-blue"];
 const ODIA_KEYWORDS = [
-  "Ollywood","Odia","Odisha","Bhubaneswar","Cuttack","blockbuster","superhit","hit",
-  "director","producer","cinematography","soundtrack","music director","choreography",
-  "debut","award","release","theatre","cast","crew",
-  "action","drama","romance","comedy","thriller","family","historical","devotional",
-  "biography","sequel","prequel","remake",
-  "box office","collection","first day","opening day","first week","verdict",
-  "net collection","gross collection","total collection","hit or flop",
-  "actor","actress","singer","lyricist","story","screenplay","dialogue",
-  "OTT","streaming","digital release","theatre release","Ollypedia",
-  "review","rating","worth watching","public review","story","plot","climax",
-  "emotional","powerful","entertaining","must watch","super hit",
+  "Ollywood", "Odia", "Odisha", "Bhubaneswar", "Cuttack", "blockbuster", "superhit", "hit",
+  "director", "producer", "cinematography", "soundtrack", "music director", "choreography",
+  "debut", "award", "release", "theatre", "cast", "crew",
+  "action", "drama", "romance", "comedy", "thriller", "family", "historical", "devotional",
+  "biography", "sequel", "prequel", "remake",
+  "box office", "collection", "first day", "opening day", "first week", "verdict",
+  "net collection", "gross collection", "total collection", "hit or flop",
+  "actor", "actress", "singer", "lyricist", "story", "screenplay", "dialogue",
+  "OTT", "streaming", "digital release", "theatre release", "Ollypedia",
+  "review", "rating", "worth watching", "public review", "story", "plot", "climax",
+  "emotional", "powerful", "entertaining", "must watch", "super hit",
 ];
 const ACCENT_CSS: Record<string, string> = {
-  "text-gold":   "#c9973a",
+  "text-gold": "#c9973a",
   "text-purple": "#a78be8",
-  "text-green":  "#4acf82",
-  "text-pink":   "#e85a8a",
-  "text-blue":   "#5aaae8",
+  "text-green": "#4acf82",
+  "text-pink": "#e85a8a",
+  "text-blue": "#5aaae8",
 };
 
 function HighlightedPara({ text }: { text: string }) {
@@ -146,7 +146,7 @@ function HighlightedPara({ text }: { text: string }) {
       const parts = seg.text.split(regex);
       parts.forEach((part) => {
         if (regex.test(part)) next.push({ text: part, color: colorKey });
-        else if (part)         next.push({ text: part, color: null });
+        else if (part) next.push({ text: part, color: null });
         regex.lastIndex = 0;
       });
     });
@@ -181,8 +181,8 @@ function plainTextToHtml(raw: string): string {
 
   const inlineFmt = (s: string) =>
     s.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
-     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-     .replace(/\*(.+?)\*/g, "<em>$1</em>");
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.+?)\*/g, "<em>$1</em>");
 
   const flushPara = () => {
     if (!paraLines.length) return;
@@ -299,7 +299,7 @@ function sanitizeMixedHtml(html: string): string {
   const stripped = html.replace(/<!--[\s\S]*?-->/g, "");
 
   const blockClose = /<\/(?:h[1-6]|p|ul|ol|li|table|div|section|article|blockquote|details|summary)>/i;
-  const blockOpen  = /^<(?:h[1-6]|p|ul|ol|table|div|section|article|blockquote|details|summary|\/article)/i;
+  const blockOpen = /^<(?:h[1-6]|p|ul|ol|table|div|section|article|blockquote|details|summary|\/article)/i;
   const parts = stripped.split(/((?:<\/(?:h[1-6]|p|ul|ol|li|table|div|section|article|blockquote|details|summary)>))/gi);
   return parts.map((part, i) => {
     if (blockClose.test(part) || blockOpen.test(part)) return part;
@@ -337,9 +337,12 @@ function ColorfulArticle({ content, onTocReady }: { content: string; onTocReady?
   } else {
     finalHtml = plainTextToHtml(content || "");
   }
-  
+
+  // Downgrade any <h1> in article body to <h2> to ensure exactly one <h1> exists on the page (the article title)
+  const normalizedHtml = finalHtml.replace(/<h1(\s[^>]*)?>/gi, '<h2$1>').replace(/<\/h1>/gi, '</h2>');
+
   // Sanitize user content first to prevent XSS
-  const safeHtml = DOMPurify.sanitize(finalHtml);
+  const safeHtml = DOMPurify.sanitize(normalizedHtml);
 
   useEffect(() => {
     if (onTocReady) {
@@ -536,29 +539,29 @@ export default function BlogDetailClient({
   const router = useRouter();
   const articleRef = useRef<HTMLDivElement>(null);
 
-  const [post,          setPost]         = useState<Post | null>(initialData ?? null);
-  const [related,       setRelated]      = useState<Post[]>([]);
-  const [relMovies,     setRelMovies]    = useState<Movie[]>([]);
-  const [relSongs,      setRelSongs]     = useState<Song[]>([]);
-  const [loading,       setLoading]      = useState(!initialData);
-  const [notFound,      setNotFound]     = useState(false);
+  const [post, setPost] = useState<Post | null>(initialData ?? null);
+  const [related, setRelated] = useState<Post[]>([]);
+  const [relMovies, setRelMovies] = useState<Movie[]>([]);
+  const [relSongs, setRelSongs] = useState<Song[]>([]);
+  const [loading, setLoading] = useState(!initialData);
+  const [notFound, setNotFound] = useState(false);
 
   // Review form
-  const [rvName,        setRvName]       = useState("");
-  const [rvText,        setRvText]       = useState("");
-  const [rvRating,      setRvRating]     = useState(5);
-  const [submitting,    setSubmitting]   = useState(false);
-  const [submitted,     setSubmitted]    = useState(false);
-  const [replies,       setReplies]      = useState<Record<number, { name?: string; text?: string; open?: boolean }>>({});
-  const [copied,        setCopied]       = useState(false);
+  const [rvName, setRvName] = useState("");
+  const [rvText, setRvText] = useState("");
+  const [rvRating, setRvRating] = useState(5);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [replies, setReplies] = useState<Record<number, { name?: string; text?: string; open?: boolean }>>({});
+  const [copied, setCopied] = useState(false);
   const [boxOfficeDays, setBoxOfficeDays] = useState<any[]>([]);
   const [boxOfficeSlug, setBoxOfficeSlug] = useState<string>("");
 
   // ★ NEW — Reading progress & TOC
-  const [readProgress,  setReadProgress] = useState(0);
-  const [tocItems,      setTocItems]     = useState<TocItem[]>([]);
-  const [activeTocId,   setActiveTocId]  = useState<string>("");
-  const [showToc,       setShowToc]      = useState(false);
+  const [readProgress, setReadProgress] = useState(0);
+  const [tocItems, setTocItems] = useState<TocItem[]>([]);
+  const [activeTocId, setActiveTocId] = useState<string>("");
+  const [showToc, setShowToc] = useState(false);
 
   // ─── Fetch post ──────────────────────────────────────────────
   useEffect(() => {
@@ -572,7 +575,7 @@ export default function BlogDetailClient({
         const d = await r.json();
         if (!dead) setPost(d);
       } catch { if (!dead) setNotFound(true); }
-      finally   { if (!dead) setLoading(false); }
+      finally { if (!dead) setLoading(false); }
     })();
     return () => { dead = true; };
   }, [slug, initialData]);
@@ -583,7 +586,7 @@ export default function BlogDetailClient({
     (async () => {
       try {
         let posts: Post[] = [];
-        
+
         // 1. Prioritize articles about the same movie
         if (post.movieTitle) {
           const r1 = await fetch(`${API_BASE}/blog?movie=${encodeURIComponent(post.movieTitle)}&limit=25`);
@@ -611,7 +614,7 @@ export default function BlogDetailClient({
         }
 
         setRelated(uniquePosts.slice(0, 20));
-      } catch {}
+      } catch { }
     })();
 
     if (post.movieTitle) {
@@ -634,9 +637,9 @@ export default function BlogDetailClient({
                   setBoxOfficeSlug(movies[0].slug);
                 }
               }
-            } catch {}
+            } catch { }
           }
-        } catch {}
+        } catch { }
       })();
     }
   }, [post, slug]);
@@ -693,12 +696,12 @@ export default function BlogDetailClient({
           try {
             const r2 = await fetch(`${API_BASE}/blog/${post.slug}/view`, { method: "POST" });
             if (r2.ok) sessionStorage.setItem(sessionKey, "1");
-          } catch {}
+          } catch { }
         }
       } catch {
         // Network error — fallback to Express API; don't set sessionStorage
         // so the next page load can retry.
-        fetch(`${API_BASE}/blog/${post.slug}/view`, { method: "POST" }).catch(() => {});
+        fetch(`${API_BASE}/blog/${post.slug}/view`, { method: "POST" }).catch(() => { });
       }
     }, 2000);
 
@@ -737,7 +740,7 @@ export default function BlogDetailClient({
         setPost((p) => p ? { ...p, reviews: updatedReviews } : p);
         setSubmitted(true); setRvName(""); setRvText(""); setRvRating(5);
       }
-    } catch {}
+    } catch { }
     setSubmitting(false);
   };
 
@@ -754,7 +757,7 @@ export default function BlogDetailClient({
           return { ...p, reviews: rv };
         });
       }
-    } catch {}
+    } catch { }
   };
 
   const submitReply = async (idx: number) => {
@@ -777,13 +780,13 @@ export default function BlogDetailClient({
         });
         setReplies((p) => ({ ...p, [idx]: { ...p[idx], text: "", open: false } }));
       }
-    } catch {}
+    } catch { }
   };
 
   const toggleReply = (idx: number) =>
     setReplies((p) => ({ ...p, [idx]: { ...(p[idx] || {}), open: !(p[idx]?.open) } }));
 
-  const avg     = avgRating(post?.reviews);
+  const avg = avgRating(post?.reviews);
   const rvCount = (post?.reviews || []).length;
 
   // ─── Loading / 404 ────────────────────────────────────────────
@@ -1053,14 +1056,14 @@ export default function BlogDetailClient({
               <div className="bp-sidebar-hd">Article Info</div>
               <div className="bp-sidebar-body">
                 {([
-                  ["Published",  fmtDate(post.createdAt)],
+                  ["Published", fmtDate(post.createdAt)],
                   post.updatedAt && post.updatedAt !== post.createdAt ? ["Updated", fmtDate(post.updatedAt)] : null,
-                  ["Author",     post.author || "OllyPedia Editorial"],
-                  ["Category",   post.category || "General"],
-                  ["Read Time",  `${post.readTime || 3} min`],
-                  ["Views",      (post.views || 0).toLocaleString()],
-                  Number(avg) > 0 ? ["Rating",  `${avg} / 5 ⭐`] : null,
-                  rvCount > 0     ? ["Reviews", `${rvCount} review${rvCount !== 1 ? "s" : ""}`] : null,
+                  ["Author", post.author || "OllyPedia Editorial"],
+                  ["Category", post.category || "General"],
+                  ["Read Time", `${post.readTime || 3} min`],
+                  ["Views", (post.views || 0).toLocaleString()],
+                  Number(avg) > 0 ? ["Rating", `${avg} / 5 ⭐`] : null,
+                  rvCount > 0 ? ["Reviews", `${rvCount} review${rvCount !== 1 ? "s" : ""}`] : null,
                 ] as ([string, string] | null)[]).filter((x): x is [string, string] => x !== null).map(([k, v]) => (
                   <div key={k} className="bp-info-row">
                     <span className="bp-info-key">{k}</span>
@@ -1284,13 +1287,13 @@ export default function BlogDetailClient({
       </div>
 
       {/* ══ BANNER AD BEFORE RELATED ARTICLES ══ */}
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 mb-8 mt-2">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mb-8 mt-2">
         <DisplayAd slot="8191172163" format="horizontal" className="rounded-xl border border-[#222]" />
       </div>
 
       {/* ─── Related Blogs Grid ─── */}
       {related.length > 0 && (
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px 80px" }}>
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 pb-20">
           <h2 className="font-display font-bold text-2xl mb-6 text-white">Related Articles</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {related.map((blog) => (
@@ -1345,12 +1348,12 @@ const CSS = `
 @media(min-width:768px){.bp-banner{min-height:520px;}}
 .bp-banner-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.5) saturate(1.2);transform:scale(1.04);}
 .bp-banner-grad{position:absolute;inset:0;background:linear-gradient(0deg,rgba(8,8,8,1) 0%,rgba(8,8,8,.8) 25%,rgba(8,8,8,.2) 60%,transparent 100%),linear-gradient(90deg,rgba(8,8,8,.5) 0%,transparent 50%);}
-.bp-banner-content{position:relative;z-index:2;width:100%;max-width:900px;padding:28px 20px 36px;}
+.bp-banner-content{position:relative;z-index:2;width:100%;max-width:1600px;padding:28px 20px 36px;}
 @media(min-width:768px){.bp-banner-content{padding:32px 40px 44px;}}
 
 .bp-nobanner{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(201,151,58,.08) 0%,rgba(167,139,232,.04) 50%,transparent 100%);border-bottom:1px solid var(--border);padding:44px 20px 36px;}
 @media(min-width:768px){.bp-nobanner{padding:56px 40px 44px;}}
-.bp-nobanner-inner{max-width:900px;}
+.bp-nobanner-inner{max-width:1600px;}
 .bp-nobanner::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:60px 60px;}
 
 .bp-back{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid var(--border2);color:rgba(255,255,255,.6);font-family:inherit;font-size:.72rem;font-weight:600;cursor:pointer;padding:5px 12px;border-radius:2px;transition:all .15s;margin-bottom:18px;}
@@ -1366,9 +1369,9 @@ const CSS = `
 .bp-meta-gold{color:var(--gold);font-weight:600;}
 .bp-meta-rating{display:inline-flex;align-items:center;gap:5px;background:rgba(201,151,58,.14);border:1px solid rgba(201,151,58,.3);border-radius:12px;padding:2px 9px;color:var(--gold);font-weight:700;}
 
-.bp-layout{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:40px;padding:36px 20px 80px;align-items:start;}
+.bp-layout{width:100%;max-width:1680px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:40px;padding:36px 20px 80px;align-items:start;}
 @media(min-width:768px){.bp-layout{padding:44px 32px 80px;}}
-@media(min-width:1060px){.bp-layout{grid-template-columns:minmax(0,1fr) 320px;gap:52px;padding:48px 40px 80px;}}
+@media(min-width:1060px){.bp-layout{grid-template-columns:minmax(0,1fr) 340px;gap:52px;padding:48px 40px 80px;}}
 .bp-sidebar{display:flex;flex-direction:column;gap:24px;position:sticky;top:24px;}
 
 /* ★ ROOT-CAUSE FIX: the main column is a CSS-grid track. A bare "1fr" track

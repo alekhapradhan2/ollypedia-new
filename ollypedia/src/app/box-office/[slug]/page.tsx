@@ -409,7 +409,7 @@ export default async function BoxOfficePage({
       {/* ★ SERVER-RENDERED SEO SECTION — positioned cleanly below the interactive client views */}
       <section
         aria-label={`${movie.title} box office collection summary`}
-        className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+        className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8"
       >
         <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-6 sm:p-8">
           <h2 className="text-xl sm:text-2xl font-bold text-white mb-3">

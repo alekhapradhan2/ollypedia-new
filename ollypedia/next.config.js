@@ -30,6 +30,12 @@ const nextConfig = {
         destination: "https://www.ollypedia.in/:path*",
         permanent: true,
       },
+      // Redirect /year/:year to /movies/year/:year
+      {
+        source: "/year/:year",
+        destination: "/movies/year/:year",
+        permanent: true,
+      },
     ];
   },
 

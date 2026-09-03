@@ -412,7 +412,7 @@ export default async function BoxOfficePage({
 
         {/* ── Header ── */}
         <div className="border-b border-[#1c1c1c] bg-[#0b0b0b]">
-          <div className="w-full max-w-screen-lg mx-auto px-3 sm:px-5 py-5 sm:py-8">
+          <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-5 sm:py-8">
             <nav className="flex items-center gap-1.5 text-xs text-gray-600 mb-3">
               <Link href="/" className="hover:text-orange-400 transition-colors">Home</Link>
               <span>/</span>
@@ -454,11 +454,11 @@ export default async function BoxOfficePage({
         </div>
 
         {/* ══ GLOBAL BANNER AD ══ */}
-        <div className="w-full max-w-screen-lg mx-auto px-3 sm:px-5 mt-4 sm:mt-6">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mt-4 sm:mt-6">
           <DisplayAd slot="8191172163" format="horizontal" className="rounded-xl border border-[#1c1c1c]" />
         </div>
 
-        <div className="w-full max-w-screen-lg mx-auto px-3 sm:px-5 py-4 sm:py-6 space-y-5">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-4 sm:py-6 space-y-5">
 
           {/* ── Year Tabs ── */}
           {availableYears.length > 1 && (

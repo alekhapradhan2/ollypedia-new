@@ -512,7 +512,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
         </div>
 
         {/* ── UNIFIED layout: poster on left, details on right ── */}
-        <div className="relative z-10 flex items-end max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[18vh] sm:pt-[22vh] pb-8 sm:pb-12 gap-4 sm:gap-10">
+        <div className="relative z-10 flex items-end w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 pt-[18vh] sm:pt-[22vh] pb-8 sm:pb-12 gap-4 sm:gap-10">
           
           {/* Portrait — overlaps the banner fade */}
           <div className="flex-shrink-0 self-end relative z-20 group">
@@ -624,7 +624,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 pb-16">
 
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-xs text-gray-500 pb-6"
